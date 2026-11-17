@@ -28,7 +28,6 @@ pub fn blurb(name: &str) -> &'static str {
         "Navigation" => "Menus, tabs, overlays and sidebars.",
         "Data display" => "Tables, progress, media, time and content.",
         "Charts" => "Statistical, market and radial charts.",
-        "Instruments" => "Vehicle dash pods one by one, then industrial, medical, military and aviation readouts.",
         "Animation" => "Entry effects and physics.",
         "Shaders" => "Pixel-shader backgrounds and effects.",
         "Loading" => "Spinners and skeletons.",

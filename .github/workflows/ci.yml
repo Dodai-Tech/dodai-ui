@@ -67,14 +67,14 @@ jobs:
       - run: git diff --exit-code -- dist
       - run: test -z "$(git status --porcelain dist)"
 
-  # Base crates everything else depends on (dodai-core, dodai-icons, dodai-charts, dodai-instruments, dodai-dash, dodai-fx, dodai-frost).
+  # Base crates everything else depends on (dodai-core, dodai-icons, dodai-charts, dodai-dash, dodai-fx, dodai-frost).
   base:
     name: ${{ matrix.crate }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        crate: [dodai-core, dodai-icons, dodai-charts, dodai-instruments, dodai-dash, dodai-fx, dodai-frost]
+        crate: [dodai-core, dodai-icons, dodai-charts, dodai-dash, dodai-fx, dodai-frost]
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
@@ -115,7 +115,6 @@ jobs:
           - { crate: dodai-iced, os: ubuntu-latest, gui: true }
           - { crate: dodai-gpui, os: ubuntu-latest, gui: true }
           - { crate: dodai-charts, os: ubuntu-latest, gui: true }
-          - { crate: dodai-instruments, os: ubuntu-latest, gui: true }
           - { crate: dodai-showcase, os: ubuntu-latest, gui: true }
           - { crate: dodai-bevy, os: ubuntu-latest, gui: true }
           - { crate: dodai-shaders, os: ubuntu-latest, gui: true }
@@ -148,10 +147,6 @@ jobs:
       - name: gpui feature slices
         if: matrix.crate == 'dodai-gpui'
         run: |
-          cargo check -p dodai-instruments --no-default-features --features gpui
-          cargo check -p dodai-instruments --no-default-features --features gpui,automotive
-          cargo check -p dodai-instruments --no-default-features --features gpui,aviation
-          cargo check -p dodai-instruments --no-default-features --features gpui,defense
           cargo check -p dodai-gpui --no-default-features --features components
           cargo check -p dodai-gpui --no-default-features --features frost
           cargo check -p dodai-gpui --no-default-features
@@ -204,10 +199,6 @@ jobs:
       - name: gpui feature slices
         if: matrix.crate == 'dodai-gpui'
         run: |
-          cargo check -p dodai-instruments --no-default-features --features gpui
-          cargo check -p dodai-instruments --no-default-features --features gpui,automotive
-          cargo check -p dodai-instruments --no-default-features --features gpui,aviation
-          cargo check -p dodai-instruments --no-default-features --features gpui,defense
           cargo check -p dodai-gpui --no-default-features --features components
           cargo check -p dodai-gpui --no-default-features --features frost
           cargo check -p dodai-gpui --no-default-features
@@ -269,9 +260,9 @@ jobs:
       - run: cargo check --locked -p dodai-fx -p dodai-icons --all-targets
       # topcoat: the library only; its showcase example needs the newer rustc of the toolkits.
       - run: cargo check --locked -p dodai-topcoat --lib
-      # charts and instruments: the agnostic library only; their tests and examples use gpui
+      # charts: the agnostic library only; their tests and examples use gpui
       # (a dev-dependency), which needs a newer rustc than the declared MSRV.
-      - run: cargo check --locked -p dodai-charts -p dodai-instruments --lib
+      - run: cargo check --locked -p dodai-charts --lib
       - run: cargo check --locked -p dodai-dash --all-features
 
   # Unused dependencies (cargo-machete scans every manifest, including freya and tools/).

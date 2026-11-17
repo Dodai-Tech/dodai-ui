@@ -1,17 +1,12 @@
-//! Chart demo tiles (line/bar, pies, donuts, gauges, sparklines, instruments, ...).
+//! Chart demo tiles (line/bar, pies, donuts, sparklines, ...).
 
 use super::*;
-use gpui::Div;
 
 /// The chart sections' bodies, built once per render.
 pub(crate) struct ChartDemos {
     /// Every chart demo as `(section, body)`, in build order; a section may get several
     /// bodies. `catalog::CHART_FAMILIES` decides where each section is listed.
     pub charts: Vec<(&'static str, gpui::AnyElement)>,
-    pub gauge_styles: Div,
-    /// Instrument demos: (signal lab, sci-fi HUD).
-    pub instruments: (Div, Div),
-    pub pulse: Div,
 }
 
 impl Showcase {
@@ -126,8 +121,6 @@ impl Showcase {
         let months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
         let a = Series::new("Revenue", drift(&[12.0, 18.0, 14.0, 26.0, 22.0, 31.0], 1.0));
         let b = Series::new("Cost", drift(&[8.0, 11.0, 13.0, 15.0, 17.0, 16.0], 2.0));
-        let gauge_styles = self.gauge_style_demos(cx);
-        let instruments = self.instrument_demos(&me, cx);
         let tile = |title: &'static str, el: gpui::AnyElement| {
             div()
                 .flex()
@@ -480,119 +473,6 @@ impl Showcase {
                     mean + (u + v - 1.0) * spread
                 })
                 .collect()
-        };
-        let pulse = {
-            use dodai_charts::gpui::{Pulse, PulseGrid, PulseMode, PulseRhythm};
-            let cfg = self.pulse_cfg;
-            let pick =
-                |id: &'static str, k: usize, label: &'static str, opts: &'static [&'static str]| {
-                    let m = me.clone();
-                    row()
-                        .child(div().w(px(90.0)).child(Label::new(label)))
-                        .child(
-                            Segmented::new(id, opts.iter().copied())
-                                .selected(cfg[k])
-                                .on_select(move |i, _, cx| {
-                                    m.update(cx, |s, cx| {
-                                        s.pulse_cfg[k] = i;
-                                        cx.notify();
-                                    })
-                                }),
-                        )
-                };
-            let rhythm = [
-                PulseRhythm::Normal,
-                PulseRhythm::AFib,
-                PulseRhythm::StElevation,
-                PulseRhythm::VFib,
-                PulseRhythm::Asystole,
-            ][cfg[0].min(4)];
-            let mode = [PulseMode::Sweep, PulseMode::Scroll, PulseMode::Static][cfg[1].min(2)];
-            let grid = [
-                PulseGrid::Paper,
-                PulseGrid::Lines,
-                PulseGrid::Dots,
-                PulseGrid::None,
-            ][cfg[2].min(3)];
-            let noise = [0.0, 0.03, 0.09][cfg[3].min(2)];
-            let rate = [48.0, 72.0, 132.0][cfg[4].min(2)];
-            let trail = [0.0, 0.4, 0.8][cfg[5].min(2)];
-            let gain = [0.6, 1.0, 1.5][cfg[6].min(2)];
-            let controls = col()
-                .child(pick(
-                    "pc-rhythm",
-                    0,
-                    "Rhythm",
-                    &["Normal", "AFib", "ST elev.", "VFib", "Asystole"],
-                ))
-                .child(pick("pc-mode", 1, "Mode", &["Sweep", "Scroll", "Static"]))
-                .child(pick(
-                    "pc-grid",
-                    2,
-                    "Grid",
-                    &["Paper", "Lines", "Dots", "None"],
-                ))
-                .child(pick("pc-noise", 3, "Noise", &["None", "Light", "Heavy"]))
-                .child(pick("pc-rate", 4, "Rate", &["48 bpm", "72 bpm", "132 bpm"]))
-                .child(pick("pc-trail", 5, "Trail", &["Off", "Soft", "Long"]))
-                .child(pick("pc-gain", 6, "Gain", &["0.6×", "1×", "1.5×"]));
-            let main = Pulse::ecg(rate)
-                .rhythm(rhythm)
-                .mode(mode)
-                .grid(grid)
-                .noise(noise)
-                .trail(trail)
-                .gain(gain)
-                .variability(if matches!(rhythm, PulseRhythm::AFib) {
-                    1.0
-                } else {
-                    0.08
-                })
-                .label("ECG · II")
-                .show_rate(true)
-                .alarm(50.0, 110.0)
-                .beat_led(true)
-                .markers(true)
-                .calibration(true)
-                .wander(0.05)
-                .footer("25 mm/s · 10 mm/mV · alarm 50–110")
-                .size(640.0, 200.0);
-            col().child(controls).child(main).child(
-                row()
-                    .child(
-                        Pulse::pleth(72.0)
-                            .label("SpO₂ · Pleth")
-                            .readout("98", "%")
-                            .grid(PulseGrid::Lines)
-                            .fill(true)
-                            .mode(PulseMode::Scroll)
-                            .size(310.0, 110.0),
-                    )
-                    .child(
-                        Pulse::art(72.0)
-                            .color(t.palette.tone(Tone::Success))
-                            .label("ABP")
-                            .readout("120/80", "mmHg")
-                            .grid(PulseGrid::Dots)
-                            .size(310.0, 110.0),
-                    )
-                    .child(
-                        Pulse::resp(16.0)
-                            .label("Resp")
-                            .show_rate(true)
-                            .grid(PulseGrid::None)
-                            .mode(PulseMode::Scroll)
-                            .seconds(12.0)
-                            .size(310.0, 110.0),
-                    )
-                    .child(
-                        Pulse::eeg()
-                            .label("EEG · Fp1")
-                            .grid(PulseGrid::Lines)
-                            .trail(0.3)
-                            .size(310.0, 110.0),
-                    ),
-            )
         };
 
         let charts: Vec<(&'static str, gpui::AnyElement)> = vec![
@@ -1023,11 +903,6 @@ impl Showcase {
                 .into_any_element(),
             ),
         ];
-        ChartDemos {
-            charts,
-            gauge_styles,
-            instruments,
-            pulse,
-        }
+        ChartDemos { charts }
     }
 }

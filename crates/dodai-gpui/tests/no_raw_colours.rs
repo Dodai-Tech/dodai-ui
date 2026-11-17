@@ -1,6 +1,5 @@
 //! Regression guard: components take their colours from the theme, so a new theme reaches
-//! every widget. Raw colour literals in the sources of `dodai-gpui`, `dodai-charts` and
-//! `dodai-instruments` (outside `#[cfg(test)]` code) fail this test
+//! every widget. Raw colour literals in the sources of `dodai-gpui` and `dodai-charts` (outside `#[cfg(test)]` code) fail this test
 //! unless they are on the allow-list below, with the reason they are theme-neutral.
 //!
 //! `hsla(t.palette.x)` is fine: that is the converter from a theme colour, not a literal.
@@ -23,11 +22,6 @@ const ALLOWED: &[(&str, &str, &str)] = &[
         "dodai-charts/src/gpui/grid.rs",
         "Color::rgba(r, gr, b, 255)",
         "converts a gradient sample (data), not a design colour",
-    ),
-    (
-        "dodai-instruments/src/gpui/gradient.rs",
-        "Color::rgba(0, 0, 0, 0)",
-        "a ramp without stops has no colour at all (fully transparent), not a design colour",
     ),
 ];
 
@@ -76,7 +70,7 @@ fn rust_files(dir: &Path, out: &mut Vec<std::path::PathBuf>) {
 fn components_use_theme_colours_not_literals() {
     let crates = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
     let mut files = Vec::new();
-    for c in ["dodai-gpui", "dodai-charts", "dodai-instruments"] {
+    for c in ["dodai-gpui", "dodai-charts"] {
         rust_files(&crates.join(c).join("src"), &mut files);
     }
     assert!(files.len() > 100, "found only {} files", files.len());

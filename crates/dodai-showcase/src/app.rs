@@ -83,7 +83,6 @@ impl Showcase {
         // Live streams: a new sample every 0.2 s / 0.35 s; the charts slide between them.
         self.live_a.advance(0.2, |i| live_signal(i, 0.9));
         self.live_b.advance(0.35, |i| live_signal(i, 0.6));
-        self.live_c.advance(0.035, live_ecg);
         self.speed_step();
         self.slider = wave(0.55, 0.0);
         self.stepped = (wave(0.4, 1.0) * 10.0).round();
@@ -286,19 +285,6 @@ impl Showcase {
             clicks: 0,
             heat_res: 3,
             heat_grad: 0,
-            inst_trail: 2,
-            inst_response: 0,
-            // DODAI_LOOK=apex starts with one look picked (a screenshot aid).
-            inst_look: std::env::var("DODAI_LOOK")
-                .ok()
-                .and_then(|n| {
-                    dodai_instruments::gpui::Look::ALL
-                        .iter()
-                        .position(|l| l.name().eq_ignore_ascii_case(&n))
-                })
-                .map_or(0, |i| i + 1),
-            inst_drive: 4,
-            inst_glow: 0,
             inst_seen: None,
             excluded_slots: Default::default(),
             demo_seen: None,
@@ -319,12 +305,8 @@ impl Showcase {
             demo_otp: String::new(),
             live_a: dodai_gpui::Live::prefilled(48, |i| live_signal(i, 0.9)),
             live_b: dodai_gpui::Live::prefilled(60, |i| live_signal(i, 0.6)),
-            live_c: dodai_gpui::Live::prefilled(120, live_ecg),
             speed_down: dodai_gpui::Live::new(sections::THROUGHPUT_WINDOW),
             speed_up: dodai_gpui::Live::new(sections::THROUGHPUT_WINDOW),
-            track_sel: 0,
-            station_sel: 0,
-            pulse_cfg: [0, 0, 0, 1, 1, 2, 1],
             sh_gen: "neon_grid",
             sh_fx: vec!["crt"],
             sh_int: 1.0,
@@ -366,9 +348,4 @@ impl Showcase {
 fn live_signal(i: u64, k: f32) -> f32 {
     let x = i as f32 * k;
     50.0 + 30.0 * (x * 0.21).sin() + 14.0 * (x * 0.67 + 1.0).sin() + 6.0 * (x * 1.9).sin()
-}
-
-/// One ECG sample per index: a beat every 44 samples.
-fn live_ecg(i: u64) -> f32 {
-    dodai_instruments::gpui::scope::ecg_beat((i % 44) as f32 / 44.0)
 }

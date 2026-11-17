@@ -118,14 +118,6 @@ test-dash:
 
 # gpui feature slices must each compile on their own
 check-gpui-features:
-    cargo check -p dodai-instruments --no-default-features --features gpui
-    cargo check -p dodai-instruments --no-default-features --features gpui,automotive
-    cargo check -p dodai-instruments --no-default-features --features gpui,aviation
-    cargo check -p dodai-instruments --no-default-features --features gpui,defense
-    cargo check -p dodai-instruments --no-default-features --features gpui,industrial
-    cargo check -p dodai-instruments --no-default-features --features gpui,medical
-    cargo check -p dodai-instruments --no-default-features --features gpui,automotive,dodai
-    cargo check -p dodai-instruments --no-default-features --features gpui,medical,cyberpunk
     cargo check -p dodai-charts --features gpui,material
     cargo check -p dodai-gpui --no-default-features --features components
     cargo check -p dodai-gpui --no-default-features --features frost
@@ -244,7 +236,7 @@ bump version: (validate-tag "v" + version) check-release _check-git-cliff
 check-publish: _check-nu
     nu scripts/check_publish.nu
 
-# The first release: every crate in dependency order (scripts/lib/versioning.nu); charts and instruments are held back
+# The first release: every crate in dependency order (scripts/lib/versioning.nu); charts is held back
 publish: check-all _check-nu
     nu scripts/publish_all.nu
 
@@ -259,14 +251,6 @@ publish-charts: check-all
 # Dry-run charts
 publish-charts-dry: check-all
     cargo publish --dry-run -p dodai-charts
-
-# Publish instruments
-publish-instruments: check-all
-    cargo publish -p dodai-instruments
-
-# Dry-run instruments
-publish-instruments-dry: check-all
-    cargo publish --dry-run -p dodai-instruments
 
 # Line coverage (needs cargo-llvm-cov); writes target/llvm-cov/html
 coverage:

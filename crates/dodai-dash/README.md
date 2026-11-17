@@ -171,7 +171,7 @@ Two implementations are typical: one over a database (long ranges, rollups) and 
 | `table` | rows of groups with their values |
 | `state_timeline` | states over time as coloured spans |
 
-The crate decides nothing about how they look: `dodai-charts` and `dodai-instruments` supply charts and gauges, and each toolkit crate styles them from the active design.
+The crate decides nothing about how they look: `dodai-charts` supplies charts and gauges, and each toolkit crate styles them from the active design.
 
 ## Where it sits
 

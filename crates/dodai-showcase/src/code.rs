@@ -20,7 +20,7 @@ impl Showcase {
     ) -> gpui::AnyElement {
         // What the panel can show: the implementation of each component the section uses, then
         // (when there is one) the usage snippet.
-        // Sections that share a key (the vehicle instruments) still list their own components.
+        // Sections that share a key still list their own components.
         let mut comps = impl_src::components(title);
         if comps.is_empty() {
             comps = key.map(impl_src::components).unwrap_or_default();

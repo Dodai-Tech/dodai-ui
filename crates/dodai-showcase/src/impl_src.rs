@@ -4,8 +4,7 @@
 //! Components are detected from the section's own source (`Name::new(` for every type that
 //! `dodai-gpui` defines), and a type's code is its definition plus every `impl` block for it.
 
-/// `(file name, source)` of every component file of `dodai-gpui`, `dodai-gpui-charts` and
-/// `dodai-gpui-instruments`.
+/// `(file name, source)` of every component file of `dodai-gpui` and `dodai-charts`.
 const FILES: &[(&str, &str)] = &[
     (
         "dodai-gpui/src/button.rs",
@@ -351,166 +350,6 @@ const FILES: &[(&str, &str)] = &[
         "dodai-charts/src/gpui/trend.rs",
         include_str!("../../dodai-charts/src/gpui/trend.rs"),
     ),
-    (
-        "dodai-instruments/src/gpui/dash.rs",
-        include_str!("../../dodai-instruments/src/gpui/dash.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/dash/lamp_looks.rs",
-        include_str!("../../dodai-instruments/src/gpui/dash/lamp_looks.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/dash/menu_looks.rs",
-        include_str!("../../dodai-instruments/src/gpui/dash/menu_looks.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/dash/menu_more.rs",
-        include_str!("../../dodai-instruments/src/gpui/dash/menu_more.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/dial.rs",
-        include_str!("../../dodai-instruments/src/gpui/dial.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/draw.rs",
-        include_str!("../../dodai-instruments/src/gpui/draw.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/faces.rs",
-        include_str!("../../dodai-instruments/src/gpui/faces.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/faces/rich.rs",
-        include_str!("../../dodai-instruments/src/gpui/faces/rich.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/faces/styles.rs",
-        include_str!("../../dodai-instruments/src/gpui/faces/styles.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/flight.rs",
-        include_str!("../../dodai-instruments/src/gpui/flight.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/frames.rs",
-        include_str!("../../dodai-instruments/src/gpui/frames.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/gauge.rs",
-        include_str!("../../dodai-instruments/src/gpui/gauge.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/gauges.rs",
-        include_str!("../../dodai-instruments/src/gpui/gauges.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/gauges_extra.rs",
-        include_str!("../../dodai-instruments/src/gpui/gauges_extra.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/gear.rs",
-        include_str!("../../dodai-instruments/src/gpui/gear.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/gradient.rs",
-        include_str!("../../dodai-instruments/src/gpui/gradient.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/mod.rs",
-        include_str!("../../dodai-instruments/src/gpui/mod.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/look.rs",
-        include_str!("../../dodai-instruments/src/gpui/look.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/pod_math.rs",
-        include_str!("../../dodai-instruments/src/gpui/pod_math.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/pods.rs",
-        include_str!("../../dodai-instruments/src/gpui/pods.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/pods/detailed.rs",
-        include_str!("../../dodai-instruments/src/gpui/pods/detailed.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/pods/digital.rs",
-        include_str!("../../dodai-instruments/src/gpui/pods/digital.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/mfd.rs",
-        include_str!("../../dodai-instruments/src/gpui/mfd.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/race.rs",
-        include_str!("../../dodai-instruments/src/gpui/race.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/shift.rs",
-        include_str!("../../dodai-instruments/src/gpui/shift.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/faces/panels.rs",
-        include_str!("../../dodai-instruments/src/gpui/faces/panels.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/pods/cockpit.rs",
-        include_str!("../../dodai-instruments/src/gpui/pods/cockpit.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/pods/race.rs",
-        include_str!("../../dodai-instruments/src/gpui/pods/race.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/pods/flow.rs",
-        include_str!("../../dodai-instruments/src/gpui/pods/flow.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/pods/energy.rs",
-        include_str!("../../dodai-instruments/src/gpui/pods/energy.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/dash/menu_panels.rs",
-        include_str!("../../dodai-instruments/src/gpui/dash/menu_panels.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/pods/future.rs",
-        include_str!("../../dodai-instruments/src/gpui/pods/future.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/pods/vintage.rs",
-        include_str!("../../dodai-instruments/src/gpui/pods/vintage.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/scope.rs",
-        include_str!("../../dodai-instruments/src/gpui/scope.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/scope/hex.rs",
-        include_str!("../../dodai-instruments/src/gpui/scope/hex.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/scope/radar.rs",
-        include_str!("../../dodai-instruments/src/gpui/scope/radar.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/segment.rs",
-        include_str!("../../dodai-instruments/src/gpui/segment.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/shapes.rs",
-        include_str!("../../dodai-instruments/src/gpui/shapes.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/tactical.rs",
-        include_str!("../../dodai-instruments/src/gpui/tactical.rs"),
-    ),
-    (
-        "dodai-instruments/src/gpui/vehicle.rs",
-        include_str!("../../dodai-instruments/src/gpui/vehicle.rs"),
-    ),
 ];
 
 /// Every showcase source that builds sections or the demos they show. The catalog, the code
@@ -525,13 +364,9 @@ const SECTIONS: &[&str] = &[
     include_str!("sections/charts_more.rs"),
     include_str!("sections/charts_status.rs"),
     include_str!("sections/throughput.rs"),
-    include_str!("sections/instruments_sec.rs"),
-    include_str!("sections/dashes.rs"),
     include_str!("sections/foundations_sec.rs"),
     include_str!("sections/shape.rs"),
     include_str!("charts_page.rs"),
-    include_str!("charts_gauges.rs"),
-    include_str!("charts_instruments.rs"),
 ];
 
 /// Layout and chrome helpers that every section uses; not worth inspecting.
@@ -1125,35 +960,21 @@ mod tests {
         assert!(!c.iter().any(|n| n == "Panel"));
     }
 
-    /// Every chart and instrument section, as the showcase lists them.
-    fn chart_and_instrument_titles() -> Vec<&'static str> {
+    /// Every chart section, as the showcase lists them.
+    fn chart_titles() -> Vec<&'static str> {
         let mut titles: Vec<&'static str> = crate::catalog::CHART_FAMILIES
             .iter()
             .flat_map(|(_, s)| s.iter().copied())
             .collect();
-        let instruments = [
-            include_str!("sections/instruments_sec.rs"),
-            include_str!("sections/dashes.rs"),
-        ];
-        for src in instruments {
-            for piece in src.split("self.section(\"").skip(1) {
-                titles.extend(piece.split('"').next());
-            }
-            for piece in src.split("\"Vehicle · ").skip(1) {
-                let rest = piece.split('"').next().unwrap_or("");
-                let at = src.find(&format!("\"Vehicle · {rest}\"")).unwrap_or(0);
-                titles.push(&src[at + 1..at + 1 + "Vehicle · ".len() + rest.len()]);
-            }
-        }
         titles.sort_unstable();
         titles.dedup();
         titles
     }
 
     #[test]
-    fn chart_and_instrument_sections_show_their_code() {
-        let titles = chart_and_instrument_titles();
-        assert!(titles.len() > 80, "{titles:?}");
+    fn chart_sections_show_their_code() {
+        let titles = chart_titles();
+        assert!(titles.len() > 60, "{titles:?}");
         for title in titles {
             let comps = components(title);
             assert!(!comps.is_empty(), "{title}: no components");
@@ -1166,12 +987,6 @@ mod tests {
     #[test]
     fn a_section_lists_only_its_own_components() {
         assert_eq!(components("Sunburst"), ["Sunburst"]);
-        assert_eq!(components("Vehicle · Menu"), ["MenuRing"]);
-        let heading = components("Aviation · Heading");
-        assert!(heading.iter().any(|c| c == "HeadingTape"), "{heading:?}");
-        assert!(!heading.iter().any(|c| c == "RadarScope"), "{heading:?}");
-        let dashes = components("Vehicle · Examples");
-        assert!(dashes.iter().any(|c| c == "PodStack"), "{dashes:?}");
     }
 
     #[test]

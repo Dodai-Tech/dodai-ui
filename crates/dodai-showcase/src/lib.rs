@@ -32,10 +32,6 @@ use dodai_gpui::{
     RichTooltip, SearchView, Snackbar, TagField, TextInput, TimePicker, Timeline, TimelineEvent,
     Toolbar, TreeItem, TreeNavigation, TreeView,
 };
-use dodai_instruments::gpui::{
-    Blip, DotMatrix, Gauge, GaugeStyle, HexMap, Oscilloscope, RadarScope, RingStack, SignalBars,
-    Spectrum,
-};
 use gpui::{actions, AnimationExt, SharedString};
 use gpui::{
     div, prelude::*, px, size, App, Application, Bounds, Context, Entity, FocusHandle,
@@ -46,8 +42,6 @@ use std::time::Duration;
 mod app;
 mod brand;
 mod catalog;
-mod charts_gauges;
-mod charts_instruments;
 mod charts_page;
 mod code;
 mod foundations;
@@ -196,19 +190,9 @@ pub struct Showcase {
     clicks: u32,
     heat_res: usize,
     heat_grad: usize,
-    /// Oscilloscope afterimage: 0 off, 1 subtle, 2 default, 3 long.
-    inst_trail: usize,
-    /// Needle response of the instruments: 0 the design's own, then `NeedleResponse::ALL`.
-    inst_response: usize,
-    /// The look the vehicle sections show: 0 all of them, in order, then one of `Look::ALL`.
-    inst_look: usize,
-    /// The drivetrain of the example dashes: an index into `sections::DRIVES`.
-    inst_drive: usize,
-    /// Glow of every chart and instrument: 0 the theme's own, 1 off, 2 soft, 3 strong.
-    inst_glow: usize,
     /// Channel-plan blocks the user toggled: `(band, row, block)`.
     excluded_slots: std::collections::BTreeSet<(usize, usize, usize)>,
-    /// When the Instruments page last rendered; it repaints every frame while it is showing.
+    /// When a live chart page last rendered; it repaints every frame while it is showing.
     inst_seen: Option<std::time::Instant>,
     /// When an input demo page last rendered; its values play on their own while it shows.
     demo_seen: Option<std::time::Instant>,
@@ -225,14 +209,9 @@ pub struct Showcase {
     demo_otp: String,
     live_a: dodai_gpui::Live,
     live_b: dodai_gpui::Live,
-    live_c: dodai_gpui::Live,
     /// The speed-test demo's download and upload windows.
     speed_down: dodai_gpui::Live,
     speed_up: dodai_gpui::Live,
-    track_sel: usize,
-    station_sel: usize,
-    /// Pulse monitor options: rhythm, mode, grid, noise, rate, trail, gain.
-    pulse_cfg: [usize; 7],
     sh_gen: &'static str,
     sh_fx: Vec<&'static str>,
     sh_int: f32,
@@ -323,104 +302,6 @@ impl Render for Showcase {
         }
         let side_need = self.side_need;
         let pinned_icons = self.pinned_icon_panel(&t, cx);
-        // One needle response for the instruments without their own; the Vehicle page shows the
-        // switch pinned above its sections.
-        let in_instruments = selected_cat == Some("Instruments");
-        dodai_gpui::follow::set_default_response(
-            in_instruments
-                .then(|| {
-                    (self.inst_response > 0)
-                        .then(|| dodai_gpui::NeedleResponse::ALL[self.inst_response - 1])
-                })
-                .flatten(),
-        );
-        // The instrument group on screen (picked, or scrolled to): its title stays pinned, the
-        // needle under it, and the look too for Vehicle.
-        let cur_sub = self
-            .sub
-            .or_else(|| spied.0.and_then(|t| sub_of("Instruments", t)))
-            .filter(|_| in_instruments);
-        let on_vehicle = cur_sub == Some("Vehicle");
-        let needle_bar = cur_sub.map(|_| {
-            let m = me.clone();
-            div()
-                .flex()
-                .flex_wrap()
-                .items_center()
-                .gap_2()
-                .py_2()
-                .child(dodai_gpui::Label::new("Needle"))
-                .child(
-                    dodai_gpui::Segmented::new(
-                        "veh-response",
-                        ["Design", "Instant", "Snappy", "Smooth", "Heavy", "Bouncy"],
-                    )
-                    .selected(self.inst_response)
-                    .on_select(move |i, _, cx| {
-                        m.update(cx, |s, cx| {
-                            s.inst_response = i;
-                            cx.notify();
-                        })
-                    }),
-                )
-                .when(on_vehicle, |d| {
-                    d.child(div().w(px(16.0)))
-                        .child(dodai_gpui::Label::new("Drive"))
-                        .child({
-                            let m = me.clone();
-                            dodai_gpui::Segmented::new(
-                                "veh-drive",
-                                crate::sections::DRIVES.iter().map(|d| d.0).chain(["Auto"]),
-                            )
-                            .selected(self.inst_drive)
-                            .on_select(move |i, _, cx| {
-                                m.update(cx, |s, cx| {
-                                    s.inst_drive = i;
-                                    cx.notify();
-                                })
-                            })
-                        })
-                        .child(div().w(px(16.0)))
-                        .child(dodai_gpui::Label::new("Look"))
-                        .child({
-                            let m = me.clone();
-                            // The section being read: a new look changes every height, so the
-                            // page jumps back to it instead of keeping a stale offset.
-                            let here = spied.0;
-                            div().w(px(220.0)).child(
-                                dodai_gpui::Select::new("veh-look")
-                                    .list_height(2.0)
-                                    .options(
-                                        ["All"].into_iter().chain(
-                                            dodai_instruments::gpui::Look::ALL
-                                                .into_iter()
-                                                .map(|l| l.name()),
-                                        ),
-                                    )
-                                    .selected(Some(self.inst_look))
-                                    .on_select(move |i, _, cx| {
-                                        m.update(cx, |s, cx| {
-                                            s.inst_look = i;
-                                            s.jump = here.map(|t| (t, 3));
-                                            cx.notify();
-                                        })
-                                    }),
-                            )
-                        })
-                })
-        });
-        let pin_title = needle_bar.is_some();
-        let needle_bar = needle_bar.map(|bar| {
-            div()
-                .flex()
-                .flex_col()
-                .gap_2()
-                .px(px(if narrow { t.spacing.md } else { t.spacing.xl }))
-                .pt(px(t.spacing.md))
-                .child(Heading::new("Instruments").level(2))
-                .child(Heading::new(cur_sub.unwrap_or_default()).level(3))
-                .child(bar)
-        });
         let side = gpui::AnyView::from(side).cached(gpui::StyleRefinement::default().size_full());
 
         let overview = self.cat == 0
@@ -522,13 +403,13 @@ impl Render for Showcase {
                 // Count the headings exactly as the body below adds them: a mismatch leaves the
                 // layout positions unusable and every section past the first few a blank spacer.
                 if *c != lc {
-                    n += usize::from(headed(pin_title, c));
+                    n += 1;
                     lc = c;
                     ls = None;
                 }
                 if let Some(sb) = sub_of(c, title) {
                     if ls != Some(sb) {
-                        n += usize::from(headed(pin_title, c));
+                        n += 1;
                         ls = Some(sb);
                     }
                 }
@@ -578,16 +459,13 @@ impl Render for Showcase {
         let mut spy: Vec<(&'static str, usize)> = Vec::new();
         for (seq, (c, title)) in shown_secs.into_iter().enumerate() {
             if c != last_cat {
-                // Pinned titles are not repeated in the scrolling body.
-                if headed(pin_title, c) {
-                    body = body.child(Heading::new(c).level(2));
-                    n_children += 1;
-                }
+                body = body.child(Heading::new(c).level(2));
+                n_children += 1;
                 last_cat = c;
                 last_sub = None;
             }
             if let Some(sb) = sub_of(c, title) {
-                if last_sub != Some(sb) && headed(pin_title, c) {
+                if last_sub != Some(sb) {
                     body = body.child(Heading::new(sb).level(3));
                     n_children += 1;
                     last_sub = Some(sb);
@@ -1035,7 +913,6 @@ impl Render for Showcase {
                                     .then(|| sections::shape::live_preview(&t, compact)),
                             )
                             .children(pinned_icons)
-                            .children(needle_bar)
                             .child(body.min_h_0()),
                     ),
             )
@@ -1055,12 +932,6 @@ actions!(
         WindowReset
     ]
 );
-
-/// Whether category `c` gets its headings in the scrolling body: not Instruments while its
-/// titles are pinned above the page. Pure.
-fn headed(pin_title: bool, c: &str) -> bool {
-    !(pin_title && c == "Instruments")
-}
 
 fn new_showcase(cx: &mut App) -> Entity<Showcase> {
     cx.new(Showcase::build)
@@ -1348,17 +1219,5 @@ impl Drop for Prof {
                 c.set((Some(t0), sum, n));
             }
         });
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::headed;
-
-    #[test]
-    fn pinned_instrument_titles_leave_the_body() {
-        assert!(!headed(true, "Instruments"));
-        assert!(headed(false, "Instruments"));
-        assert!(headed(true, "Charts"));
     }
 }

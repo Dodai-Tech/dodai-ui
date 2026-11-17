@@ -20,7 +20,6 @@ pub fn category_icon(name: &str) -> dodai_icons::IconId {
         "Navigation" => I::Menu,
         "Data display" => I::Table,
         "Charts" => I::BarChart,
-        "Instruments" => I::Dashboard,
         "Animation" => I::Wave,
         "Shaders" => I::Pixels,
         "Shape" => I::Cube,
@@ -98,7 +97,7 @@ impl Section {
     }
 }
 
-/// The categories this port shows, in sidebar order. (Charts and Instruments are not ported
+/// The categories this port shows, in sidebar order. (Charts are not ported
 /// to the other toolkits.)
 pub const CATEGORIES: [&str; 10] = [
     "Foundations",

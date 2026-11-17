@@ -131,8 +131,6 @@ fn frame_cost_probe(cx: &mut TestAppContext) {
         "Pie",
         "Heatmap",
         "Candlestick",
-        "Gauge styles",
-        "Instruments",
         "Shader playground",
     ];
     cx.update(|cx| dodai_gpui::install_switcher(cx, dodai_core::switcher()));

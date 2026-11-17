@@ -31,7 +31,6 @@
 //! | [`stream`] | fixed-size sample window for live charts |
 //! | [`timeaxis`] | calendar-aware time ticks, unix ↔ civil date, UTC-offset labels |
 //!
-//! Instrument geometry (gauges, flight, tactical, segment displays) is in `dodai-instruments`.
 
 pub mod axis;
 pub mod bins;

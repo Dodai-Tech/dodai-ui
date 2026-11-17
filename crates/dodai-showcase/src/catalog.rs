@@ -255,20 +255,7 @@ pub(crate) fn caps(title: &str) -> Caps {
             c(true, true, true)
         }
         "Knob · Vertical sliders" => c(true, true, true),
-        t if chart_family(t).is_some()
-            || ["Gauges", "Instruments", "Signal lab", "Radar & telemetry"].contains(&t)
-            || [
-                "Vehicle · ",
-                "Industrial · ",
-                "Medical · ",
-                "Military · ",
-                "Aviation · ",
-            ]
-            .iter()
-            .any(|p| t.starts_with(p)) =>
-        {
-            c(true, true, true)
-        }
+        t if chart_family(t).is_some() => c(true, true, true),
         _ => c(true, false, true),
     }
 }
@@ -278,14 +265,6 @@ pub(crate) fn subs(cat: &str) -> &'static [&'static str] {
     match cat {
         "Animation" => &["Entry", "Physics", "Dynamics"],
         "Charts" => &CHART_FAMILY_NAMES,
-        "Instruments" => &[
-            "Vehicle",
-            "Gauges & signals",
-            "Industrial",
-            "Medical",
-            "Military",
-            "Aviation",
-        ],
         // By what a shader is for, not by whose look it has: the family stays in each title.
         "Shaders" => &["Playground", "Sources", "Effects", "Presets"],
         "Inputs" => &["Choice", "Sliders", "Text", "Date & time"],
@@ -307,14 +286,6 @@ pub(crate) fn sub_of(cat: &str, label: &str) -> Option<&'static str> {
             "Entry"
         }),
         "Charts" => chart_family(label),
-        "Instruments" => Some(match label {
-            l if l.starts_with("Vehicle · ") => "Vehicle",
-            l if l.starts_with("Industrial · ") => "Industrial",
-            l if l.starts_with("Medical · ") => "Medical",
-            l if l.starts_with("Military · ") => "Military",
-            l if l.starts_with("Aviation · ") => "Aviation",
-            _ => "Gauges & signals",
-        }),
         "Shaders" => Some(shader_group(label).unwrap_or("Playground")),
         "Inputs" => Some(input_group(label)),
         "Shape" => Some(if label == "Shape gallery" {
@@ -359,7 +330,6 @@ pub(crate) fn cat_blurb(name: &str) -> &'static str {
         "Navigation" => "Menus, tabs, overlays and sidebars.",
         "Data display" => "Tables, progress, media, time and content.",
         "Charts" => "Statistical, market and radial charts.",
-        "Instruments" => "Vehicle dash pods one by one, then industrial, medical, military and aviation readouts.",
         "Animation" => "Entry effects and physics.",
         "Shaders" => "Pixel-shader backgrounds and effects.",
         "Loading" => "Spinners and skeletons.",
@@ -377,7 +347,6 @@ pub(crate) fn cat_icon(name: &str) -> dodai_gpui::IconName {
         "Navigation" => I::Menu,
         "Data display" => I::Table,
         "Charts" => I::BarChart,
-        "Instruments" => I::Dashboard,
         "Animation" => I::Wave,
         "Shaders" => I::Pixels,
         "Shape" => I::Cube,
@@ -429,7 +398,6 @@ pub(crate) fn shader_group(title: &str) -> Option<&'static str> {
 pub(crate) fn owner(title: &str) -> Option<&'static [&'static str]> {
     match title {
         "Button groups · Split button" | "Loading indicator" => Some(&["material"]),
-        "Instruments" => Some(&["cyberpunk"]),
         "Frosted glass" => Some(&["dodai", "material", "neobrutalism", "cyberpunk"]),
         _ => None,
     }
@@ -473,7 +441,6 @@ mod owner_tests {
     #[test]
     fn each_design_owns_its_own_sections() {
         assert_eq!(owner("Loading indicator"), Some(&["material"][..]));
-        assert_eq!(owner("Instruments"), Some(&["cyberpunk"][..]));
         assert!(owner("Frosted glass").unwrap().contains(&"material"));
         assert_eq!(owner("Buttons"), None);
     }

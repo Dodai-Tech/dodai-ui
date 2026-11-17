@@ -4351,16 +4351,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dodai-instruments"
-version = "0.1.6"
-dependencies = [
- "dodai-charts",
- "dodai-core",
- "dodai-gpui",
- "gpui",
-]
-
-[[package]]
 name = "dodai-leptos"
 version = "0.1.6"
 dependencies = [
@@ -4412,7 +4402,6 @@ dependencies = [
  "dodai-core",
  "dodai-gpui",
  "dodai-icons",
- "dodai-instruments",
  "dodai-shaders",
  "gpui",
  "objc2 0.6.5",
