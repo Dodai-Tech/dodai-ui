@@ -388,7 +388,7 @@ pub fn tap_tempo(t: &Theme, v: &crate::Values, now: f32) -> Node {
 
 /// The machine's UTC offset in minutes (the clock shows local time).
 pub fn local_offset_minutes() -> i32 {
-    chrono::Local::now().offset().local_minus_utc() / 60
+    jiff::Zoned::now().offset().seconds() / 60
 }
 
 #[cfg(test)]

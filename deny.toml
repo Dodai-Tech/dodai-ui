@@ -21,6 +21,8 @@ ignore = [
     "RUSTSEC-2026-0372",
     # pin-utils, via gpui -> gpui_http_client -> zed-async-tar -> async-std.
     "RUSTSEC-2026-0441",
+    # chrono, via slint -> i-slint-core. dodai's own crates use jiff; slint has no alternative yet.
+    "RUSTSEC-2026-0543",
 ]
 
 [licenses]
