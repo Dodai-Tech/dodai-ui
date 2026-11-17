@@ -24,7 +24,11 @@ fn fade(c: Color, a: f32) -> Color {
 }
 
 fn stroke(color: Color, width: f32, points: Vec<(f32, f32)>) -> Line {
-    Line { color, width, points }
+    Line {
+        color,
+        width,
+        points,
+    }
 }
 
 fn poly(color: Color, points: Vec<(f32, f32)>) -> Poly {
@@ -56,7 +60,11 @@ fn grid(t: &Theme, w: f32, h: f32, pad: f32) -> Vec<Line> {
     (0..=4)
         .map(|i| {
             let y = pad + (h - 2.0 * pad) * i as f32 / 4.0;
-            stroke(fade(t.palette.border, 0.7), 1.0, vec![(pad, y), (w - pad, y)])
+            stroke(
+                fade(t.palette.border, 0.7),
+                1.0,
+                vec![(pad, y), (w - pad, y)],
+            )
         })
         .collect()
 }
@@ -74,7 +82,11 @@ pub fn line(t: &Theme, w: f32, h: f32, now: f32, area: bool) -> Plot {
         (0..n)
             .map(|i| {
                 let x = pad + (w - 2.0 * pad) * i as f32 / (n - 1) as f32;
-                let v = wander(now, base + 0.25 * (i as f32 * 0.55 + key).sin(), key + i as f32 * 0.37);
+                let v = wander(
+                    now,
+                    base + 0.25 * (i as f32 * 0.55 + key).sin(),
+                    key + i as f32 * 0.37,
+                );
                 (x, h - pad - v * (h - 2.0 * pad))
             })
             .collect()
@@ -106,13 +118,19 @@ pub fn bars(t: &Theme, w: f32, h: f32, now: f32, stacked: bool) -> Plot {
         let bw = slot * 0.64;
         if stacked {
             let mut y = h - pad;
-            for k in 0..3 {
-                let v = wander(now, 0.2 + 0.05 * k as f32, i as f32 * 1.3 + k as f32 * 4.0) * (h - 2.0 * pad) * 0.5;
+            for (k, &color) in s.iter().enumerate().take(3) {
+                let v = wander(now, 0.2 + 0.05 * k as f32, i as f32 * 1.3 + k as f32 * 4.0)
+                    * (h - 2.0 * pad)
+                    * 0.5;
                 y -= v;
-                fills.push(rect(s[k], x, y, bw, v - 1.0));
+                fills.push(rect(color, x, y, bw, v - 1.0));
             }
         } else {
-            let v = wander(now, 0.3 + 0.35 * ((i as f32 * 0.6).sin() * 0.5 + 0.5), i as f32 * 2.3) * (h - 2.0 * pad);
+            let v = wander(
+                now,
+                0.3 + 0.35 * ((i as f32 * 0.6).sin() * 0.5 + 0.5),
+                i as f32 * 2.3,
+            ) * (h - 2.0 * pad);
             fills.push(rect(s[i % 2], x, h - pad - v, bw, v));
         }
     }
@@ -158,10 +176,16 @@ pub fn radar(t: &Theme, size: f32, now: f32) -> Plot {
         lines.push(stroke(fade(t.palette.border, 0.8), 1.0, p));
     }
     for i in 0..6 {
-        lines.push(stroke(fade(t.palette.border, 0.5), 1.0, vec![(c, c), at(i, 1.0)]));
+        lines.push(stroke(
+            fade(t.palette.border, 0.5),
+            1.0,
+            vec![(c, c), at(i, 1.0)],
+        ));
     }
     let shape = |key: f32, base: f32| -> Vec<(f32, f32)> {
-        (0..6).map(|i| at(i, wander(now, base, key + i as f32 * 1.7))).collect()
+        (0..6)
+            .map(|i| at(i, wander(now, base, key + i as f32 * 1.7)))
+            .collect()
     };
     let a = shape(0.0, 0.62);
     let b = shape(3.0, 0.42);
@@ -171,7 +195,12 @@ pub fn radar(t: &Theme, size: f32, now: f32) -> Plot {
     let mut closed = b.clone();
     closed.push(b[0]);
     lines.push(stroke(s[1], 2.0, closed));
-    plot(size, size, vec![poly(fade(s[0], 0.28), a), poly(fade(s[1], 0.2), b)], lines)
+    plot(
+        size,
+        size,
+        vec![poly(fade(s[0], 0.28), a), poly(fade(s[1], 0.2), b)],
+        lines,
+    )
 }
 
 /// A half-circle gauge showing `value` (0..1).
@@ -182,8 +211,16 @@ pub fn gauge(t: &Theme, w: f32, now: f32) -> Plot {
     let r = w / 2.0 - 12.0;
     let v = wander(now, 0.62, 5.0);
     let lines = vec![
-        stroke(fade(t.palette.border, 0.8), 14.0, arc(c, r, -TAU / 2.0, 0.0)),
-        stroke(s[0], 14.0, arc(c, r, -TAU / 2.0, -TAU / 2.0 + v * TAU / 2.0)),
+        stroke(
+            fade(t.palette.border, 0.8),
+            14.0,
+            arc(c, r, -TAU / 2.0, 0.0),
+        ),
+        stroke(
+            s[0],
+            14.0,
+            arc(c, r, -TAU / 2.0, -TAU / 2.0 + v * TAU / 2.0),
+        ),
     ];
     plot(w, h, Vec::new(), lines)
 }
@@ -197,7 +234,11 @@ pub fn scatter(t: &Theme, w: f32, h: f32, now: f32) -> Plot {
         let fx = (i * 37 % 100) as f32 / 100.0;
         let fy = wander(now * 0.5, 0.25 + fx * 0.5, i as f32 * 1.1);
         let (x, y) = (pad + fx * (w - 2.0 * pad), h - pad - fy * (h - 2.0 * pad));
-        lines.push(dot(fade(s[i % 3], 0.75), (x, y), 5.0 + (i % 4) as f32 * 3.0));
+        lines.push(dot(
+            fade(s[i % 3], 0.75),
+            (x, y),
+            5.0 + (i % 4) as f32 * 3.0,
+        ));
     }
     plot(w, h, Vec::new(), lines)
 }
@@ -210,8 +251,18 @@ pub fn heat(t: &Theme, w: f32, h: f32, now: f32) -> Plot {
     let mut fills = Vec::new();
     for r in 0..rows {
         for c in 0..cols {
-            let v = wander(now * 0.6, 0.5 + 0.4 * ((r * 3 + c) as f32 * 0.45).sin(), (r * cols + c) as f32 * 0.21);
-            fills.push(rect(fade(s[0], 0.1 + 0.9 * v), c as f32 * cw + 1.0, r as f32 * ch + 1.0, cw - 2.0, ch - 2.0));
+            let v = wander(
+                now * 0.6,
+                0.5 + 0.4 * ((r * 3 + c) as f32 * 0.45).sin(),
+                (r * cols + c) as f32 * 0.21,
+            );
+            fills.push(rect(
+                fade(s[0], 0.1 + 0.9 * v),
+                c as f32 * cw + 1.0,
+                r as f32 * ch + 1.0,
+                cw - 2.0,
+                ch - 2.0,
+            ));
         }
     }
     plot(w, h, fills, Vec::new())
@@ -227,7 +278,11 @@ pub fn candles(t: &Theme, w: f32, h: f32, now: f32) -> Plot {
     let y = |v: f32| h - pad - v * (h - 2.0 * pad);
     let mut prev = 0.5;
     for i in 0..n {
-        let close = wander(now * 0.4, 0.5 + 0.2 * (i as f32 * 0.5).sin(), i as f32 * 0.9);
+        let close = wander(
+            now * 0.4,
+            0.5 + 0.2 * (i as f32 * 0.5).sin(),
+            i as f32 * 0.9,
+        );
         let (open, close) = (prev, close);
         prev = close;
         let col = if close >= open { s[1] } else { s[3] };
@@ -235,7 +290,13 @@ pub fn candles(t: &Theme, w: f32, h: f32, now: f32) -> Plot {
         let (hi, lo) = (open.max(close) + 0.06, open.min(close) - 0.06);
         lines.push(stroke(col, 1.5, vec![(x, y(hi)), (x, y(lo))]));
         let (top, bot) = (y(open.max(close)), y(open.min(close)));
-        fills.push(rect(col, x - slot * 0.3, top, slot * 0.6, (bot - top).max(2.0)));
+        fills.push(rect(
+            col,
+            x - slot * 0.3,
+            top,
+            slot * 0.6,
+            (bot - top).max(2.0),
+        ));
     }
     plot(w, h, fills, lines)
 }
@@ -249,12 +310,25 @@ pub fn treemap(t: &Theme, w: f32, h: f32, now: f32) -> Plot {
         (0.0, 0.0, split, h),
         (split, 0.0, w - split, vsplit),
         (split, vsplit, (w - split) * 0.5, h - vsplit),
-        (split + (w - split) * 0.5, vsplit, (w - split) * 0.5, h - vsplit),
+        (
+            split + (w - split) * 0.5,
+            vsplit,
+            (w - split) * 0.5,
+            h - vsplit,
+        ),
     ];
     let fills = cells
         .iter()
         .enumerate()
-        .map(|(i, (x, y, cw, ch))| rect(fade(s[i % 3], 0.9 - 0.12 * i as f32), x + 1.5, y + 1.5, cw - 3.0, ch - 3.0))
+        .map(|(i, (x, y, cw, ch))| {
+            rect(
+                fade(s[i % 3], 0.9 - 0.12 * i as f32),
+                x + 1.5,
+                y + 1.5,
+                cw - 3.0,
+                ch - 3.0,
+            )
+        })
         .collect();
     plot(w, h, fills, Vec::new())
 }
@@ -265,10 +339,22 @@ pub fn spark(t: &Theme, w: f32, h: f32, now: f32) -> Plot {
     let n = 24;
     let pts: Vec<_> = (0..n)
         .map(|i| {
-            let v = wander(now, 0.5 + 0.2 * (i as f32 * 0.4 - now).sin(), i as f32 * 0.5);
-            (6.0 + (w - 12.0) * i as f32 / (n - 1) as f32, h - 6.0 - v * (h - 12.0))
+            let v = wander(
+                now,
+                0.5 + 0.2 * (i as f32 * 0.4 - now).sin(),
+                i as f32 * 0.5,
+            );
+            (
+                6.0 + (w - 12.0) * i as f32 / (n - 1) as f32,
+                h - 6.0 - v * (h - 12.0),
+            )
         })
         .collect();
     let last = pts[n - 1];
-    plot(w, h, Vec::new(), vec![stroke(s[1], 2.0, pts), dot(s[1], last, 8.0)])
+    plot(
+        w,
+        h,
+        Vec::new(),
+        vec![stroke(s[1], 2.0, pts), dot(s[1], last, 8.0)],
+    )
 }

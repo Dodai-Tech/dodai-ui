@@ -35,7 +35,9 @@ fn state() -> &'static Mutex<State> {
 }
 
 fn lock() -> std::sync::MutexGuard<'static, State> {
-    state().lock().unwrap_or_else(std::sync::PoisonError::into_inner)
+    state()
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
 }
 
 /// A buffer of `len` bytes for the host to write into.
