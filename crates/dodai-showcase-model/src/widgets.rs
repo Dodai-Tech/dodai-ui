@@ -14,6 +14,16 @@ use crate::node::{Font, Gap, Ink, Node};
 use crate::plot::{Line, Plot};
 
 /// Seconds since the showcase started (drives spinning and travelling waves).
+#[cfg(target_arch = "wasm32")]
+pub fn elapsed() -> f32 {
+    // No `Instant` in a browser build: the host's clock, from the first call.
+    static START: std::sync::OnceLock<f64> = std::sync::OnceLock::new();
+    let now = dodai_core::clock_math::unix_now();
+    (now - START.get_or_init(|| now)) as f32
+}
+
+/// Seconds since the showcase started (drives spinning and travelling waves).
+#[cfg(not(target_arch = "wasm32"))]
 pub fn elapsed() -> f32 {
     static START: std::sync::OnceLock<std::time::Instant> = std::sync::OnceLock::new();
     START
@@ -387,8 +397,15 @@ pub fn tap_tempo(t: &Theme, v: &crate::Values, now: f32) -> Node {
 }
 
 /// The machine's UTC offset in minutes (the clock shows local time).
+#[cfg(not(target_arch = "wasm32"))]
 pub fn local_offset_minutes() -> i32 {
     jiff::Zoned::now().offset().seconds() / 60
+}
+
+/// The UTC offset in minutes the host of a browser build gave.
+#[cfg(target_arch = "wasm32")]
+pub fn local_offset_minutes() -> i32 {
+    dodai_core::clock_math::host_utc_offset_minutes()
 }
 
 #[cfg(test)]

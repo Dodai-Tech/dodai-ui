@@ -1,6 +1,7 @@
 //! Pure time maths and text formatting for clocks, timers, stopwatches and tap tempo
 //! (toolkit-free).
 
+#[cfg(not(target_arch = "wasm32"))]
 use std::time::{SystemTime, UNIX_EPOCH};
 
 /// `HH:MM:SS` from whole seconds (wraps at 24 h).
@@ -153,11 +154,45 @@ pub fn date_text(unix: f64, offset_min: i32) -> String {
 }
 
 /// Seconds since the Unix epoch, now (0 when the clock is before it).
+#[cfg(not(target_arch = "wasm32"))]
 pub fn unix_now() -> f64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_secs_f64())
         .unwrap_or(0.0)
+}
+
+/// The page's clock: a browser build has no system clock to read, so the host feeds it.
+#[cfg(target_arch = "wasm32")]
+static HOST_CLOCK: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+/// Seconds since the Unix epoch, as last given to [`set_host_clock`].
+#[cfg(target_arch = "wasm32")]
+pub fn unix_now() -> f64 {
+    f64::from_bits(HOST_CLOCK.load(std::sync::atomic::Ordering::Relaxed))
+}
+
+/// Sets the clock of a browser (wasm) build to `secs` since the Unix epoch.
+#[cfg(target_arch = "wasm32")]
+pub fn set_host_clock(secs: f64) {
+    HOST_CLOCK.store(secs.to_bits(), std::sync::atomic::Ordering::Relaxed);
+}
+
+/// The UTC offset in minutes of a browser (wasm) build, as last given to
+/// [`set_host_utc_offset_minutes`].
+#[cfg(target_arch = "wasm32")]
+static HOST_OFFSET: std::sync::atomic::AtomicI32 = std::sync::atomic::AtomicI32::new(0);
+
+/// The UTC offset in minutes the host gave (0 until it does).
+#[cfg(target_arch = "wasm32")]
+pub fn host_utc_offset_minutes() -> i32 {
+    HOST_OFFSET.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+/// Sets the UTC offset in minutes of a browser (wasm) build.
+#[cfg(target_arch = "wasm32")]
+pub fn set_host_utc_offset_minutes(minutes: i32) {
+    HOST_OFFSET.store(minutes, std::sync::atomic::Ordering::Relaxed);
 }
 
 #[cfg(test)]

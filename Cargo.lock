@@ -4423,6 +4423,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "dodai-showcase-web"
+version = "0.1.6"
+dependencies = [
+ "dodai-core",
+ "dodai-icons",
+ "dodai-showcase-model",
+ "dodai-topcoat",
+]
+
+[[package]]
 name = "dodai-slint"
 version = "0.1.6"
 dependencies = [

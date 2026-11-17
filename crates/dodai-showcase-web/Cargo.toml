@@ -1,0 +1,19 @@
+[package]
+name                   = "dodai-showcase-web"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+description            = "The Dodai showcase in the browser: the topcoat showcase page and its model compiled to WebAssembly, so a static site can run it."
+publish                = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+dodai-core            = { workspace = true, features = ["cyberpunk", "material", "neobrutalism", "dodai"] }
+dodai-icons           = { workspace = true, features = ["theme", "cyberpunk", "material", "neobrutalism", "symbols"] }
+dodai-showcase-model  = { workspace = true }
+dodai-topcoat         = { workspace = true }
