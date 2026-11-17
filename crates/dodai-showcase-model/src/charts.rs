@@ -7,6 +7,10 @@ use dodai_core::{Color, Theme};
 
 use crate::plot::{Line, Plot, Poly};
 
+pub mod basic;
+pub mod flow;
+pub mod market;
+
 /// The colours of the series: the theme's, in order.
 fn series(t: &Theme) -> [Color; 4] {
     let p = &t.palette;
@@ -357,4 +361,21 @@ pub fn spark(t: &Theme, w: f32, h: f32, now: f32) -> Plot {
         Vec::new(),
         vec![stroke(s[1], 2.0, pts), dot(s[1], last, 8.0)],
     )
+}
+
+/// A repeatable pseudo-random number in `0..1` for sample `i` of stream `k`.
+fn rnd(i: usize, k: f32) -> f32 {
+    let mut x =
+        (i as u32).wrapping_mul(0x9E37_79B1) ^ ((k * 1000.0) as u32).wrapping_mul(0x85EB_CA6B);
+    x ^= x >> 15;
+    x = x.wrapping_mul(0x2C1B_3C6D);
+    x ^= x >> 12;
+    x = x.wrapping_mul(0x297A_2D39);
+    x ^= x >> 15;
+    x as f32 / u32::MAX as f32
+}
+
+/// A repeatable bell-shaped sample (Box–Muller) for sample `i` of stream `k`.
+fn gauss(i: usize, k: f32) -> f32 {
+    (-2.0 * rnd(i, k).max(1e-4).ln()).sqrt() * (TAU * rnd(i, k + 17.0)).cos()
 }
