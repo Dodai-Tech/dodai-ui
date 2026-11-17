@@ -531,12 +531,17 @@ pub fn view(node: &Node, r: &R) -> String {
         ),
         Node::Shader(spec) => crate::shader::view(spec, theme),
         Node::Plot(p) => {
+            let fills: String = p
+                .fills
+                .iter()
+                .map(|f| format!("<polygon fill=\"{}\" points=\"{}\"/>", f.color.to_css(), svg_points(&f.points)))
+                .collect();
             let lines: String = p
                 .lines
                 .iter()
                 .map(|l| {
                     format!(
-                        "<polyline fill=\"none\" stroke=\"{}\" stroke-width=\"{}\" stroke-linejoin=\"round\" points=\"{}\"/>",
+                        "<polyline fill=\"none\" stroke=\"{}\" stroke-width=\"{}\" stroke-linejoin=\"round\" stroke-linecap=\"round\" points=\"{}\"/>",
                         l.color.to_css(),
                         l.width,
                         svg_points(&l.points)
@@ -544,7 +549,7 @@ pub fn view(node: &Node, r: &R) -> String {
                 })
                 .collect();
             format!(
-                "<svg width=\"{}\" height=\"{}\" viewBox=\"0 0 {} {}\" style=\"flex:none\">{lines}</svg>",
+                "<svg width=\"{}\" height=\"{}\" viewBox=\"0 0 {} {}\" style=\"flex:none\">{fills}{lines}</svg>",
                 p.w, p.h, p.w, p.h
             )
         }

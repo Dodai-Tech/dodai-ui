@@ -153,6 +153,7 @@ impl Ring {
             }
         }
         let plot = Node::Plot(Plot {
+            fills: Vec::new(),
             w: size,
             h: size,
             lines,
@@ -210,6 +211,7 @@ pub fn clock(t: &Theme, size: f32, offset_min: i32) -> Node {
     });
     dial(vec![
         Node::Plot(Plot {
+            fills: Vec::new(),
             w: size,
             h: size,
             lines,

@@ -12,6 +12,7 @@
 //! Nothing here depends on a toolkit.
 
 pub mod catalog;
+pub mod charts;
 pub mod commands;
 pub mod icon_actions;
 pub mod icons;

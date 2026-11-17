@@ -2,6 +2,7 @@
 
 pub(crate) mod actions;
 pub(crate) mod animation;
+pub(crate) mod charts;
 pub(crate) mod data;
 pub(crate) mod foundations;
 pub(crate) mod inputs;

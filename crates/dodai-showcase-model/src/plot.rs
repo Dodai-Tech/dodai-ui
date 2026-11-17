@@ -17,6 +17,15 @@ pub struct Line {
     pub points: Vec<(f32, f32)>,
 }
 
+/// A filled polygon in the plot's pixel space.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Poly {
+    /// Fill colour (alpha included).
+    pub color: Color,
+    /// Corners px.
+    pub points: Vec<(f32, f32)>,
+}
+
 /// A plot: a `w`×`h` px box and the lines drawn in it.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Plot {
@@ -24,6 +33,8 @@ pub struct Plot {
     pub w: f32,
     /// Height px.
     pub h: f32,
+    /// Filled shapes, drawn under the lines.
+    pub fills: Vec<Poly>,
     /// Lines, back to front.
     pub lines: Vec<Line>,
 }
@@ -136,6 +147,7 @@ pub fn easing_at(theme: &Theme, e: Easing, side: f32, progress: Option<f32>) -> 
         lines.push(dot(&f, accent, tip));
     }
     Plot {
+        fills: Vec::new(),
         w: side,
         h: side,
         lines,
@@ -153,6 +165,7 @@ pub fn track(theme: &Theme, w: f32, h: f32, value: f32) -> Plot {
         hi: 1.0,
     };
     Plot {
+        fills: Vec::new(),
         w,
         h,
         lines: vec![
@@ -232,7 +245,12 @@ pub fn pose_chip(theme: &Theme, w: f32, h: f32, pose: Pose) -> Plot {
             points: outline,
         });
     }
-    Plot { w, h, lines }
+    Plot {
+        w,
+        h,
+        fills: Vec::new(),
+        lines,
+    }
 }
 
 /// A plot of `f` over `0..=1` with its value range `lo..=hi`, and a baseline at zero.
@@ -245,6 +263,7 @@ pub fn lane(theme: &Theme, w: f32, h: f32, lo: f32, hi: f32, f: impl Fn(f32) -> 
         hi,
     };
     Plot {
+        fills: Vec::new(),
         w,
         h,
         lines: vec![

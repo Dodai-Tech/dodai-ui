@@ -15,7 +15,7 @@ pub const OPEN_CATEGORY: &str = "go:c:";
 pub const OPEN_SECTION: &str = "go:s:";
 
 /// Categories that animate all the time and so only show on their own page.
-pub const OWN_PAGE: [&str; 2] = ["Loading", "Shaders"];
+pub const OWN_PAGE: [&str; 3] = ["Loading", "Charts", "Shaders"];
 
 /// What a category holds, in a line.
 pub fn blurb(name: &str) -> &'static str {

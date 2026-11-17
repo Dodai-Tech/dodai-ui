@@ -97,14 +97,15 @@ impl Section {
     }
 }
 
-/// The categories this port shows, in sidebar order. (Charts are not ported
-/// to the other toolkits.)
-pub const CATEGORIES: [&str; 10] = [
+/// The categories this port shows, in sidebar order. (Charts: the plain-shape types only;
+/// the gpui showcase has the full set.)
+pub const CATEGORIES: [&str; 11] = [
     "Foundations",
     "Shape",
     "Surface effects",
     "Actions",
     "Data display",
+    "Charts",
     "Navigation",
     "Inputs",
     "Loading",
@@ -121,6 +122,7 @@ pub fn sections() -> &'static [Section] {
         all.extend(page::surface::SECTIONS);
         all.extend(page::actions::SECTIONS);
         all.extend(page::data::SECTIONS);
+        all.extend(page::charts::SECTIONS);
         all.extend(page::navigation::SECTIONS);
         all.extend(page::inputs::SECTIONS);
         all.extend(page::loading::SECTIONS);
