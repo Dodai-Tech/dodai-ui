@@ -299,7 +299,9 @@ impl Showcase {
         if !visible.iter().any(|s| s.live) {
             return None;
         }
-        if visible.iter().any(|s| s.animated)
+        if visible.iter().any(|s| s.heavy) {
+            Some(Duration::from_millis(150))
+        } else if visible.iter().any(|s| s.animated)
             || crate::live_state::running(&self.values, crate::widgets::elapsed())
         {
             Some(Duration::from_millis(33))

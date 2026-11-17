@@ -6,23 +6,25 @@ use crate::b::*;
 use crate::catalog::{Ctx, Section};
 use crate::charts as ch;
 use crate::charts::basic::{self, Radial};
-use crate::charts::{flow, market as mk};
+use crate::charts::{flow, market as mk, status as st};
 use crate::node::Node;
 
 const CAT: &str = "Charts";
 
-pub(crate) const SECTIONS: [Section; 11] = [
-    Section::new(CAT, "Line · Area · Stream", lines).animated(),
-    Section::new(CAT, "Bar · Waterfall", bars).animated(),
-    Section::new(CAT, "Pie · Donut · Gauge", radial).animated(),
-    Section::new(CAT, "Radar · Treemap · Hierarchy", hierarchy).animated(),
-    Section::new(CAT, "Scatter · Heatmap · Density", fields).animated(),
-    Section::new(CAT, "Distribution", distribution).animated(),
-    Section::new(CAT, "Comparison · Ranking", comparison).animated(),
-    Section::new(CAT, "Flow · Network", networks).animated(),
-    Section::new(CAT, "Candlestick · Indicators", market).animated(),
-    Section::new(CAT, "Time · Status · Pulse", timeline).animated(),
-    Section::new(CAT, "Sparkline", sparks).animated(),
+pub(crate) const SECTIONS: [Section; 13] = [
+    Section::new(CAT, "Line · Area · Stream", lines).heavy(),
+    Section::new(CAT, "Bar · Waterfall", bars).heavy(),
+    Section::new(CAT, "Pie · Donut · Gauge", radial).heavy(),
+    Section::new(CAT, "Radar · Treemap · Hierarchy", hierarchy).heavy(),
+    Section::new(CAT, "Scatter · Heatmap · Density", fields).heavy(),
+    Section::new(CAT, "Distribution", distribution).heavy(),
+    Section::new(CAT, "Comparison · Ranking", comparison).heavy(),
+    Section::new(CAT, "Flow · Network", networks).heavy(),
+    Section::new(CAT, "Candlestick · Indicators", market).heavy(),
+    Section::new(CAT, "Time · Status · Pulse", timeline).heavy(),
+    Section::new(CAT, "Status · KPI", status).heavy(),
+    Section::new(CAT, "Sparkline", sparks).heavy(),
+    Section::new(CAT, "Dashboards", dashboards).heavy(),
 ];
 
 const W: f32 = 300.0;
@@ -53,6 +55,10 @@ fn lines(c: &Ctx) -> Node {
             flow::streams(t, W, H, now(), StackOffset::Expand),
         ),
         card("Secondary axis", mk::secondary_axis(t, W, H, now())),
+        card("Time axis", st::time_axis(t, W, H, now())),
+        card("Band", st::band(t, W, H, now())),
+        card("Annotated threshold", st::annotated(t, W, H, now())),
+        card("Small multiples", st::small_multiples(t, W, H, now())),
     ])
 }
 
@@ -127,6 +133,7 @@ fn distribution(c: &Ctx) -> Node {
         card("Ridgeline", flow::ridgeline(t, W, H, now())),
         card("Horizon", flow::horizon_strips(t, W, H, now())),
         card("Peak range", flow::peak_range(t, W, H, now())),
+        card("Bubble swarm", st::bubble_swarm(t, W, H * 0.7, now())),
     ])
 }
 
@@ -139,6 +146,8 @@ fn comparison(c: &Ctx) -> Node {
         card("Slope", basic::slope(t, W * 0.7, H, now())),
         card("Bump", flow::bump(t, W, H, now())),
         card("Parallel coordinates", flow::parallel(t, W, H, now())),
+        card("Pareto", st::pareto(t, W, H, now())),
+        card("Diverging bars", st::diverging(t, W, H, now())),
     ])
 }
 
@@ -174,6 +183,7 @@ fn timeline(c: &Ctx) -> Node {
         card("State spans", mk::state_spans(t, W, H * 0.7, now())),
         card("Control chart", mk::control_chart(t, W, H, now())),
         card("Span fan", flow::span_fan(t, S + 20.0, now())),
+        card("Bubble timeline", st::bubble_timeline(t, W, H * 0.7, now())),
         card(
             "Pulse: ECG, pleth, respiration",
             mk::pulse_traces(t, W, H, now()),
@@ -190,6 +200,61 @@ fn sparks(c: &Ctx) -> Node {
         card("Step", basic::spark_kind(t, w, 70.0, now(), 1)),
         card("Dots", basic::spark_kind(t, w, 70.0, now(), 2)),
         card("Win / loss", basic::spark_kind(t, w, 70.0, now(), 3)),
+    ])
+}
+
+fn kpi(title: &str, value: String, plot: crate::plot::Plot) -> Node {
+    tile(
+        plot.w.max(150.0),
+        vec![muted(title), heading(value, 2), Node::Plot(plot)],
+    )
+}
+
+fn status(c: &Ctx) -> Node {
+    let t = c.theme;
+    let k = |a: f32| (now() * 0.4 + a).sin();
+    row(vec![
+        kpi(
+            "Revenue",
+            format!("${:.1}k", 48.0 + 3.0 * k(0.0)),
+            st::kpi_trend(t, 170.0, 56.0, now()),
+        ),
+        kpi(
+            "Latency",
+            format!("{:.0} ms", 120.0 + 12.0 * k(1.0)),
+            st::kpi_trend(t, 170.0, 56.0, now() + 2.0),
+        ),
+        card("Slot grid", st::slot_grid(t, W, H * 0.7, now())),
+        card("Status strip", st::status_strip(t, W, 28.0, now())),
+        card("Bucket bar", st::bucket_bar(t, W * 0.7, H * 0.8, now())),
+        card("Stage bars", st::stage_bars(t, W * 0.7, H * 0.8, now())),
+        card("Gradient scale", st::gradient_scale(t, W, 48.0, now())),
+    ])
+}
+
+fn dashboards(c: &Ctx) -> Node {
+    let t = c.theme;
+    row(vec![
+        tile(
+            W * 1.4,
+            vec![
+                muted("Live throughput"),
+                Node::Plot(ch::line(t, W * 1.4, H, now(), true)),
+                line(vec![
+                    Node::Plot(basic::spark_kind(t, 120.0, 40.0, now(), 0)),
+                    Node::Plot(basic::spark_kind(t, 120.0, 40.0, now(), 3)),
+                    Node::Plot(ch::gauge(t, 120.0, now())),
+                ]),
+            ],
+        ),
+        tile(
+            W * 1.4,
+            vec![
+                muted("Network overview"),
+                Node::Plot(flow::network(t, W * 1.4, H, now())),
+                Node::Plot(st::status_strip(t, W * 1.4, 22.0, now())),
+            ],
+        ),
     ])
 }
 

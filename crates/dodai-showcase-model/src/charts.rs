@@ -10,6 +10,7 @@ use crate::plot::{Line, Plot, Poly};
 pub mod basic;
 pub mod flow;
 pub mod market;
+pub mod status;
 
 /// The colours of the series: the theme's, in order.
 fn series(t: &Theme) -> [Color; 4] {

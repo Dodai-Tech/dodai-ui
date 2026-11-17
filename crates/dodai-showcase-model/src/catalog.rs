@@ -55,6 +55,9 @@ pub struct Section {
     /// Moves on its own all the time (the Animation page's looping demos): implies
     /// [`live`](Section::live) and asks for a redraw every frame.
     pub animated: bool,
+    /// Moves like [`animated`](Section::animated) but holds many shapes (a page of charts): redrawn
+    /// a few times a second, not every frame.
+    pub heavy: bool,
 }
 
 impl Section {
@@ -68,6 +71,7 @@ impl Section {
             build,
             live: false,
             animated: false,
+            heavy: false,
         }
     }
 
@@ -81,6 +85,14 @@ impl Section {
     pub const fn animated(mut self) -> Self {
         self.live = true;
         self.animated = true;
+        self
+    }
+
+    /// Animated, but with so many shapes that it is redrawn only a few times a second.
+    pub const fn heavy(mut self) -> Self {
+        self.live = true;
+        self.animated = true;
+        self.heavy = true;
         self
     }
 

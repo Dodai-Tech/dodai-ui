@@ -478,20 +478,26 @@ pub fn horizon_strips(t: &Theme, w: f32, h: f32, now: f32) -> Plot {
             .collect();
         let band = horizon::band_for(&vals, bands);
         let cw = w / n as f32;
-        for (i, v) in vals.iter().enumerate() {
-            for (b, f) in horizon::fold(*v, band, bands).iter().enumerate() {
-                if *f > 0.0 {
-                    let col = fade(
-                        if *v >= 0.0 { p.info } else { p.danger },
-                        0.35 + 0.3 * b as f32,
-                    );
-                    fills.push(rect(
-                        col,
-                        i as f32 * cw,
-                        strip * (r as f32 + 1.0) - 2.0 - f * (strip - 4.0),
-                        cw + 0.5,
-                        f * (strip - 4.0),
-                    ));
+        let base = strip * (r as f32 + 1.0) - 2.0;
+        // One stepped polygon per band and sign, not a rectangle per cell: the page redraws often.
+        for b in 0..bands {
+            for (up, colour) in [(true, p.info), (false, p.danger)] {
+                let mut top = Vec::new();
+                for (i, v) in vals.iter().enumerate() {
+                    let f = if (*v >= 0.0) == up {
+                        horizon::fold(*v, band, bands)[b]
+                    } else {
+                        0.0
+                    };
+                    let y = base - f * (strip - 4.0);
+                    top.push((i as f32 * cw, y));
+                    top.push(((i + 1) as f32 * cw, y));
+                }
+                if top.iter().any(|q| q.1 < base) {
+                    let mut poly_pts = vec![(0.0, base)];
+                    poly_pts.extend(top);
+                    poly_pts.push((w, base));
+                    fills.push(poly(fade(colour, 0.35 + 0.3 * b as f32), poly_pts));
                 }
             }
         }
