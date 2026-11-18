@@ -943,7 +943,7 @@ dependencies = [
 
 [[package]]
 name = "dodai-core"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "dodai-fx",
 ]
@@ -959,11 +959,11 @@ dependencies = [
 
 [[package]]
 name = "dodai-fx"
-version = "0.1.5"
+version = "0.1.6"
 
 [[package]]
 name = "dodai-icons"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "dodai-core",
 ]

@@ -34,6 +34,8 @@ def main [new_version: string, --skip-checks] {
         run-external "cargo" "test" "--workspace"
     }
     run-external "cargo" "update" "--workspace"
+    # dodai-freya is its own workspace with its own lockfile, which records the dodai versions.
+    run-external "cargo" "update" "--workspace" "--manifest-path" "crates/dodai-freya/Cargo.toml"
 
     let written = (open --raw CHANGELOG.md | str contains $"## [($new_version)]")
     if $written {
