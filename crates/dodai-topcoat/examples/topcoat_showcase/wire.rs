@@ -2,22 +2,22 @@
 //!
 //! | line | meaning |
 //! |---|---|
-//! | `P|key` | a counting / command button was pressed |
-//! | `I|key|n` | index `n` was picked |
-//! | `B|key|true` | a flag changed |
-//! | `Z|key|n` | an integer changed |
-//! | `T|key|text` | a text field changed (the text is last, so it may hold `|`) |
-//! | `N|key|v|min|max|step` | a slider value, snapped to the step (`-` = none) |
-//! | `L|lo|hi|end|v|min|max|step` | a range slider thumb (`end` 0 = low, 1 = high) |
-//! | `KN|key|min|max|v0|dx|dy` | a knob dragged by `dx`, `dy` px from `v0` |
-//! | `GO|yaw|pitch|y0|p0|dx|dy` | the gizmo dragged (orbit) |
-//! | `GC|yaw|pitch|size|y0|p0|x|y` | the gizmo clicked at `x`, `y` |
-//! | `C|n` | page `n` (empty = All) |
-//! | `S|title` | a section was picked in the sidebar |
-//! | `V|top|title` | the page scrolled to this section (`top` = 1 at the very top); only the sidebar changes |
-//! | `F|text` | the sidebar filter |
-//! | `D|n`, `M|n`, `K|n` | design, theme of the design, colour |
-//! | `A|b`, `E|n`, `R|b`, `Y|b` | animate, speed, right-to-left, patterns |
+//! | `P\|key` | a counting / command button was pressed |
+//! | `I\|key\|n` | index `n` was picked |
+//! | `B\|key\|true` | a flag changed |
+//! | `Z\|key\|n` | an integer changed |
+//! | `T\|key\|text` | a text field changed (the text is last, so it may hold `\|`) |
+//! | `N\|key\|v\|min\|max\|step` | a slider value, snapped to the step (`-` = none) |
+//! | `L\|lo\|hi\|end\|v\|min\|max\|step` | a range slider thumb (`end` 0 = low, 1 = high) |
+//! | `KN\|key\|min\|max\|v0\|dx\|dy` | a knob dragged by `dx`, `dy` px from `v0` |
+//! | `GO\|yaw\|pitch\|y0\|p0\|dx\|dy` | the gizmo dragged (orbit) |
+//! | `GC\|yaw\|pitch\|size\|y0\|p0\|x\|y` | the gizmo clicked at `x`, `y` |
+//! | `C\|n` | page `n` (empty = All) |
+//! | `S\|title` | a section was picked in the sidebar |
+//! | `V\|top\|title` | the page scrolled to this section (`top` = 1 at the very top); only the sidebar changes |
+//! | `F\|text` | the sidebar filter |
+//! | `D\|n`, `M\|n`, `K\|n` | design, theme of the design, colour |
+//! | `A\|b`, `E\|n`, `R\|b`, `Y\|b` | animate, speed, right-to-left, patterns |
 
 use dodai_showcase_model::{catalog, Action, Bind, Showcase, Value, CATEGORIES};
 
