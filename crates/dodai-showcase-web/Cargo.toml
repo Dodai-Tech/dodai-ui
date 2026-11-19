@@ -17,3 +17,8 @@ dodai-core            = { workspace = true, features = ["cyberpunk", "material",
 dodai-icons           = { workspace = true, features = ["theme", "cyberpunk", "material", "neobrutalism", "symbols"] }
 dodai-showcase-model  = { workspace = true }
 dodai-topcoat         = { workspace = true }
+
+# lib.rs pulls the topcoat showcase sources in with #[path]; they use these crates, but the
+# files live outside this crate's directory so machete cannot see the use.
+[package.metadata.cargo-machete]
+ignored = ["dodai-icons", "dodai-topcoat"]
