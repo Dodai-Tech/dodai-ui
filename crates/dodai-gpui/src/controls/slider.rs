@@ -394,6 +394,9 @@ impl Slider {
     ) -> gpui::Div {
         let rail = div().absolute().top_0().bottom_0().left_0().right_0();
         let tick_c = hsla(t.palette.border_strong);
+        let (tick_len, tick_w) = (t.sizes().tick_len, t.sizes().tick_width);
+        // Ticks and thumb sit centred on the rail, whatever the thumb size.
+        let tick_off = (thumb_d - tick_len) / 2.0;
         let ticks = if self.ticks {
             tick_fractions(self.min, self.max, self.step)
         } else {
@@ -405,9 +408,9 @@ impl Slider {
                 r = r.child(
                     div()
                         .absolute()
-                        .left(px(5.0))
-                        .w(px(10.0))
-                        .h(px(2.0))
+                        .left(px(tick_off))
+                        .w(px(tick_len))
+                        .h(px(tick_w))
                         .top(relative(1.0 - f))
                         .bg(tick_c),
                 );
@@ -424,11 +427,11 @@ impl Slider {
                 r = r.child(
                     div()
                         .absolute()
-                        .top(px(5.0))
-                        .h(px(10.0))
-                        .w(px(2.0))
+                        .top(px(tick_off))
+                        .h(px(tick_len))
+                        .w(px(tick_w))
                         .left(relative(*f))
-                        .ml(px(-1.0))
+                        .ml(px(-tick_w / 2.0))
                         .bg(tick_c),
                 );
             }
