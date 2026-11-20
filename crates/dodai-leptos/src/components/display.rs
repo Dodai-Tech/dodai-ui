@@ -52,14 +52,56 @@ pub fn Tag(
 
 /// Tab strip: `tabs` are labels, `active` the selected index.
 #[component]
-pub fn Tabs(tabs: Vec<String>, #[prop(optional)] active: usize) -> impl IntoView {
+pub fn Tabs(
+    tabs: Vec<String>,
+    #[prop(optional)] active: usize,
+    /// Called with the index of the tab whose close cross was clicked; its presence makes every
+    /// tab closable. The app removes the tab.
+    #[prop(optional, into)]
+    on_close: Option<Callback<usize>>,
+    /// Called when the "+" after the last tab is clicked; its presence shows the button.
+    #[prop(optional, into)]
+    on_add: Option<Callback<()>>,
+) -> impl IntoView {
     view! {
         <nav class="dodai-tabs">
             {tabs
                 .into_iter()
                 .enumerate()
-                .map(|(i, t)| view! { <a class=class::tab(i == active) href="#">{t}</a> })
+                .map(|(i, t)| {
+                    let close = on_close.map(|cb| {
+                        view! {
+                            <span
+                                class="dodai-tab__close"
+                                role="button"
+                                tabindex="0"
+                                aria-label="Close tab"
+                                on:click=move |e| {
+                                    e.prevent_default();
+                                    e.stop_propagation();
+                                    cb.run(i)
+                                }
+                            >
+                                "\u{00d7}"
+                            </span>
+                        }
+                    });
+                    view! { <a class=class::tab(i == active) href="#"><span>{t}</span>{close}</a> }
+                })
                 .collect_view()}
+            {on_add
+                .map(|cb| {
+                    view! {
+                        <button
+                            type="button"
+                            class="dodai-tab dodai-tab--add"
+                            aria-label="Add tab"
+                            on:click=move |_| cb.run(())
+                        >
+                            "+"
+                        </button>
+                    }
+                })}
         </nav>
     }
 }

@@ -8,6 +8,8 @@ use egui::{pos2, vec2, Align2, Rect, Response, Sense, Stroke, Ui, Widget};
 pub struct Tabs<'a> {
     selected: &'a mut usize,
     labels: Vec<String>,
+    closed: Option<&'a mut Option<usize>>,
+    added: Option<&'a mut bool>,
 }
 
 impl<'a> Tabs<'a> {
@@ -19,7 +21,22 @@ impl<'a> Tabs<'a> {
         Self {
             selected,
             labels: labels.into_iter().map(Into::into).collect(),
+            closed: None,
+            added: None,
         }
+    }
+
+    /// Give every tab a close cross. A click writes the tab's index to `closed`; the app then
+    /// removes the label (the strip never drops tabs itself).
+    pub fn closable(mut self, closed: &'a mut Option<usize>) -> Self {
+        self.closed = Some(closed);
+        self
+    }
+
+    /// Show a "+" after the last tab; a click sets `added` to `true` for the app to add a tab.
+    pub fn addable(mut self, added: &'a mut bool) -> Self {
+        self.added = Some(added);
+        self
     }
 }
 
@@ -27,15 +44,40 @@ impl Widget for Tabs<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
         let t = active_theme(ui.ctx());
         let mut changed = None;
+        let mut close_hit = None;
+        let mut add_hit = false;
+        let close_d = t.sizes().icon_sm;
+        let closable = self.closed.is_some();
+        let addable = self.added.is_some();
         let mut resp = ui
             .horizontal(|ui| {
                 ui.spacing_mut().item_spacing.x = t.spacing.xs;
                 for (i, label) in self.labels.iter().enumerate() {
                     let g = layout(ui, display_text(&t, label), t.typography.size_md);
-                    let size = vec2(g.size().x + 2.0 * t.spacing.md, t.shape.control_height);
+                    let extra = if closable {
+                        close_d + t.spacing.sm
+                    } else {
+                        0.0
+                    };
+                    let size = vec2(
+                        g.size().x + 2.0 * t.spacing.md + extra,
+                        t.shape.control_height,
+                    );
                     let (rect, r) = ui.allocate_exact_size(size, Sense::click());
+                    let x_rect = Rect::from_center_size(
+                        pos2(rect.max.x - t.spacing.md - close_d / 2.0, rect.center().y),
+                        vec2(close_d, close_d),
+                    );
+                    let x_hot = closable
+                        && ui
+                            .input(|i| i.pointer.hover_pos())
+                            .is_some_and(|p| x_rect.contains(p));
                     if r.clicked() {
-                        changed = Some(i);
+                        if x_hot {
+                            close_hit = Some(i);
+                        } else {
+                            changed = Some(i);
+                        }
                     }
                     if ui.is_rect_visible(rect) {
                         let active = changed.unwrap_or(*self.selected) == i;
@@ -49,14 +91,57 @@ impl Widget for Tabs<'_> {
                                 Stroke::new(2.0_f32, color32(c)),
                             );
                         }
+                        let label_rect =
+                            Rect::from_min_max(rect.min, pos2(rect.max.x - extra, rect.max.y));
                         let pos = Align2::CENTER_CENTER
-                            .align_size_within_rect(g.size(), rect)
+                            .align_size_within_rect(g.size(), label_rect)
                             .min;
                         ui.painter().galley(pos, g, color32(tok.foreground));
+                        if closable {
+                            let c = color32(tok.foreground).gamma_multiply(if x_hot {
+                                1.0
+                            } else {
+                                0.7
+                            });
+                            let k = close_d * 0.3;
+                            let s = Stroke::new(1.5_f32, c);
+                            let m = x_rect.center();
+                            ui.painter()
+                                .line_segment([m + vec2(-k, -k), m + vec2(k, k)], s);
+                            ui.painter()
+                                .line_segment([m + vec2(-k, k), m + vec2(k, -k)], s);
+                        }
+                    }
+                }
+                if addable {
+                    let side = t.shape.control_height;
+                    let (rect, r) = ui.allocate_exact_size(vec2(side, side), Sense::click());
+                    add_hit = r.clicked();
+                    if ui.is_rect_visible(rect) {
+                        let c = color32(t.palette.text).gamma_multiply(if r.hovered() {
+                            1.0
+                        } else {
+                            0.7
+                        });
+                        let k = close_d * 0.35;
+                        let s = Stroke::new(1.5_f32, c);
+                        let m = rect.center();
+                        ui.painter()
+                            .line_segment([m + vec2(-k, 0.0), m + vec2(k, 0.0)], s);
+                        ui.painter()
+                            .line_segment([m + vec2(0.0, -k), m + vec2(0.0, k)], s);
                     }
                 }
             })
             .response;
+        if let (Some(i), Some(out)) = (close_hit, self.closed) {
+            *out = Some(i);
+            resp.mark_changed();
+        }
+        if let (true, Some(out)) = (add_hit, self.added) {
+            *out = true;
+            resp.mark_changed();
+        }
         if let Some(i) = changed {
             if *self.selected != i {
                 *self.selected = i;

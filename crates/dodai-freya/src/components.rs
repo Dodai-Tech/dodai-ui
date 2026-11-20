@@ -316,6 +316,8 @@ struct DodaiTab {
     label: String,
     active: bool,
     on_select: Option<Action>,
+    /// Room kept free at the right edge for a close cross.
+    extra: f32,
     key: DiffKey,
 }
 
@@ -336,7 +338,8 @@ impl Component for DodaiTab {
         let (style, fg, ind) = tab_style(&t, self.active, *hover.read());
         let ts = text_style(&t, TextRole::Label, Some(t.typography.size_sm));
         let w = estimate_text_width(&ts.apply(&self.label), ts.size, ts.letter_spacing)
-            + 2.0 * t.spacing.md;
+            + 2.0 * t.spacing.md
+            + self.extra;
         let line = ind.map(|i| {
             rect()
                 .position(Position::new_absolute().bottom(0.0))
@@ -345,6 +348,7 @@ impl Component for DodaiTab {
                 .background(color(i))
         });
         let body = rect()
+            .padding(Gaps::new(0.0, self.extra, 0.0, 0.0))
             .child(text(&ts, Some(fg), &self.label))
             .maybe_child(line);
         let on_select = self.on_select.clone();
@@ -370,6 +374,9 @@ pub struct DodaiTabs {
     labels: Vec<String>,
     selected: usize,
     on_select: Option<EventHandler<usize>>,
+    closable: bool,
+    on_close: Option<EventHandler<usize>>,
+    on_add: Option<EventHandler<()>>,
 }
 
 impl DodaiTabs {
@@ -379,7 +386,22 @@ impl DodaiTabs {
             labels: labels.into_iter().map(Into::into).collect(),
             selected: 0,
             on_select: None,
+            closable: false,
+            on_close: None,
+            on_add: None,
         }
+    }
+    /// Give every tab a close cross; `f` gets the tab's index and the app removes the label.
+    pub fn on_close(mut self, f: impl FnMut(usize) + 'static) -> Self {
+        self.closable = true;
+        self.on_close = Some(EventHandler::new(f));
+        self
+    }
+    /// Show a "+" after the last tab; the app adds the tab in `f`.
+    pub fn on_add(mut self, f: impl FnMut() + 'static) -> Self {
+        let mut f = f;
+        self.on_add = Some(EventHandler::new(move |()| f()));
+        self
     }
     /// Index of the active tab.
     pub fn selected(mut self, selected: usize) -> Self {
@@ -396,12 +418,29 @@ impl DodaiTabs {
 impl Component for DodaiTabs {
     fn render(&self) -> impl IntoElement {
         let t = use_dodai_theme();
+        let ts = text_style(&t, TextRole::Label, Some(t.typography.size_sm));
+        let cross = t.sizes().icon_sm;
+        let extra = if self.closable {
+            cross + t.spacing.sm
+        } else {
+            0.0
+        };
+        let add = self.on_add.clone().map(|h| {
+            let side = t.shape.control_height;
+            rect()
+                .width(Size::px(side))
+                .height(Size::px(side))
+                .main_align(Alignment::Center)
+                .cross_align(Alignment::Center)
+                .on_press(move |_| h.call(()))
+                .child(text(&ts, Some(t.palette.text), "+"))
+        });
         rect()
             .direction(Direction::Horizontal)
             .spacing(t.spacing.xs)
             .children(self.labels.iter().enumerate().map(|(i, l)| {
                 let handler = self.on_select.clone();
-                DodaiTab {
+                let tab = DodaiTab {
                     label: l.clone(),
                     active: i == self.selected,
                     on_select: Some(action(move || {
@@ -409,10 +448,22 @@ impl Component for DodaiTabs {
                             h.call(i);
                         }
                     })),
+                    extra,
                     key: DiffKey::None,
-                }
-                .key(i)
+                };
+                let close = self.on_close.clone().map(|h| {
+                    rect()
+                        .position(Position::new_absolute().top(0.0).right(t.spacing.md))
+                        .width(Size::px(cross))
+                        .height(Size::px(t.shape.control_height))
+                        .main_align(Alignment::Center)
+                        .cross_align(Alignment::Center)
+                        .on_press(move |_| h.call(i))
+                        .child(text(&ts, Some(t.palette.text), "\u{00d7}"))
+                });
+                rect().child(tab).maybe_child(close).key(i)
             }))
+            .maybe_child(add)
     }
 }
 

@@ -327,3 +327,28 @@ fn checkbox_line_matches_the_widget_row() {
     );
     assert_eq!(line.to_string(), row(&b, 0));
 }
+
+#[test]
+fn editable_tabs_hit_testing_matches_the_drawn_strip() {
+    let th = TuiTheme::new(spec(
+        "t",
+        Shape {
+            ..dodai_core::themes::neutral().shape
+        },
+        false,
+        false,
+    ));
+    let labels = ["ab", "cde"];
+    let line = th.tabs_editable(&labels, 0, true, true);
+    let drawn: usize = line.spans.iter().map(|s| s.content.chars().count()).sum();
+    // Every part is reachable, in order, and the strip's last cell is the "+".
+    assert_eq!(tab_hit(&labels, true, true, 0), Some(TabHit::Select(0)));
+    assert_eq!(tab_hit(&labels, true, true, 6), Some(TabHit::Close(0)));
+    assert_eq!(tab_hit(&labels, true, true, 9), Some(TabHit::Select(1)));
+    assert_eq!(tab_hit(&labels, true, true, 16), Some(TabHit::Close(1)));
+    assert_eq!(
+        tab_hit(&labels, true, true, drawn as u16 - 1),
+        Some(TabHit::Add)
+    );
+    assert_eq!(tab_hit(&labels, true, false, drawn as u16), None);
+}

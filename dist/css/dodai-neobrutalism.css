@@ -121,6 +121,10 @@ code,pre,.dodai-mono{font-family:var(--dodai-font-mono)}
 .dodai-tab--active,.dodai-tab[aria-current=page],.dodai-tab--active:hover{background:var(--dodai-primary);color:var(--dodai-on-primary);border-bottom-color:var(--dodai-primary)}
 .dodai-tabs--secondary .dodai-tab--active,.dodai-tabs--secondary .dodai-tab--active:hover{background:none;color:var(--dodai-primary);box-shadow:inset 0 -2px var(--dodai-primary)}
 .dodai-tab--disabled{opacity:.45;pointer-events:none}
+.dodai-tab__close{display:inline-flex;align-items:center;justify-content:center;width:var(--dodai-sz-icon-sm,18px);height:var(--dodai-sz-icon-sm,18px);margin-left:var(--dodai-space-sm);border-radius:var(--dodai-radius);opacity:.7;cursor:pointer;vertical-align:middle}
+.dodai-tab__close:hover,.dodai-tab__close:focus-visible{opacity:1;background:color-mix(in srgb,currentColor 18%,transparent)}
+.dodai-tab--add{background:none;border:0;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;opacity:.8}
+.dodai-tab--add:hover{opacity:1}
 .dodai-tab--icon{display:inline-flex;flex-direction:column;align-items:center;gap:var(--dodai-space-xs)}
 
 /* Tables */

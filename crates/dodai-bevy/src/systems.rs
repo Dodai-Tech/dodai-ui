@@ -131,12 +131,23 @@ pub(crate) fn radio_exclusive(
 }
 
 pub(crate) fn tab_input(
-    q: Query<(Entity, &ControlPointer, &ChildOf), (Changed<ControlPointer>, With<UiTab>)>,
+    q: Query<
+        (Entity, &ControlPointer, &ChildOf),
+        (Changed<ControlPointer>, With<UiTab>, Without<TabAdd>),
+    >,
+    closers: Query<(&ControlPointer, &ChildOf), With<TabClose>>,
     mut tabs: Query<(Entity, &mut UiTab, &ChildOf)>,
     mut out: MessageWriter<ControlEvent>,
 ) {
     for (entity, i, parent) in &q {
         if *i != ControlPointer::Pressed {
+            continue;
+        }
+        // A press on the close cross bubbles up to its tab: that is a close, not a selection.
+        if closers
+            .iter()
+            .any(|(p, c)| c.parent() == entity && *p == ControlPointer::Pressed)
+        {
             continue;
         }
         for (e, mut t, p) in &mut tabs {
@@ -148,6 +159,30 @@ pub(crate) fn tab_input(
             entity,
             kind: ControlKind::TabSelected,
         });
+    }
+}
+
+/// The close cross and the "+" of an editable tab row: report them, change nothing.
+pub(crate) fn tab_edit_input(
+    closers: Query<(&ControlPointer, &ChildOf), (Changed<ControlPointer>, With<TabClose>)>,
+    adders: Query<(Entity, &ControlPointer), (Changed<ControlPointer>, With<TabAdd>)>,
+    mut out: MessageWriter<ControlEvent>,
+) {
+    for (p, parent) in &closers {
+        if *p == ControlPointer::Pressed {
+            out.write(ControlEvent {
+                entity: parent.parent(),
+                kind: ControlKind::TabClosed,
+            });
+        }
+    }
+    for (entity, p) in &adders {
+        if *p == ControlPointer::Pressed {
+            out.write(ControlEvent {
+                entity,
+                kind: ControlKind::TabAdded,
+            });
+        }
     }
 }
 
@@ -1258,7 +1293,7 @@ mod input_tests {
 #[cfg(test)]
 mod vertical_slider_tests {
     use super::*;
-    use crate::widgets::{slider, vertical_slider, SliderThumb};
+    use crate::widgets::{slider, tabs_editable, vertical_slider, SliderThumb};
 
     fn styled(bundle: impl Bundle) -> (App, Entity) {
         let mut app = App::new();
@@ -1291,6 +1326,37 @@ mod vertical_slider_tests {
         assert_eq!(fill.height, Val::Percent(25.0));
         assert_eq!(thumb.bottom, Val::Percent(25.0));
         assert!(matches!(app.world().get::<Node>(e).unwrap().width, Val::Px(w) if w > 0.0));
+    }
+
+    #[test]
+    fn editable_tabs_report_close_and_add_without_selecting() {
+        let mut app = App::new();
+        app.add_message::<ControlEvent>()
+            .add_systems(Update, (tab_input, tab_edit_input));
+        app.world_mut()
+            .spawn(tabs_editable(&["a", "b"], 0, true, true));
+        app.update();
+        let w = app.world_mut();
+        assert_eq!(w.query::<&TabClose>().iter(w).count(), 2);
+        assert_eq!(w.query::<&TabAdd>().iter(w).count(), 1);
+        // Press the second tab's cross: it bubbles to the tab, which must not become active.
+        let closer = w
+            .query_filtered::<(Entity, &ChildOf), With<TabClose>>()
+            .iter(w)
+            .map(|(e, p)| (e, p.parent()))
+            .nth(1)
+            .unwrap();
+        *w.get_mut::<ControlPointer>(closer.0).unwrap() = ControlPointer::Pressed;
+        *w.get_mut::<ControlPointer>(closer.1).unwrap() = ControlPointer::Pressed;
+        app.update();
+        let w = app.world_mut();
+        let events: Vec<_> = w
+            .resource_mut::<Messages<ControlEvent>>()
+            .drain()
+            .map(|e| (e.entity, e.kind))
+            .collect();
+        assert_eq!(events, vec![(closer.1, ControlKind::TabClosed)]);
+        assert!(!w.get::<UiTab>(closer.1).unwrap().active);
     }
 
     #[test]

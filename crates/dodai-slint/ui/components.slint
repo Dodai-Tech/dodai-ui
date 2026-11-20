@@ -127,28 +127,51 @@ export component LTag inherits Rectangle {
 export component LTab inherits Rectangle {
     in property <string> text;
     in property <bool> active: false;
+    in property <bool> closable: false;
     callback clicked();
+    callback close-clicked();
+    property <length> cross: Theme.size-sm + Theme.sp-xs;
     property <int> idx: (root.active ? 2 : 0) + (ta.has-hover ? 1 : 0);
     min-height: Theme.control-height;
-    min-width: l.preferred-width + Theme.sp-lg * 2;
+    min-width: l.preferred-width + Theme.sp-lg * 2 + (root.closable ? root.cross : 0px);
     LFrame { fill: Theme.tab-bg[root.idx]; stroke: transparent; stroke-width: 0px; }
-    l := LText { kind: 1; content: root.text; color: Theme.tab-fg[root.idx]; horizontal-alignment: center; vertical-alignment: center; }
+    l := LText { kind: 1; content: root.text; color: Theme.tab-fg[root.idx]; horizontal-alignment: center; vertical-alignment: center; x: 0px; width: parent.width - (root.closable ? root.cross : 0px); }
     Rectangle {
         y: parent.height - 2px;
         height: 2px;
         background: Theme.tab-indicator[root.idx];
     }
     ta := TouchArea { clicked => { root.clicked(); } }
+    if root.closable: Rectangle {
+        x: parent.width - root.cross - Theme.sp-sm;
+        width: root.cross;
+        background: cta.has-hover ? Theme.tab-fg[root.idx].with-alpha(0.2) : transparent;
+        border-radius: 2px;
+        LText { kind: 1; content: "×"; color: Theme.tab-fg[root.idx]; horizontal-alignment: center; vertical-alignment: center; }
+        cta := TouchArea { clicked => { root.close-clicked(); } }
+    }
 }
 
 export component LTabs inherits HorizontalLayout {
     in property <[string]> tabs;
     in-out property <int> current;
+    /// A close cross on every tab; the app removes the entry from `tabs` in `closed(i)`.
+    in property <bool> closable: false;
+    /// A "+" after the last tab; the app appends an entry in `added()`.
+    in property <bool> addable: false;
+    callback closed(int);
+    callback added();
     spacing: Theme.sp-xs;
     for t[i] in root.tabs: LTab {
         text: t;
         active: i == root.current;
+        closable: root.closable;
         clicked => { root.current = i; }
+        close-clicked => { root.closed(i); }
+    }
+    if root.addable: LTab {
+        text: "+";
+        clicked => { root.added(); }
     }
 }
 

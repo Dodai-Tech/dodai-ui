@@ -281,6 +281,26 @@ pub fn tabs(
     icons: &[IconId],
     attrs: &dyn Fn(usize) -> String,
 ) -> String {
+    tabs_editable(
+        cx, labels, active, secondary, disabled, icons, attrs, None, None,
+    )
+}
+
+/// [`tabs`] with editing: `close_attrs(i)` (when `Some`) gives every tab a close cross carrying
+/// those attributes, and `add_attrs` (when `Some`) appends a "+" button. The page removes or
+/// adds the tab itself.
+#[allow(clippy::too_many_arguments)]
+pub fn tabs_editable(
+    cx: &Cx,
+    labels: &[String],
+    active: usize,
+    secondary: bool,
+    disabled: &[usize],
+    icons: &[IconId],
+    attrs: &dyn Fn(usize) -> String,
+    close_attrs: Option<&dyn Fn(usize) -> String>,
+    add_attrs: Option<&str>,
+) -> String {
     let mut o = format!(
         "<div class=\"{}\" role=\"tablist\">",
         if secondary {
@@ -304,11 +324,22 @@ pub fn tabs(
             .get(i)
             .map_or(String::new(), |ic| icon(cx, *ic, 18, false));
         o.push_str(&format!(
-            "<a class=\"{class}\" role=\"tab\" aria-selected=\"{}\" aria-disabled=\"{}\" href=\"#\" {}>{ic}<span>{}</span></a>",
+            "<a class=\"{class}\" role=\"tab\" aria-selected=\"{}\" aria-disabled=\"{}\" href=\"#\" {}>{ic}<span>{}</span>{}</a>",
             i == active,
             disabled.contains(&i),
             attrs(i),
-            esc(t)
+            esc(t),
+            close_attrs.map_or(String::new(), |c| format!(
+                "<span class=\"dodai-tab__close\" role=\"button\" tabindex=\"0\" aria-label=\"Close tab\" {}>{}</span>",
+                c(i),
+                icon(cx, IconId::Close, 14, false)
+            ))
+        ));
+    }
+    if let Some(a) = add_attrs {
+        o.push_str(&format!(
+            "<button type=\"button\" class=\"dodai-tab dodai-tab--add\" aria-label=\"Add tab\" {a}>{}</button>",
+            icon(cx, IconId::Plus, 16, false)
         ));
     }
     o.push_str("</div>");

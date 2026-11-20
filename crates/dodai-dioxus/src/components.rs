@@ -209,6 +209,16 @@ pub struct TabsProps {
     pub icons: Vec<dodai_icons::IconId>,
     #[props(default)]
     pub onselect: EventHandler<usize>,
+    /// A close cross on every tab; the app removes the tab in `onclose`.
+    #[props(default)]
+    pub closable: bool,
+    #[props(default)]
+    pub onclose: EventHandler<usize>,
+    /// Shows a "+" after the last tab; the app adds the tab in `onadd`.
+    #[props(default)]
+    pub addable: bool,
+    #[props(default)]
+    pub onadd: EventHandler<()>,
 }
 
 /// The classes of one tab.
@@ -242,6 +252,25 @@ pub fn Tabs(props: TabsProps) -> Element {
                     onclick: move |e| { e.prevent_default(); props.onselect.call(i) },
                     if let Some(ic) = props.icons.get(i) { Icon { icon: *ic, size: 18 } }
                     span { "{t}" }
+                    if props.closable {
+                        span {
+                            class: "dodai-tab__close",
+                            role: "button",
+                            tabindex: "0",
+                            "aria-label": "Close tab",
+                            onclick: move |e| { e.prevent_default(); e.stop_propagation(); props.onclose.call(i) },
+                            Icon { icon: dodai_icons::IconId::Close, size: 14 }
+                        }
+                    }
+                }
+            }
+            if props.addable {
+                button {
+                    r#type: "button",
+                    class: "dodai-tab dodai-tab--add",
+                    "aria-label": "Add tab",
+                    onclick: move |_| props.onadd.call(()),
+                    Icon { icon: dodai_icons::IconId::Plus, size: 16 }
                 }
             }
         }

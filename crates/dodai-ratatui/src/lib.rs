@@ -340,6 +340,19 @@ impl TuiTheme {
     /// Tab strip. Active tab is a solid chamfered ` LABEL ◤`; inactive tabs are
     /// muted, same width, so nothing shifts when you switch.
     pub fn tabs<'a>(&self, labels: &[&str], active: usize) -> Line<'a> {
+        self.tabs_editable(labels, active, false, false)
+    }
+
+    /// [`tabs`](Self::tabs) with editing: `closable` puts a `×` after every label, `addable` a
+    /// trailing `+`. Terminals have no pointer routing here, so map a mouse column to the
+    /// part that was hit with [`tab_hit`].
+    pub fn tabs_editable<'a>(
+        &self,
+        labels: &[&str],
+        active: usize,
+        closable: bool,
+        addable: bool,
+    ) -> Line<'a> {
         let mut spans = Vec::new();
         for (i, l) in labels.iter().enumerate() {
             let text = format!(" {} ", self.label(l));
@@ -356,7 +369,13 @@ impl TuiTheme {
             } else {
                 spans.push(Span::styled(format!(" {text} "), self.muted()));
             }
+            if closable {
+                spans.push(Span::styled("× ", self.muted()));
+            }
             spans.push(Span::raw(" "));
+        }
+        if addable {
+            spans.push(Span::styled(" + ", self.muted()));
         }
         Line::from(spans)
     }
@@ -464,4 +483,38 @@ mod tests {
         let s: String = l.spans.iter().map(|s| s.content.as_ref()).collect();
         assert_eq!(s.chars().count(), 20);
     }
+}
+
+/// What a column of a [`TuiTheme::tabs_editable`] strip lies on.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TabHit {
+    /// The body of tab `i`.
+    Select(usize),
+    /// The `×` of tab `i`.
+    Close(usize),
+    /// The trailing `+`.
+    Add,
+}
+
+/// Which part of a strip drawn by `tabs_editable(labels, _, closable, addable)` covers the
+/// 0-based `column` (relative to the strip's left edge); `None` over a gap.
+pub fn tab_hit(labels: &[&str], closable: bool, addable: bool, column: u16) -> Option<TabHit> {
+    let mut x = 0usize;
+    let col = column as usize;
+    for (i, l) in labels.iter().enumerate() {
+        // " {" l "} " plus the `ˍ` margin of the active tab or the muted padding: l + 4 cells.
+        let body = l.chars().count() + 4;
+        if col < x + body {
+            return Some(TabHit::Select(i));
+        }
+        x += body;
+        if closable {
+            if col < x + 2 {
+                return Some(TabHit::Close(i));
+            }
+            x += 2;
+        }
+        x += 1;
+    }
+    (addable && (x..x + 3).contains(&col)).then_some(TabHit::Add)
 }

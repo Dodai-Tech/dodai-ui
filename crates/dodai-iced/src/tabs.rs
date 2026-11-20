@@ -16,6 +16,16 @@ pub struct TabsLook {
     pub disabled: Vec<usize>,
     /// An icon over each label.
     pub icons: Vec<dodai_icons::IconId>,
+    /// Tabs (by index) that show a close button; used by [`IcedTheme::tabs_editable`].
+    pub closable: Vec<usize>,
+}
+
+impl TabsLook {
+    /// Every one of `n` tabs gets a close button.
+    pub fn closable_all(mut self, n: usize) -> Self {
+        self.closable = (0..n).collect();
+        self
+    }
 }
 
 /// Estimated width of a tab labelled `label` (no font metrics outside layout: ~0.62 em per
@@ -69,7 +79,24 @@ impl IcedTheme {
         look: &TabsLook,
         on_select: impl Fn(usize) -> Message + 'a,
     ) -> Element<'a, Message> {
+        self.tabs_editable(labels, active, look, on_select, |_| None, None)
+    }
+
+    /// [`tabs_with`](Self::tabs_with) plus editing: tabs listed in [`TabsLook::closable`] get a
+    /// close button that sends `on_close(i)` (return `None` to ignore), and `on_add` (when
+    /// `Some`) appends a "+" button after the last tab. Controlled like every tab bar: the app
+    /// removes or adds the label itself.
+    pub fn tabs_editable<'a, Message: Clone + 'a>(
+        &self,
+        labels: &[&str],
+        active: usize,
+        look: &TabsLook,
+        on_select: impl Fn(usize) -> Message + 'a,
+        on_close: impl Fn(usize) -> Option<Message> + 'a,
+        on_add: Option<Message>,
+    ) -> Element<'a, Message> {
         let sp = &self.theme.spacing;
+        let close_d = self.theme.sizes().icon_sm;
         let mut bar = row![].spacing(sp.xs);
         for (i, l) in labels.iter().enumerate() {
             let is_active = i == active;
@@ -100,24 +127,59 @@ impl IcedTheme {
             };
             // The secondary style never fills the active tab.
             let style = self.tab_style(is_active && !look.secondary);
-            let mut btn = button(content).padding([sp.sm, sp.lg]).style(style);
+            let closer = if look.closable.contains(&i) {
+                on_close(i)
+            } else {
+                None
+            };
+            let pad_r = if closer.is_some() { sp.xs } else { sp.lg };
+            let mut btn = button(content)
+                .padding(iced::Padding {
+                    top: sp.sm,
+                    bottom: sp.sm,
+                    left: sp.lg,
+                    right: pad_r,
+                })
+                .style(style);
             if !off {
                 btn = btn.on_press(on_select(i));
             }
+            let extra = if closer.is_some() {
+                close_d + sp.sm
+            } else {
+                0.0
+            };
+            let head: Element<'a, Message> = match closer {
+                Some(msg) => {
+                    let x = button(self.icon(dodai_icons::IconId::Close, close_d, ink))
+                        .padding(sp.xs)
+                        .style(self.tab_style(false))
+                        .on_press(msg);
+                    row![btn, x]
+                        .align_y(iced::alignment::Vertical::Center)
+                        .into()
+                }
+                None => btn.into(),
+            };
             // A fixed width (the label's estimated width plus its padding): a `Fill` rule made
             // every tab claim an equal share of the row.
             let rule = container("")
-                .width(Length::Fixed(tab_width(
-                    l,
-                    self.theme.typography.size_sm,
-                    sp.lg,
-                )))
+                .width(Length::Fixed(
+                    tab_width(l, self.theme.typography.size_sm, sp.lg) + extra,
+                ))
                 .height(2)
                 .style(move |_| container::Style {
                     background: underline.map(Background::Color),
                     ..container::Style::default()
                 });
-            bar = bar.push(column![btn, rule]);
+            bar = bar.push(column![head, rule]);
+        }
+        if let Some(msg) = on_add {
+            let plus = button(self.icon(dodai_icons::IconId::Plus, close_d, None))
+                .padding(sp.sm)
+                .style(self.tab_style(false))
+                .on_press(msg);
+            bar = bar.push(plus);
         }
         bar.into()
     }
@@ -126,6 +188,21 @@ impl IcedTheme {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn editable_tabs_build_with_close_and_add() {
+        let lt = IcedTheme::new(crate::testutil::cyberpunk());
+        let look = TabsLook::default().closable_all(2);
+        let _: Element<'_, u8> = lt.tabs_editable(
+            &["a", "b"],
+            0,
+            &look,
+            |i| i as u8,
+            |i| Some(10 + i as u8),
+            Some(99),
+        );
+        assert_eq!(look.closable, vec![0, 1]);
+    }
 
     #[test]
     fn tab_width_grows_with_the_label_and_the_padding() {

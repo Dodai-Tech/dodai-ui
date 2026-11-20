@@ -8,8 +8,8 @@ use crate::text::{first_family, format_label};
 use crate::{hsla, theme_of};
 use dodai_core::Theme;
 use gpui::{
-    div, prelude::FluentBuilder, px, App, ElementId, Hsla, IntoElement, ParentElement,
-    SharedString, StatefulInteractiveElement, Styled, Window,
+    div, prelude::FluentBuilder, px, App, ElementId, Hsla, InteractiveElement, IntoElement,
+    ParentElement, SharedString, StatefulInteractiveElement, Styled, Window,
 };
 use std::cell::Cell;
 use std::rc::Rc;
@@ -46,7 +46,12 @@ pub struct Tabs {
     animation: Option<SelectionMotion>,
     motion: Option<Motion>,
     disabled: Vec<usize>,
+    closable: bool,
+    on_close: Option<SelectHandler>,
+    on_add: Option<AddHandler>,
 }
+
+type AddHandler = Rc<dyn Fn(&mut Window, &mut App)>;
 
 crate::corners_setter!(Tabs);
 
@@ -66,7 +71,21 @@ impl Tabs {
             animation: None,
             motion: None,
             disabled: Vec::new(),
+            closable: false,
+            on_close: None,
+            on_add: None,
         }
+    }
+    /// Give every tab a close button (a cross after the label). Controlled: the app drops the
+    /// label in [`Tabs::on_close`]; the tab is not removed here.
+    pub fn closable(mut self, on: bool) -> Self {
+        self.closable = on;
+        self
+    }
+    /// Show a "+" button after the last tab; the app adds the tab in the handler.
+    pub fn on_add(mut self, f: impl Fn(&mut Window, &mut App) + 'static) -> Self {
+        self.on_add = Some(Rc::new(f));
+        self
     }
     /// Tabs (by index) that can't be picked: dimmed, skipped by the arrow keys.
     pub fn disabled(mut self, tabs: impl IntoIterator<Item = usize>) -> Self {
@@ -113,6 +132,12 @@ impl Tabs {
     crate::callback!(
         /// Called with the clicked tab index.
         on_select,
+        usize
+    );
+    crate::callback!(
+        /// Called with the index of the tab whose close button was clicked. Setting it also
+        /// makes every tab closable.
+        on_close,
         usize
     );
 }
@@ -220,6 +245,32 @@ impl Tabs {
         }
         if let Some(label) = label {
             tab = tab.child(format_label(&t.typography, label));
+        }
+        if let (true, Some(f)) = (
+            self.closable || self.on_close.is_some(),
+            self.on_close.clone(),
+        ) {
+            let fgc = fg;
+            tab = tab.child(
+                div()
+                    .id((self.id.clone(), SharedString::from(format!("close{i}"))))
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .size(px(t.sizes().icon_sm))
+                    .cursor_pointer()
+                    .opacity(0.7)
+                    .hover(|d| d.opacity(1.0))
+                    .child(
+                        crate::icons::Icon::new(crate::icons::IconName::Close)
+                            .size(t.sizes().icon_sm * 0.75)
+                            .color(fgc),
+                    )
+                    .on_click(move |_, w, cx| {
+                        cx.stop_propagation();
+                        f(i, w, cx)
+                    }),
+            );
         }
         if let Some(c) = indicator {
             tab = tab.child(bottom_band_canvas(&t.shape, t.shape.border_width, c));
@@ -425,6 +476,27 @@ impl Tabs {
         for i in 0..count {
             let pan = scroll.as_ref().map(|s| s.read(cx).pan.clone());
             row = row.child(self.tab(&t, i, pan, track.as_ref(), window, cx));
+        }
+        if let Some(f) = self.on_add.clone() {
+            let fg = hsla(t.tab(dodai_core::ItemState::of(false, false)).foreground);
+            row = row.child(
+                div()
+                    .id((self.id.clone(), "add"))
+                    .flex()
+                    .flex_none()
+                    .items_center()
+                    .justify_center()
+                    .size(px(t.shape.control_height))
+                    .cursor_pointer()
+                    .opacity(0.8)
+                    .hover(|d| d.opacity(1.0))
+                    .child(
+                        crate::icons::Icon::new(crate::icons::IconName::Plus)
+                            .size(t.sizes().icon_sm)
+                            .color(fg),
+                    )
+                    .on_click(move |_, w, cx| f(w, cx)),
+            );
         }
         if let (false, Some(track)) = (pill, &track) {
             let colour = tab_style(&t, true, false).2.unwrap_or_default();

@@ -394,6 +394,7 @@ pub fn view<'a>(node: &Demo, cx: &Cx) -> Element<'a, Msg> {
                 secondary: ch.secondary,
                 disabled: ch.disabled.clone(),
                 icons: ch.icons.clone(),
+                ..Default::default()
             };
             lt.tabs_with(&labels, at, &look, move |i| {
                 Msg::Act(Action::Set(key.clone(), Value::Index(i)))

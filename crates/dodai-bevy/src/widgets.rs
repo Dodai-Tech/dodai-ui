@@ -172,6 +172,17 @@ pub struct UiTab {
     pub active: bool,
 }
 
+/// The close cross inside a tab (see [`tab_closable`]). Pressing it sends
+/// [`ControlKind::TabClosed`] for the tab and does not select it.
+#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[require(ControlPointer)]
+pub struct TabClose;
+
+/// Marks the "+" tab of [`tabs_editable`]: pressing it sends [`ControlKind::TabAdded`] and
+/// never becomes the active tab. Put it on a [`UiTab`].
+#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct TabAdd;
+
 /// Which toggle control.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ToggleKind {
@@ -378,6 +389,10 @@ pub enum ControlKind {
     Toggled(bool),
     /// Tab became active.
     TabSelected,
+    /// The close cross of this tab was pressed; the app despawns it (the strip never does).
+    TabClosed,
+    /// The "+" of a tab row was pressed; the app spawns the new tab.
+    TabAdded,
     /// List row became selected.
     Selected,
     /// Slider value changed.
@@ -688,6 +703,82 @@ pub fn tab(label: impl Into<String>, active: bool) -> impl Bundle {
                 BackgroundColor::default(),
             )
         ],
+    )
+}
+
+/// One tab with a close cross after the label.
+pub fn tab_closable(label: impl Into<String>, active: bool) -> impl Bundle {
+    (
+        UiTab { active },
+        Node {
+            align_items: AlignItems::Center,
+            justify_content: JustifyContent::Center,
+            column_gap: Val::Px(8.0),
+            ..default()
+        },
+        children![
+            text(label, TextRole::Control),
+            (
+                TabClose,
+                Node {
+                    align_items: AlignItems::Center,
+                    ..default()
+                },
+                children![text("\u{00d7}", TextRole::Control)],
+            ),
+            (
+                TabIndicator,
+                Node {
+                    position_type: PositionType::Absolute,
+                    left: Val::Px(0.0),
+                    right: Val::Px(0.0),
+                    bottom: Val::Px(0.0),
+                    height: Val::Px(2.0),
+                    ..default()
+                },
+                BackgroundColor::default(),
+            )
+        ],
+    )
+}
+
+/// [`tabs`] with editing: `closable` gives every tab a close cross ([`TabClose`]), `addable`
+/// appends a "+" tab ([`TabAdd`]). Listen for [`ControlKind::TabClosed`] and
+/// [`ControlKind::TabAdded`] and spawn or despawn the tabs yourself.
+pub fn tabs_editable(
+    labels: &[&str],
+    active: usize,
+    closable: bool,
+    addable: bool,
+) -> impl Bundle + use<> {
+    type Spawn = Box<dyn FnOnce(&mut ChildSpawner) + Send + Sync>;
+    let mut items: Vec<Spawn> = Vec::new();
+    for (i, l) in labels.iter().enumerate() {
+        let l = l.to_string();
+        items.push(Box::new(move |c: &mut ChildSpawner| {
+            if closable {
+                c.spawn(tab_closable(l, i == active));
+            } else {
+                c.spawn(tab(l, i == active));
+            }
+        }));
+    }
+    if addable {
+        items.push(Box::new(|c: &mut ChildSpawner| {
+            c.spawn((tab("+", false), TabAdd));
+        }));
+    }
+    (
+        UiTabs,
+        Node {
+            flex_direction: FlexDirection::Row,
+            ..default()
+        },
+        Children::spawn(SpawnWith(move |c: &mut ChildSpawner| {
+            for f in items {
+                f(c);
+            }
+        })),
     )
 }
 

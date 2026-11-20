@@ -93,6 +93,16 @@ pub struct TabsProps {
     pub active: usize,
     #[prop_or_default]
     pub onselect: Callback<usize>,
+    /// A close cross on every tab; the app removes the tab in `onclose`.
+    #[prop_or_default]
+    pub closable: bool,
+    #[prop_or_default]
+    pub onclose: Callback<usize>,
+    /// A "+" after the last tab; the app adds the tab in `onadd`.
+    #[prop_or_default]
+    pub addable: bool,
+    #[prop_or_default]
+    pub onadd: Callback<()>,
 }
 
 /// Tab strip; `active` is the selected index.
@@ -103,14 +113,25 @@ pub fn Tabs(props: &TabsProps) -> Html {
         { for props.tabs.iter().enumerate().map(|(i, t)| {
             let on = i == props.active;
             let cb = props.onselect.clone();
+            let close = props.onclose.clone();
             html! {
                 <a key={i} role="tab" aria-selected={on.to_string()}
                    class={join(&["dodai-tab", if on { "dodai-tab--active" } else { "" }])}
                    href="#" onclick={move |e: MouseEvent| { e.prevent_default(); cb.emit(i) }}>
-                    { t.clone() }
+                    <span>{ t.clone() }</span>
+                    if props.closable {
+                        <span class="dodai-tab__close" role="button" tabindex="0" aria-label="Close tab"
+                              onclick={move |e: MouseEvent| { e.prevent_default(); e.stop_propagation(); close.emit(i) }}>
+                            { "\u{00d7}" }
+                        </span>
+                    }
                 </a>
             }
         }) }
+        if props.addable {
+            <button type="button" class="dodai-tab dodai-tab--add" aria-label="Add tab"
+                    onclick={{ let add = props.onadd.clone(); move |_| add.emit(()) }}>{ "+" }</button>
+        }
         </nav>
     }
 }
