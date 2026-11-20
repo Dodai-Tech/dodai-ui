@@ -14,6 +14,7 @@
 
 mod checkbox;
 mod controls;
+mod dialog;
 mod input;
 mod list;
 mod nuances;
@@ -28,6 +29,7 @@ pub use {tui_chart, tui_checkbox, tui_nuances, tui_piechart, tui_rating, tui_sli
 
 pub use checkbox::{checkbox_design, Checkbox};
 pub use controls::{Divider, Progress, Tag, Toggle, ToggleKind};
+pub use dialog::{centered, fit, paint_background, Dialog, DialogTone};
 pub use input::InputField;
 pub use list::SelectList;
 pub use shape::{border_set, cuts_bottom_right, CHAMFER_BORDER, ROUNDED_BORDER, SQUARE_BORDER};

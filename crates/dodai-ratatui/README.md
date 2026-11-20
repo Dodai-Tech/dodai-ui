@@ -4,6 +4,10 @@ Ratatui adapter for Dodai UI: `TuiTheme` (styles, chamfered blocks, buttons, tab
 Components (all token-driven; border glyphs follow `Shape::kind()`: square `┌┐└┘`, rounded `╭╮╰╯`, chamfered `╱╲` on the cut corners only):
 `TuiTheme::{block, button, button_block, tabs, badge, status_bar, input}`, `Tag` (solid/outline), `Checkbox` (design-aware, see below), `Toggle` (radio/switch), `Progress` (eighth-block bar), `SelectList`, `Divider`, `InputField`, `Scanlines` (when `effects.scanlines`), `border_set`, `dim_color`. Labels honour `typography.uppercase_labels`.
 
+## Dialog
+
+`Dialog::new(&theme, "Confirm").tone(DialogTone::Warning).lines(..).hint("Enter/y: yes  Esc/n: no").render_centered(area, buf)` draws an opaque modal sized to its content (never a share of the terminal), themed by any `tui_nuances::ThemeProvider` (a plain `tui_nuances::Theme` or a `TuiTheme`). `paint_background`, `fit` and `centered` are the building blocks for popups you draw yourself.
+
 ## Checkbox
 
 `Checkbox::new(&tui, "Neural link", true)` draws the checkbox in the design system of the theme: the design comes from the theme's `Look` flags (tonal → Material, sinking hard-shadow controls → Neo-brutalism, cut corners or luminous → Cyberpunk, else Dodai) and the colours from its palette tokens. Glyphs are block elements, so they are gap-free in any terminal font.
