@@ -212,6 +212,46 @@ fn size_tokens(t: &Theme) -> Vec<(String, String)> {
         .collect()
 }
 
+/// The `nav` group: drawer, rail and bar geometry (numbers in px; `pill` is a flag).
+fn nav_tokens(t: &Theme) -> Vec<(String, String)> {
+    let n = t.navigation();
+    let mut v: Vec<(String, String)> = crate::nav_entries(&n)
+        .into_iter()
+        .map(|(k, x)| (k.to_string(), px(x)))
+        .collect();
+    v.push(("pill".into(), tok("boolean", n.pill.to_string())));
+    v
+}
+
+/// The `button` group: background, foreground and border of every variant in every state
+/// (`<variant>-<state>-bg|fg|border`; `transparent` for none).
+fn button_tokens(t: &Theme) -> Vec<(String, String)> {
+    use crate::{ButtonVariant as V, ControlState as S};
+    let mut v = Vec::new();
+    let col = |c: Option<Color>| match c {
+        Some(c) => tok("color", js(&color(c))),
+        None => tok("color", js("#00000000")),
+    };
+    for variant in [
+        V::Primary,
+        V::Secondary,
+        V::Outline,
+        V::OutlineSecondary,
+        V::Danger,
+        V::Scrim,
+        V::Ghost,
+    ] {
+        for state in [S::Idle, S::Hovered, S::Pressed, S::Focused, S::Disabled] {
+            let k = format!("{variant:?}-{state:?}").to_lowercase();
+            let b = t.button(variant, state);
+            v.push((format!("{k}-bg"), col(b.background)));
+            v.push((format!("{k}-fg"), col(Some(b.foreground))));
+            v.push((format!("{k}-border"), col(b.border)));
+        }
+    }
+    v
+}
+
 /// The `look` group: the structural flags of the design (which components take which form).
 fn look_tokens(t: &Theme) -> Vec<(String, String)> {
     let l = t.look();
@@ -354,10 +394,11 @@ pub fn theme_tokens_json(t: &Theme) -> String {
     let (colors, font, space) = (colour_tokens(t), font_tokens(t), space_tokens(t));
     let (shape, effect) = (shape_tokens(t), effect_tokens(t));
     let (motion, surface) = (motion_tokens(t), surface_tokens(t));
-    let (size, look) = (size_tokens(t), look_tokens(t));
+    let (size, look, nav) = (size_tokens(t), look_tokens(t), nav_tokens(t));
+    let button = button_tokens(t);
 
     format!(
-        "{}:{{\"$description\":{},\"$extensions\":{{\"dodai.mode\":{},\"dodai.family\":{}}},{},{},{},{},{},{},{},{},{}}}",
+        "{}:{{\"$description\":{},\"$extensions\":{{\"dodai.mode\":{},\"dodai.family\":{}}},{},{},{},{},{},{},{},{},{},{},{}}}",
         js(t.id()),
         js(t.meta.description),
         js(if t.is_dark() { "dark" } else { "light" }),
@@ -371,6 +412,8 @@ pub fn theme_tokens_json(t: &Theme) -> String {
         group("surface", &surface),
         group("size", &size),
         group("look", &look),
+        group("nav", &nav),
+        group("button", &button),
     )
 }
 
@@ -453,6 +496,23 @@ mod tests {
             "\"dodai.mode\":\"{}\"",
             if t.is_dark() { "dark" } else { "light" }
         )));
+    }
+
+    #[test]
+    fn exports_sizes_look_nav_and_button_groups() {
+        let t = crate::themes::neutral();
+        let j = theme_tokens_json(&t);
+        for g in ["\"size\":{", "\"look\":{", "\"nav\":{", "\"button\":{"] {
+            assert!(j.contains(g), "missing group {g}");
+        }
+        // Every Sizes and navigation dimension is exported, none dropped by the list.
+        for (k, _) in crate::size_entries(&t.sizes()) {
+            assert!(j.contains(&format!("\"{k}\":")), "size {k}");
+        }
+        for (k, _) in crate::nav_entries(&t.navigation()) {
+            assert!(j.contains(&format!("\"{k}\":")), "nav {k}");
+        }
+        assert!(j.contains("\"primary-idle-bg\""));
     }
 
     #[test]

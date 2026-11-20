@@ -135,6 +135,29 @@ pub struct NavigationTokens {
     pub roles: (TypeRole, TypeRole, TypeRole, TypeRole),
 }
 
+/// Every numeric [`NavigationTokens`] dimension by kebab-case token name (pairs split into
+/// `-w` and `-h`). The one list the token exports read.
+pub fn nav_entries(n: &NavigationTokens) -> Vec<(&'static str, f32)> {
+    vec![
+        ("item-height", n.item_height),
+        ("nested-height", n.nested_height),
+        ("headline-height", n.headline_height),
+        ("item-padding", n.item_padding),
+        ("container-padding", n.container_padding),
+        ("item-content-gap", n.item_content_gap),
+        ("item-gap", n.item_gap),
+        ("indent", n.indent),
+        ("icon-size", n.icon_size),
+        ("drawer-max-width", n.drawer_max_width),
+        ("rail-width", n.rail_width),
+        ("indicator-w", n.indicator.0),
+        ("indicator-h", n.indicator.1),
+        ("rail-label-gap", n.rail_label_gap),
+        ("bar-height", n.bar_height),
+        ("bar-indicator-width", n.bar_indicator_width),
+    ]
+}
+
 /// Tab tokens.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TabTokens {

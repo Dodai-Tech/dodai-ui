@@ -324,6 +324,11 @@ pub fn theme_vars(t: &Theme) -> String {
     for (k, px) in dodai_core::size_entries(&t.sizes()) {
         v(&format!("sz-{k}"), format!("{px}px"));
     }
+    let nav = t.navigation();
+    for (k, px) in dodai_core::nav_entries(&nav) {
+        v(&format!("nav-{k}"), format!("{px}px"));
+    }
+    v("nav-pill", if nav.pill { "1" } else { "0" }.to_string());
     let look = t.look();
     for (k, on) in [
         ("tonal", look.tonal),

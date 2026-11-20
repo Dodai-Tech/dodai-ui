@@ -303,6 +303,8 @@ jobs:
         with:
           version: "*"
       - run: nu scripts/tests/run_all.nu
+      # docs/PARITY.md is generated; a model renderer must also name every Node variant.
+      - run: nu scripts/parity.nu --check
 
   docs:
     name: docs

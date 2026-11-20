@@ -63,10 +63,10 @@ pub mod neobrutalism;
 pub use chart_style::{ChartStyle, DialLook, NeedleResponse, ScopeLook};
 pub use color::Color;
 pub use component::{
-    AppBarKind, AppBarTokens, ButtonTokens, ButtonVariant, CardVariant, ControlSize, ControlState,
-    InputTokens, ItemState, ListItemTokens, NavigationTokens, PanelTokens, ProgressTokens,
-    SizeMetrics, StepState, StepTokens, SurfaceTokens, TabTokens, TagTokens, ToggleKind,
-    ToggleTokens, TypeRole, TypeStyle,
+    nav_entries, AppBarKind, AppBarTokens, ButtonTokens, ButtonVariant, CardVariant, ControlSize,
+    ControlState, InputTokens, ItemState, ListItemTokens, NavigationTokens, PanelTokens,
+    ProgressTokens, SizeMetrics, StepState, StepTokens, SurfaceTokens, TabTokens, TagTokens,
+    ToggleKind, ToggleTokens, TypeRole, TypeStyle,
 };
 pub use dodai_fx::{
     EffectSet, PressStyle, ResolvedSurface, Surface, SurfaceClass, SurfaceTargets, SurfaceTuning,
