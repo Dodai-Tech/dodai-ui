@@ -321,6 +321,22 @@ pub fn theme_vars(t: &Theme) -> String {
     ] {
         v(k, format!("{px}px"));
     }
+    for (k, px) in dodai_core::size_entries(&t.sizes()) {
+        v(&format!("sz-{k}"), format!("{px}px"));
+    }
+    let look = t.look();
+    for (k, on) in [
+        ("tonal", look.tonal),
+        ("soft-elevation", look.soft_elevation),
+        ("floating-label", look.floating_label),
+        ("sink", look.sink),
+        ("luminous", look.luminous),
+        ("cut-corners", look.cut_corners),
+        ("accent-border", look.accent_border),
+        ("segmented-tabs", look.segmented_tabs),
+    ] {
+        v(&format!("look-{k}"), if on { "1" } else { "0" }.to_string());
+    }
     v(
         "label-case",
         if ty.uppercase_labels {

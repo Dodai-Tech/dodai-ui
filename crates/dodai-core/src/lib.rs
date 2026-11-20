@@ -99,7 +99,8 @@ pub use surface_style::SurfaceStyle;
 pub use switcher::ThemeSwitcher;
 pub use theme::{Theme, ThemeMeta};
 pub use tokens::{
-    Clip, Corners, Effects, Scale, Shape, ShapeKind, Sizes, Spacing, StateLayer, Typography,
+    size_entries, Clip, Corners, Effects, Scale, Shape, ShapeKind, Sizes, Spacing, StateLayer,
+    Typography,
 };
 pub use tonal::TonalPalette;
 pub use tune::{BorderTint, ControlColour, GradientMode, RoundnessGroup, ShadowDir, ShapeTune};

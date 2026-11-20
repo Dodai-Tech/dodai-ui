@@ -203,6 +203,35 @@ fn shape_tokens(t: &Theme) -> Vec<(String, String)> {
     shape
 }
 
+/// The `size` group: every [`Sizes`](crate::Sizes) dimension of the theme. Pairs are written as
+/// `<name>-w` and `<name>-h`.
+fn size_tokens(t: &Theme) -> Vec<(String, String)> {
+    crate::size_entries(&t.sizes())
+        .into_iter()
+        .map(|(k, v)| (k.to_string(), px(v)))
+        .collect()
+}
+
+/// The `look` group: the structural flags of the design (which components take which form).
+fn look_tokens(t: &Theme) -> Vec<(String, String)> {
+    let l = t.look();
+    let flag = |b: bool| tok("boolean", b.to_string());
+    vec![
+        ("tonal".into(), flag(l.tonal)),
+        ("soft-elevation".into(), flag(l.soft_elevation)),
+        ("floating-label".into(), flag(l.floating_label)),
+        ("sink".into(), flag(l.sink)),
+        ("luminous".into(), flag(l.luminous)),
+        ("cut-corners".into(), flag(l.cut_corners)),
+        ("accent-border".into(), flag(l.accent_border)),
+        ("segmented-tabs".into(), flag(l.segmented_tabs)),
+        (
+            "icons".into(),
+            tok("string", js(&format!("{:?}", l.icons).to_lowercase())),
+        ),
+    ]
+}
+
 /// The `effect` group.
 fn effect_tokens(t: &Theme) -> Vec<(String, String)> {
     let e = &t.effects;
@@ -325,9 +354,10 @@ pub fn theme_tokens_json(t: &Theme) -> String {
     let (colors, font, space) = (colour_tokens(t), font_tokens(t), space_tokens(t));
     let (shape, effect) = (shape_tokens(t), effect_tokens(t));
     let (motion, surface) = (motion_tokens(t), surface_tokens(t));
+    let (size, look) = (size_tokens(t), look_tokens(t));
 
     format!(
-        "{}:{{\"$description\":{},\"$extensions\":{{\"dodai.mode\":{},\"dodai.family\":{}}},{},{},{},{},{},{},{}}}",
+        "{}:{{\"$description\":{},\"$extensions\":{{\"dodai.mode\":{},\"dodai.family\":{}}},{},{},{},{},{},{},{},{},{}}}",
         js(t.id()),
         js(t.meta.description),
         js(if t.is_dark() { "dark" } else { "light" }),
@@ -339,6 +369,8 @@ pub fn theme_tokens_json(t: &Theme) -> String {
         group("effect", &effect),
         group("motion", &motion),
         group("surface", &surface),
+        group("size", &size),
+        group("look", &look),
     )
 }
 

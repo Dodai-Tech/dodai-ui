@@ -186,6 +186,44 @@ pub struct Sizes {
     pub dialog_width: f32,
 }
 
+/// Every [`Sizes`] dimension by its kebab-case token name, in declaration order; pairs split
+/// into `<name>-w` and `<name>-h`. The one list the token exports (DTCG, CSS) read.
+pub fn size_entries(s: &Sizes) -> Vec<(&'static str, f32)> {
+    vec![
+        ("icon-sm", s.icon_sm),
+        ("icon", s.icon),
+        ("touch-target", s.touch_target),
+        ("state-layer", s.state_layer),
+        ("switch-track-w", s.switch_track.0),
+        ("switch-track-h", s.switch_track.1),
+        ("switch-handle-off", s.switch_handle.0),
+        ("switch-handle-on", s.switch_handle.1),
+        ("selection-box", s.selection_box),
+        ("slider-thumb", s.slider_thumb),
+        ("segmented-height", s.segmented_height),
+        ("slider-track", s.slider_track),
+        ("tick-len", s.tick_len),
+        ("tick-width", s.tick_width),
+        ("hairline", s.hairline),
+        ("legend-swatch", s.legend_swatch),
+        ("status-dot", s.status_dot),
+        ("badge-min", s.badge_min),
+        ("chip-height", s.chip_height),
+        ("chip-pad", s.chip_pad),
+        ("axis-gutter", s.axis_gutter),
+        ("axis-gutter-lg", s.axis_gutter_lg),
+        ("axis-label", s.axis_label),
+        ("chart-bar", s.chart_bar),
+        ("chart-cell", s.chart_cell),
+        ("chart-pad", s.chart_pad),
+        ("scatter-dot", s.scatter_dot),
+        ("bar-thickness", s.bar_thickness),
+        ("sheet-handle-w", s.sheet_handle.0),
+        ("sheet-handle-h", s.sheet_handle.1),
+        ("dialog-width", s.dialog_width),
+    ]
+}
+
 impl Sizes {
     /// Control-sized dimensions scaled by `density`, snapped to half pixels. Icons, the touch
     /// target, hairlines, ticks and chart geometry keep their size.
