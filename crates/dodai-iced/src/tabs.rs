@@ -250,3 +250,41 @@ mod tests {
         );
     }
 }
+
+/// The tab a key event moves to: the arrows, Home and End through `n` tabs from `active`,
+/// skipping `disabled` ones (the shared roving rule of `dodai-core`). Call it from the app's
+/// keyboard subscription and map the result to your tab-select message; `None` for any other
+/// key or when nothing enabled lies that way.
+pub fn tab_key(
+    key: &iced::keyboard::Key,
+    active: usize,
+    n: usize,
+    disabled: &[usize],
+) -> Option<usize> {
+    use iced::keyboard::key::Named;
+    let name = match key.as_ref() {
+        iced::keyboard::Key::Named(Named::ArrowLeft) => "left",
+        iced::keyboard::Key::Named(Named::ArrowRight) => "right",
+        iced::keyboard::Key::Named(Named::Home) => "home",
+        iced::keyboard::Key::Named(Named::End) => "end",
+        _ => return None,
+    };
+    dodai_core::roving::next(name, dodai_core::roving::Axis::Horizontal, active, n, |i| {
+        !disabled.contains(&i)
+    })
+}
+
+#[cfg(test)]
+mod key_tests {
+    use super::*;
+    use iced::keyboard::{key::Named, Key};
+
+    #[test]
+    fn arrows_skip_disabled_tabs() {
+        let right = Key::Named(Named::ArrowRight);
+        assert_eq!(tab_key(&right, 0, 3, &[]), Some(1));
+        assert_eq!(tab_key(&right, 0, 3, &[1]), Some(2));
+        assert_eq!(tab_key(&Key::Named(Named::Home), 2, 3, &[0]), Some(1));
+        assert_eq!(tab_key(&Key::Named(Named::Enter), 0, 3, &[]), None);
+    }
+}

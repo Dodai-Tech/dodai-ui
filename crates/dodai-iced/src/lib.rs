@@ -82,7 +82,7 @@ pub use knob::{wheel_value, KnobDrag, KnobRange};
 pub use range_slider::{RangeDrag, RangeSpec, SliderLook};
 pub use shaped_button::{ButtonState, ShapedButton, ShapedColors, Tick};
 pub use surface_fx::SurfaceFxProgram;
-pub use tabs::TabsLook;
+pub use tabs::{tab_key, TabsLook};
 
 use dodai_core::{Color as LColor, Theme};
 use iced::{

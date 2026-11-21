@@ -44,6 +44,8 @@ impl Widget for Tabs<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
         let t = active_theme(ui.ctx());
         let mut changed = None;
+        let mut ids = Vec::new();
+        let mut focused = None;
         let mut close_hit = None;
         let mut add_hit = false;
         let close_d = t.sizes().icon_sm;
@@ -64,6 +66,10 @@ impl Widget for Tabs<'_> {
                         t.shape.control_height,
                     );
                     let (rect, r) = ui.allocate_exact_size(size, Sense::click());
+                    ids.push(r.id);
+                    if r.has_focus() {
+                        focused = Some(i);
+                    }
                     let x_rect = Rect::from_center_size(
                         pos2(rect.max.x - t.spacing.md - close_d / 2.0, rect.center().y),
                         vec2(close_d, close_d),
@@ -141,6 +147,32 @@ impl Widget for Tabs<'_> {
         if let (true, Some(out)) = (add_hit, self.added) {
             *out = true;
             resp.mark_changed();
+        }
+        // Roving focus: the arrows, Home and End move to the next tab and select it.
+        if let Some(at) = focused {
+            let key = ui.input(|i| {
+                [
+                    (egui::Key::ArrowLeft, "left"),
+                    (egui::Key::ArrowRight, "right"),
+                    (egui::Key::Home, "home"),
+                    (egui::Key::End, "end"),
+                ]
+                .into_iter()
+                .find(|(k, _)| i.key_pressed(*k))
+                .map(|(_, n)| n)
+            });
+            if let Some(to) = key.and_then(|k| {
+                dodai_core::roving::next(
+                    k,
+                    dodai_core::roving::Axis::Horizontal,
+                    at,
+                    ids.len(),
+                    |_| true,
+                )
+            }) {
+                ui.memory_mut(|m| m.request_focus(ids[to]));
+                changed = Some(to);
+            }
         }
         if let Some(i) = changed {
             if *self.selected != i {

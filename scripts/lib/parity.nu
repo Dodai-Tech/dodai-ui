@@ -100,7 +100,7 @@ export def render-parity []: nothing -> string {
             look: (uses $src 'look\(\)|--look-')
             nav: (uses $src 'navigation\(\)|--nav-')
             motion: (uses $src 'motion::|Easing|transition:|@keyframes|animation:|animate\(|Animation')
-            keys: (uses $src 'roving::|Key(?:board)?Event|on_key|keydown|ArrowLeft')
+            keys: (uses $src 'roving::|Key(?:board)?Event|on_key|keydown|ArrowLeft|key-pressed')
             missing: ($comps | where { $in not-in $have })
         }
     })

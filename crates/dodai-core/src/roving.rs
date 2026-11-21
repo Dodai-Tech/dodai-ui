@@ -11,6 +11,20 @@ pub enum Axis {
     Vertical,
 }
 
+/// The name [`next`] expects for a key, from the names the web (`KeyboardEvent.key`: `ArrowLeft`,
+/// `Home`) and most native toolkits use. `None` for keys that don't navigate.
+pub fn key_name(key: &str) -> Option<&'static str> {
+    Some(match key {
+        "ArrowLeft" | "Left" | "left" => "left",
+        "ArrowRight" | "Right" | "right" => "right",
+        "ArrowUp" | "Up" | "up" => "up",
+        "ArrowDown" | "Down" | "down" => "down",
+        "Home" | "home" => "home",
+        "End" | "end" => "end",
+        _ => return None,
+    })
+}
+
 /// The item a key moves to from `at` among `n` items, skipping any `enabled` says no to.
 /// `None`: not a navigation key, or nothing enabled lies that way (the focus stays).
 /// Home and End jump to the first and last enabled item; the arrows stop at the ends.
@@ -95,6 +109,14 @@ mod tests {
         assert_eq!(next("right", H, 1, 3, all), Some(0));
         assert_eq!(next("down", Axis::Vertical, 0, 2, all), Some(1));
         crate::direction::CURRENT.with(|c| c.set(crate::direction::Direction::Ltr));
+    }
+
+    #[test]
+    fn key_names_cover_web_and_native_spellings() {
+        assert_eq!(key_name("ArrowLeft"), Some("left"));
+        assert_eq!(key_name("Home"), Some("home"));
+        assert_eq!(key_name("left"), Some("left"));
+        assert_eq!(key_name("Enter"), None);
     }
 
     #[test]

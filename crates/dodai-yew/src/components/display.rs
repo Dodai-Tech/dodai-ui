@@ -108,14 +108,24 @@ pub struct TabsProps {
 /// Tab strip; `active` is the selected index.
 #[function_component]
 pub fn Tabs(props: &TabsProps) -> Html {
+    // Roving focus (shared rule in dodai-core): arrows, Home and End pick the next tab.
+    let (n, active, onselect) = (props.tabs.len(), props.active, props.onselect.clone());
+    let onkeydown = move |e: KeyboardEvent| {
+        if let Some(to) = dodai_core::roving::key_name(&e.key()).and_then(|k| {
+            dodai_core::roving::next(k, dodai_core::roving::Axis::Horizontal, active, n, |_| true)
+        }) {
+            e.prevent_default();
+            onselect.emit(to);
+        }
+    };
     html! {
-        <nav class="dodai-tabs" role="tablist">
+        <nav class="dodai-tabs" role="tablist" {onkeydown}>
         { for props.tabs.iter().enumerate().map(|(i, t)| {
             let on = i == props.active;
             let cb = props.onselect.clone();
             let close = props.onclose.clone();
             html! {
-                <a key={i} role="tab" aria-selected={on.to_string()}
+                <a key={i} role="tab" aria-selected={on.to_string()} tabindex={if on { "0" } else { "-1" }}
                    class={join(&["dodai-tab", if on { "dodai-tab--active" } else { "" }])}
                    href="#" onclick={move |e: MouseEvent| { e.prevent_default(); cb.emit(i) }}>
                     <span>{ t.clone() }</span>

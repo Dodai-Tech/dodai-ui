@@ -435,7 +435,29 @@ impl Component for DodaiTabs {
                 .on_press(move |_| h.call(()))
                 .child(text(&ts, Some(t.palette.text), "+"))
         });
+        // Roving focus (shared rule in dodai-core): arrows, Home and End pick the next tab.
+        let (n, at, on_pick) = (self.labels.len(), self.selected, self.on_select.clone());
         rect()
+            .a11y_focusable(true)
+            .on_key_down(move |e: Event<KeyboardEventData>| {
+                let name = match &e.key {
+                    Key::Named(NamedKey::ArrowLeft) => "left",
+                    Key::Named(NamedKey::ArrowRight) => "right",
+                    Key::Named(NamedKey::Home) => "home",
+                    Key::Named(NamedKey::End) => "end",
+                    _ => return,
+                };
+                let to = dodai_core::roving::next(
+                    name,
+                    dodai_core::roving::Axis::Horizontal,
+                    at,
+                    n,
+                    |_| true,
+                );
+                if let (Some(to), Some(h)) = (to, &on_pick) {
+                    h.call(to);
+                }
+            })
             .direction(Direction::Horizontal)
             .spacing(t.spacing.xs)
             .children(self.labels.iter().enumerate().map(|(i, l)| {

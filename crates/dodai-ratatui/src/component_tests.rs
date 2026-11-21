@@ -352,3 +352,13 @@ fn editable_tabs_hit_testing_matches_the_drawn_strip() {
     );
     assert_eq!(tab_hit(&labels, true, false, drawn as u16), None);
 }
+
+#[test]
+fn tab_keys_follow_the_shared_roving_rule() {
+    use ratatui::crossterm::event::KeyCode;
+    assert_eq!(tab_key(KeyCode::Right, 0, 3, |_| true), Some(1));
+    assert_eq!(tab_key(KeyCode::Right, 0, 3, |i| i != 1), Some(2));
+    assert_eq!(tab_key(KeyCode::End, 0, 3, |_| true), Some(2));
+    assert_eq!(tab_key(KeyCode::Left, 0, 3, |_| true), None);
+    assert_eq!(tab_key(KeyCode::Enter, 0, 3, |_| true), None);
+}

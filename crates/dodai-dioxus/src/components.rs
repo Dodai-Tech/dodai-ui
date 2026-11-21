@@ -239,8 +239,22 @@ fn tab_class(active: bool, disabled: bool, icon: bool) -> String {
 /// Tab strip; active tab is controlled by `active`.
 #[component]
 pub fn Tabs(props: TabsProps) -> Element {
+    // Roving focus (shared rule in dodai-core): arrows, Home and End pick the next enabled tab.
+    let (n, active, disabled) = (props.tabs.len(), props.active, props.disabled.clone());
+    let onselect = props.onselect;
     rsx! {
-        div { class: if props.secondary { "dodai-tabs dodai-tabs--secondary" } else { "dodai-tabs" }, role: "tablist",
+        div {
+            class: if props.secondary { "dodai-tabs dodai-tabs--secondary" } else { "dodai-tabs" },
+            role: "tablist",
+            onkeydown: move |e| {
+                let key = e.key().to_string();
+                if let Some(to) = dodai_core::roving::key_name(&key).and_then(|k| {
+                    dodai_core::roving::next(k, dodai_core::roving::Axis::Horizontal, active, n, |i| !disabled.contains(&i))
+                }) {
+                    e.prevent_default();
+                    onselect.call(to);
+                }
+            },
             for (i, t) in props.tabs.iter().enumerate() {
                 a {
                     key: "{i}",
@@ -249,6 +263,7 @@ pub fn Tabs(props: TabsProps) -> Element {
                     "aria-selected": "{i == props.active}",
                     "aria-disabled": "{props.disabled.contains(&i)}",
                     href: "#",
+                    tabindex: if i == props.active { "0" } else { "-1" },
                     onclick: move |e| { e.prevent_default(); props.onselect.call(i) },
                     if let Some(ic) = props.icons.get(i) { Icon { icon: *ic, size: 18 } }
                     span { "{t}" }

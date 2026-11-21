@@ -518,3 +518,29 @@ pub fn tab_hit(labels: &[&str], closable: bool, addable: bool, column: u16) -> O
     }
     (addable && (x..x + 3).contains(&col)).then_some(TabHit::Add)
 }
+
+/// The tab a key press moves to: the arrows, Home and End through `n` tabs from `active`,
+/// skipping tabs `enabled` rejects (the shared roving rule of `dodai-core`). `None`: not a
+/// navigation key, or nothing enabled lies that way.
+pub fn tab_key(
+    code: ratatui::crossterm::event::KeyCode,
+    active: usize,
+    n: usize,
+    enabled: impl Fn(usize) -> bool,
+) -> Option<usize> {
+    use ratatui::crossterm::event::KeyCode;
+    let key = match code {
+        KeyCode::Left => "left",
+        KeyCode::Right => "right",
+        KeyCode::Home => "home",
+        KeyCode::End => "end",
+        _ => return None,
+    };
+    dodai_core::roving::next(
+        key,
+        dodai_core::roving::Axis::Horizontal,
+        active,
+        n,
+        enabled,
+    )
+}

@@ -162,6 +162,65 @@ pub(crate) fn tab_input(
     }
 }
 
+/// Roving focus for the tab row under the pointer (bevy has no tab focus): the arrows, Home and
+/// End pick the next enabled tab by the shared rule of `dodai-core`, like a click on it.
+pub(crate) fn tab_keys(
+    mut keys: MessageReader<KeyboardInput>,
+    rows: Query<&Children, With<UiTabs>>,
+    pointers: Query<&ControlPointer>,
+    mut tabs: Query<(&mut UiTab, Has<TabDisabled>, Has<TabAdd>)>,
+    mut out: MessageWriter<ControlEvent>,
+) {
+    for k in keys.read() {
+        if !k.state.is_pressed() {
+            continue;
+        }
+        let name = match k.logical_key {
+            Key::ArrowLeft => "left",
+            Key::ArrowRight => "right",
+            Key::Home => "home",
+            Key::End => "end",
+            _ => continue,
+        };
+        for children in &rows {
+            if !children
+                .iter()
+                .any(|c| pointers.get(c).is_ok_and(|p| *p != ControlPointer::None))
+            {
+                continue;
+            }
+            let items: Vec<(Entity, bool, bool)> = children
+                .iter()
+                .filter_map(|c| {
+                    let (t, off, add) = tabs.get(c).ok()?;
+                    (!add).then_some((c, t.active, off))
+                })
+                .collect();
+            let Some(at) = items.iter().position(|(_, active, _)| *active) else {
+                continue;
+            };
+            let to = dodai_core::roving::next(
+                name,
+                dodai_core::roving::Axis::Horizontal,
+                at,
+                items.len(),
+                |i| !items[i].2,
+            );
+            if let Some(to) = to {
+                for (i, (e, _, _)) in items.iter().enumerate() {
+                    if let Ok((mut t, _, _)) = tabs.get_mut(*e) {
+                        t.active = i == to;
+                    }
+                }
+                out.write(ControlEvent {
+                    entity: items[to].0,
+                    kind: ControlKind::TabSelected,
+                });
+            }
+        }
+    }
+}
+
 /// The close cross and the "+" of an editable tab row: report them, change nothing.
 pub(crate) fn tab_edit_input(
     closers: Query<(&ControlPointer, &ChildOf), (Changed<ControlPointer>, With<TabClose>)>,
@@ -1357,6 +1416,43 @@ mod vertical_slider_tests {
             .collect();
         assert_eq!(events, vec![(closer.1, ControlKind::TabClosed)]);
         assert!(!w.get::<UiTab>(closer.1).unwrap().active);
+    }
+
+    #[test]
+    fn arrow_keys_move_the_hovered_tab_row_past_disabled_tabs() {
+        use bevy::input::{keyboard::KeyCode, ButtonState};
+        let mut app = App::new();
+        app.add_message::<ControlEvent>()
+            .add_message::<KeyboardInput>()
+            .add_systems(Update, tab_keys);
+        let row = app
+            .world_mut()
+            .spawn(tabs_editable(&["a", "b", "c"], 0, false, false))
+            .id();
+        app.update();
+        let w = app.world_mut();
+        let kids: Vec<Entity> = w.get::<Children>(row).unwrap().iter().collect();
+        w.entity_mut(kids[1]).insert(TabDisabled);
+        let press = |w: &mut World| {
+            w.write_message(KeyboardInput {
+                key_code: KeyCode::ArrowRight,
+                logical_key: Key::ArrowRight,
+                state: ButtonState::Pressed,
+                text: None,
+                repeat: false,
+                window: Entity::PLACEHOLDER,
+            });
+        };
+        // Not hovered: nothing moves.
+        press(app.world_mut());
+        app.update();
+        assert!(app.world().get::<UiTab>(kids[0]).unwrap().active);
+        // Hovered: skips the disabled middle tab.
+        *app.world_mut().get_mut::<ControlPointer>(kids[0]).unwrap() = ControlPointer::Hovered;
+        press(app.world_mut());
+        app.update();
+        assert!(app.world().get::<UiTab>(kids[2]).unwrap().active);
+        assert!(!app.world().get::<UiTab>(kids[0]).unwrap().active);
     }
 
     #[test]

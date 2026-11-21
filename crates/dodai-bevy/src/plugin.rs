@@ -102,6 +102,7 @@ impl Plugin for DodaiUiPlugin {
                     radio_exclusive,
                     tab_input,
                     tab_edit_input,
+                    tab_keys,
                     list_input,
                     slider_input,
                     input_focus,

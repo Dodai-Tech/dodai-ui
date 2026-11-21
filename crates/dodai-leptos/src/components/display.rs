@@ -55,6 +55,10 @@ pub fn Tag(
 pub fn Tabs(
     tabs: Vec<String>,
     #[prop(optional)] active: usize,
+    /// Called with the index of the tab to select when the arrow, Home or End keys move through
+    /// the strip (the shared roving rule of `dodai-core`); the app updates `active`.
+    #[prop(optional, into)]
+    on_select: Option<Callback<usize>>,
     /// Called with the index of the tab whose close cross was clicked; its presence makes every
     /// tab closable. The app removes the tab.
     #[prop(optional, into)]
@@ -63,8 +67,22 @@ pub fn Tabs(
     #[prop(optional, into)]
     on_add: Option<Callback<()>>,
 ) -> impl IntoView {
+    let n = tabs.len();
+    let onkeydown = move |e: leptos::ev::KeyboardEvent| {
+        if let (Some(cb), Some(to)) = (
+            on_select,
+            dodai_core::roving::key_name(&e.key()).and_then(|k| {
+                dodai_core::roving::next(k, dodai_core::roving::Axis::Horizontal, active, n, |_| {
+                    true
+                })
+            }),
+        ) {
+            e.prevent_default();
+            cb.run(to);
+        }
+    };
     view! {
-        <nav class="dodai-tabs">
+        <nav class="dodai-tabs" role="tablist" on:keydown=onkeydown>
             {tabs
                 .into_iter()
                 .enumerate()

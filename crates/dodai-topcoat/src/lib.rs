@@ -536,6 +536,22 @@ pub fn multi_theme_stylesheet(themes: &[Theme]) -> String {
     s
 }
 
+/// Inline script: roving focus for every `.dodai-tabs` strip. The arrows, Home and End move to
+/// the next tab that is not `.dodai-tab--disabled` (the rule of `dodai_core::roving`, mirrored
+/// for right-to-left), focus it and click it so the tab's own attributes select it. Load once
+/// per page; it listens on the document.
+pub const TABS_SCRIPT: &str = "(function(){document.addEventListener('keydown',function(e){\
+var s=e.target.closest&&e.target.closest('.dodai-tabs');if(!s||e.target.closest('.dodai-tab__close'))return;\
+var t=[].slice.call(s.querySelectorAll('.dodai-tab:not(.dodai-tab--add)')),\
+on=function(i){return !t[i].classList.contains('dodai-tab--disabled')},\
+at=t.indexOf(e.target.closest('.dodai-tab')),rtl=getComputedStyle(s).direction==='rtl',k=e.key;\
+if(at<0)return;if(rtl&&(k==='ArrowLeft'||k==='ArrowRight'))k=k==='ArrowLeft'?'ArrowRight':'ArrowLeft';\
+var to=-1,i;if(k==='ArrowRight'){for(i=at+1;i<t.length;i++)if(on(i)){to=i;break}}\
+else if(k==='ArrowLeft'){for(i=at-1;i>=0;i--)if(on(i)){to=i;break}}\
+else if(k==='Home'){for(i=0;i<t.length;i++)if(on(i)){to=i;break}}\
+else if(k==='End'){for(i=t.length-1;i>=0;i--)if(on(i)){to=i;break}}\
+if(to<0||to===at)return;e.preventDefault();t[to].focus();t[to].click()})})();";
+
 /// Inline script: exposes `dodaiTheme.next()/prev()/set(id)`, persists the
 /// choice in `localStorage` and applies `data-theme` on `<html>` before paint.
 /// Wire buttons with `data-dodai-theme-next` / `data-dodai-theme-prev`.
