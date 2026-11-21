@@ -20,6 +20,7 @@ members = [
     "crates/dodai-leptos",
     "crates/dodai-yew",
     "crates/dodai-bevy",
+    "crates/dodai-xilem",
 ]
 resolver = "2"
 # Own workspace (own Skia, own lockfile): see crates/dodai-freya/Cargo.toml.

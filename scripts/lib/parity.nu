@@ -14,6 +14,7 @@ export def toolkits []: nothing -> table {
         { id: leptos,  crate: dodai-leptos,  kind: rust,  model: "" }
         { id: yew,     crate: dodai-yew,     kind: rust,  model: "" }
         { id: ratatui, crate: dodai-ratatui, kind: rust,  model: "" }
+        { id: xilem,   crate: dodai-xilem,   kind: rust,  model: "" }
     ]
 }
 

@@ -1,0 +1,28 @@
+[package]
+name         = "dodai-xilem"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+# xilem 0.4 needs 1.88.
+rust-version = "1.88"
+description  = "xilem (masonry, vello) adapter for the Dodai UI design system"
+readme       = "README.md"
+keywords     = ["theme", "design-system", "xilem", "vello"]
+categories   = ["gui"]
+
+[features]
+default   = ["cyberpunk", "material", "neobrutalism", "dodai"]
+# Design systems to bundle (features of `dodai-core`).
+cyberpunk    = ["dodai-core/cyberpunk"]
+material     = ["dodai-core/material"]
+neobrutalism = ["dodai-core/neobrutalism"]
+dodai        = ["dodai-core/dodai"]
+
+[dependencies]
+dodai-core = { workspace = true }
+xilem = "0.4"
+
+[dev-dependencies]
+dodai-core = { workspace = true, features = ["cyberpunk", "material", "neobrutalism", "dodai"] }
