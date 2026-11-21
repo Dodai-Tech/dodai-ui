@@ -170,10 +170,12 @@ check:
 fmt:
     cargo fmt --all
     cd crates/dodai-freya && cargo fmt
+    cd crates/dodai-xilem && cargo fmt
 
 fmt-check:
     cargo fmt --all -- --check
     cd crates/dodai-freya && cargo fmt --check
+    cd crates/dodai-xilem && cargo fmt --check
 
 clippy:
     cargo clippy --workspace --all-targets -- -D warnings
@@ -188,6 +190,12 @@ check-freya:
     cd crates/dodai-freya && cargo fmt --check
     cd crates/dodai-freya && cargo clippy --locked --all-targets -- -D warnings
     cd crates/dodai-freya && cargo test --locked
+
+# xilem is its own workspace (naga 26 clashes with gpui and iced when unified)
+check-xilem:
+    cd crates/dodai-xilem && cargo fmt --check
+    cd crates/dodai-xilem && cargo clippy --locked --all-targets -- -D warnings
+    cd crates/dodai-xilem && cargo test --locked
 
 # The fuzz crate is outside the workspace; it must still compile after public struct changes
 check-fuzz:

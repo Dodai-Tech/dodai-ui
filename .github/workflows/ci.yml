@@ -233,6 +233,30 @@ jobs:
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test
 
+  # xilem has its own workspace + lockfile (naga 26 clashes with gpui and iced when unified).
+  xilem:
+    name: dodai-xilem (own workspace)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: crates/dodai-xilem
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install Linux GUI system libraries
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            pkg-config libxkbcommon-dev libxkbcommon-x11-dev libx11-dev libxcb1-dev libxcb-xkb-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libwayland-dev libgl1-mesa-dev libvulkan-dev libfontconfig1-dev libasound2-dev libudev-dev libssl-dev
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: crates/dodai-xilem
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test
+
   # The declared `rust-version` must still build the GUI-free crates (dodai-frost needs wgpu, so it declares 1.87 itself).
   msrv:
     name: msrv
@@ -305,7 +329,7 @@ jobs:
       - run: nu scripts/tests/run_all.nu
       # docs/PARITY.md is generated; a model renderer must also name every Node variant.
       - run: nu scripts/parity.nu --check
-      - run: nu scripts/gen-components.nu --check
+      - run: cargo run -q -p dodai-gen -- --check
 
   docs:
     name: docs
@@ -336,6 +360,7 @@ jobs:
           for d in crates/*/; do
             p=$(basename "$d")
             [ "$p" = dodai-freya ] && continue   # its own workspace
+            [ "$p" = dodai-xilem ] && continue   # its own workspace
             [ -f "$d/Cargo.toml" ] || continue
             cargo doc --no-deps -p "$p" || exit 1
           done

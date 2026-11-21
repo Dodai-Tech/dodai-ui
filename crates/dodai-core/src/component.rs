@@ -70,6 +70,15 @@ pub struct ButtonTokens {
 
 /// Panel (card) tokens.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "spec", derive(dodai_spec::TokenSpec))]
+#[cfg_attr(
+    feature = "spec",
+    token_spec(
+    resolver = "panel",
+    args(focused: bool),
+    doc = "Container surface; `focused` highlights the border."
+    )
+)]
 pub struct PanelTokens {
     pub background: Color,
     pub border: Color,
@@ -88,6 +97,15 @@ pub struct InputTokens {
 
 /// Tag / badge tokens.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "spec", derive(dodai_spec::TokenSpec))]
+#[cfg_attr(
+    feature = "spec",
+    token_spec(
+    resolver = "tag",
+    args(tone: Tone, solid: bool),
+    doc = "Tag / badge: solid fills with the tone, otherwise outlined."
+    )
+)]
 pub struct TagTokens {
     pub background: Option<Color>,
     pub foreground: Color,

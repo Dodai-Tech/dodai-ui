@@ -16,6 +16,18 @@ use xilem::style::Style;
 use xilem::view::{button as masonry_button, flex_row, label, sized_box};
 use xilem::{Color, WidgetView};
 
+/// Applies the shape every themed box shares (fill, border, radius, padding) to a masonry view.
+/// A macro, not a function, because each view type returns its own wrapper types.
+macro_rules! shaped {
+    ($view:expr, $theme:expr, fill: $fill:expr, border: $border:expr, pad: $pad:expr) => {
+        $view
+            .background_color($fill)
+            .border($border, f64::from($theme.shape.border_width))
+            .corner_radius(f64::from($theme.shape.radius))
+            .padding(f64::from($pad))
+    };
+}
+
 /// A token colour as a vello/peniko colour.
 pub fn color(c: dodai_core::Color) -> Color {
     Color::from_rgba8(c.r, c.g, c.b, c.a)
@@ -38,18 +50,15 @@ pub fn button<State: 'static>(
     let pressed = theme.button(variant, ControlState::Pressed);
     let off = theme.button(variant, ControlState::Disabled);
     let text = display(theme, text.into());
-    masonry_button::<State, (), _>(
+    let view = masonry_button::<State, (), _>(
         label(text)
             .text_size(theme.typography.size_md)
             .color(color(idle.foreground)),
         on_press,
-    )
-    .background_color(fill(idle.background))
-    .active_background_color(fill(pressed.background))
-    .disabled_background_color(fill(off.background))
-    .border(fill(idle.border), f64::from(theme.shape.border_width))
-    .corner_radius(f64::from(theme.shape.radius))
-    .padding(f64::from(theme.button_padding()))
+    );
+    shaped!(view, theme, fill: fill(idle.background), border: fill(idle.border), pad: theme.button_padding())
+        .active_background_color(fill(pressed.background))
+        .disabled_background_color(fill(off.background))
 }
 
 /// Status tag: solid or outlined in a [`Tone`].
@@ -60,15 +69,12 @@ pub fn tag<State: 'static>(
     solid: bool,
 ) -> impl WidgetView<State> {
     let tok = TagStyle::of(theme, tone, solid);
-    sized_box(
+    let view = sized_box(
         label(display(theme, text.into()))
             .text_size(theme.typography.size_xs)
             .color(tok.foreground),
-    )
-    .background_color(tok.background)
-    .border(tok.border, f64::from(theme.shape.border_width))
-    .corner_radius(f64::from(theme.shape.radius))
-    .padding(f64::from(theme.spacing.sm))
+    );
+    shaped!(view, theme, fill: tok.background, border: tok.border, pad: theme.spacing.sm)
 }
 
 /// Panel: the surface, border and radius of a container around `child`.
@@ -78,11 +84,7 @@ pub fn panel<State: 'static, V: WidgetView<State>>(
     child: V,
 ) -> impl WidgetView<State> {
     let tok = PanelStyle::of(theme, focused);
-    sized_box(child)
-        .background_color(tok.background)
-        .border(tok.border, f64::from(theme.shape.border_width))
-        .corner_radius(f64::from(theme.shape.radius))
-        .padding(f64::from(theme.spacing.md))
+    shaped!(sized_box(child), theme, fill: tok.background, border: tok.border, pad: theme.spacing.md)
 }
 
 /// Tab strip: one button per label, the active one filled from the tab tokens. `on_select`
@@ -99,16 +101,13 @@ pub fn tabs<State: 'static>(
         .map(|(i, text)| {
             let tok = theme.tab(ItemState::of(i == active, false));
             let on_select = on_select.clone();
-            masonry_button::<State, (), _>(
+            let view = masonry_button::<State, (), _>(
                 label(display(theme, (*text).to_string()))
                     .text_size(theme.typography.size_md)
                     .color(color(tok.foreground)),
                 move |state: &mut State| on_select(state, i),
-            )
-            .background_color(fill(tok.background))
-            .border(fill(tok.indicator), f64::from(theme.shape.border_width))
-            .corner_radius(f64::from(theme.shape.radius))
-            .padding(f64::from(theme.spacing.md))
+            );
+            shaped!(view, theme, fill: fill(tok.background), border: fill(tok.indicator), pad: theme.spacing.md)
         })
         .collect();
     flex_row(items).gap(xilem::masonry::properties::types::Length::px(f64::from(

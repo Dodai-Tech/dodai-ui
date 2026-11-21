@@ -20,11 +20,13 @@ members = [
     "crates/dodai-leptos",
     "crates/dodai-yew",
     "crates/dodai-bevy",
-    "crates/dodai-xilem",
+    "crates/dodai-spec",
+    "crates/dodai-gen",
 ]
 resolver = "2"
-# Own workspace (own Skia, own lockfile): see crates/dodai-freya/Cargo.toml.
-exclude = ["crates/dodai-freya", "tools/shaders-kernels"]
+# Own workspaces: freya (own Skia) and xilem (its wgpu/naga 26 does not unify with gpui and
+# iced), each with its own lockfile: see their Cargo.toml.
+exclude = ["crates/dodai-freya", "crates/dodai-xilem", "tools/shaders-kernels"]
 
 [workspace.package]
 version      = "0.1.6"
@@ -50,6 +52,7 @@ objc2-app-kit    = { version = "0.3", default-features = false, features = ["std
 objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSData"] }
 
 # Internal crates
+dodai-spec    = { path = "crates/dodai-spec",  version = "0.1.6" }
 dodai-core    = { path = "crates/dodai-core",    version = "0.1.6" }
 dodai-fx = { path = "crates/dodai-fx", version = "0.1.6" }
 dodai-frost = { path = "crates/dodai-frost", version = "0.1.6" }

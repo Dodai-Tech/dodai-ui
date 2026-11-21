@@ -14,11 +14,17 @@
 //! assert!(b.background.is_some());
 //! ```
 
+// Lets `#[derive(TokenSpec)]` name `::dodai_core` inside this crate too.
+#[cfg(feature = "spec")]
+extern crate self as dodai_core;
+
 pub mod calendar;
 pub mod chart_style;
 pub mod clock_math;
 mod color;
 mod component;
+#[cfg(feature = "spec")]
+pub mod component_spec;
 mod crop;
 pub mod direction;
 pub mod export;

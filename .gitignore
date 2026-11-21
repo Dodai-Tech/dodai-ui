@@ -13,3 +13,4 @@ fuzz/corpus/
 fuzz/artifacts/
 /crates/dodai-freya/target
 /tools/shaders-kernels/target
+/crates/dodai-xilem/target

@@ -21,6 +21,9 @@ cyberpunk = []
 material = []
 neobrutalism = []
 dodai = []
+## Component specs (`component_spec`, `#[derive(TokenSpec)]`) for the `dodai-gen` tool; pulls in syn.
+spec = ["dep:dodai-spec"]
 
 [dependencies]
 dodai-fx = { workspace = true }
+dodai-spec = { workspace = true, optional = true }
