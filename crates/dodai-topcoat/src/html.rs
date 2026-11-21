@@ -286,6 +286,57 @@ pub fn tabs(
     )
 }
 
+/// One row of a [`menu`].
+#[derive(Clone, Copy, Default)]
+pub struct MenuRow<'a> {
+    /// The label; empty for a separator.
+    pub label: &'a str,
+    /// Right-aligned key hint, e.g. `⌘C`.
+    pub shortcut: Option<&'a str>,
+    /// Not pickable; the keyboard skips it.
+    pub disabled: bool,
+    /// Destructive action.
+    pub danger: bool,
+    /// Shows a check before the label.
+    pub checked: bool,
+    /// A horizontal rule between groups (the other fields are ignored).
+    pub separator: bool,
+}
+
+/// Popup action list. `attrs(i)` is the attribute string of row `i` (an index into `rows`).
+/// Load [`MENU_SCRIPT`](crate::MENU_SCRIPT) once for the arrow, Home, End and Enter keys.
+pub fn menu(cx: &Cx, rows: &[MenuRow], attrs: &dyn Fn(usize) -> String) -> String {
+    let mut o = String::from("<div class=\"dodai-menu\" role=\"menu\">");
+    for (i, r) in rows.iter().enumerate() {
+        if r.separator {
+            o.push_str("<div class=\"dodai-menu__sep\" role=\"separator\"></div>");
+            continue;
+        }
+        let mut class = String::from("dodai-menu__item");
+        if r.disabled {
+            class.push_str(" dodai-menu__item--disabled");
+        }
+        if r.danger {
+            class.push_str(" dodai-menu__item--danger");
+        }
+        let check = if r.checked {
+            icon(cx, IconId::Check, 14, false)
+        } else {
+            String::new()
+        };
+        o.push_str(&format!(
+            "<div class=\"{class}\" role=\"menuitem\" tabindex=\"{}\" aria-disabled=\"{}\" {}><span class=\"dodai-menu__check\">{check}</span><span class=\"dodai-menu__label\">{}</span>{}</div>",
+            if i == 0 { 0 } else { -1 },
+            r.disabled,
+            attrs(i),
+            esc(r.label),
+            r.shortcut.map_or(String::new(), |s| format!("<span class=\"dodai-menu__key\">{}</span>", esc(s)))
+        ));
+    }
+    o.push_str("</div>");
+    o
+}
+
 /// [`tabs`] with editing: `close_attrs(i)` (when `Some`) gives every tab a close cross carrying
 /// those attributes, and `add_attrs` (when `Some`) appends a "+" button. The page removes or
 /// adds the tab itself.
@@ -1259,6 +1310,37 @@ mod tests {
             theme: t,
             surface: Surface::NONE,
         }
+    }
+
+    #[test]
+    fn a_menu_marks_rows_and_escapes_labels() {
+        let t = themes::cyberpunk::yellow();
+        let rows = [
+            MenuRow {
+                label: "<Cut>",
+                shortcut: Some("⌘X"),
+                ..Default::default()
+            },
+            MenuRow {
+                separator: true,
+                ..Default::default()
+            },
+            MenuRow {
+                label: "Delete",
+                danger: true,
+                disabled: true,
+                checked: true,
+                ..Default::default()
+            },
+        ];
+        let h = menu(&cx(&t), &rows, &|i| format!("data-i=\"{i}\""));
+        assert!(h.contains("&lt;Cut&gt;") && h.contains("dodai-menu__key"));
+        assert_eq!(h.matches("role=\"separator\"").count(), 1);
+        assert!(
+            h.contains("dodai-menu__item--danger dodai-menu__item--disabled")
+                || h.contains("dodai-menu__item--disabled dodai-menu__item--danger")
+        );
+        assert!(h.contains("data-i=\"2\"") && h.contains("tabindex=\"0\""));
     }
 
     #[test]

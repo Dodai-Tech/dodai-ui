@@ -23,10 +23,11 @@ const SCRIPT: &str = include_str!("app.js");
 fn document(m: &mut Showcase) -> String {
     let id = m.theme().id();
     format!(
-        "<!DOCTYPE html><html data-theme=\"{id}\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Dodai UI · Topcoat</title><link rel=\"icon\" href=\"{}\"><style>html,body{{margin:0;height:100%}}body{{background:var(--dodai-background);color:var(--dodai-text);font-family:var(--dodai-font-body);font-size:var(--dodai-size-md);line-height:1.5}}</style></head><body>{}<script>{SCRIPT}</script><script>{}</script></body></html>",
+        "<!DOCTYPE html><html data-theme=\"{id}\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Dodai UI · Topcoat</title><link rel=\"icon\" href=\"{}\"><style>html,body{{margin:0;height:100%}}body{{background:var(--dodai-background);color:var(--dodai-text);font-family:var(--dodai-font-body);font-size:var(--dodai-size-md);line-height:1.5}}</style></head><body>{}<script>{SCRIPT}</script><script>{}{}</script></body></html>",
         dodai_showcase_model::media::logo_data_url(),
         chrome::app(m),
-        dodai_topcoat::TABS_SCRIPT
+        dodai_topcoat::TABS_SCRIPT,
+        dodai_topcoat::MENU_SCRIPT
     )
 }
 

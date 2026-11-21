@@ -552,6 +552,21 @@ else if(k==='Home'){for(i=0;i<t.length;i++)if(on(i)){to=i;break}}\
 else if(k==='End'){for(i=t.length-1;i>=0;i--)if(on(i)){to=i;break}}\
 if(to<0||to===at)return;e.preventDefault();t[to].focus();t[to].click()})})();";
 
+/// Inline script: keyboard for every `.dodai-menu`. Up and Down move to the next row that is not
+/// `.dodai-menu__item--disabled` (wrapping), Home and End jump to the ends, Enter and Space press
+/// the row. Load once per page; it listens on the document.
+pub const MENU_SCRIPT: &str = "(function(){document.addEventListener('keydown',function(e){\
+var m=e.target.closest&&e.target.closest('.dodai-menu');if(!m)return;\
+var r=[].slice.call(m.querySelectorAll('.dodai-menu__item')),\
+on=function(i){return !r[i].classList.contains('dodai-menu__item--disabled')},\
+at=r.indexOf(e.target.closest('.dodai-menu__item')),k=e.key,n=r.length,to=-1,i;\
+if(k==='Enter'||k===' '){if(at>=0&&on(at)){e.preventDefault();r[at].click()}return}\
+if(k==='ArrowDown'){for(i=1;i<=n;i++)if(on((at+i)%n)){to=(at+i)%n;break}}\
+else if(k==='ArrowUp'){for(i=1;i<=n;i++){var j=((at<0?0:at)-i+n*2)%n;if(on(j)){to=j;break}}}\
+else if(k==='Home'){for(i=0;i<n;i++)if(on(i)){to=i;break}}\
+else if(k==='End'){for(i=n-1;i>=0;i--)if(on(i)){to=i;break}}\
+if(to<0)return;e.preventDefault();r[to].focus()})})();";
+
 /// Inline script: exposes `dodaiTheme.next()/prev()/set(id)`, persists the
 /// choice in `localStorage` and applies `data-theme` on `<html>` before paint.
 /// Wire buttons with `data-dodai-theme-next` / `data-dodai-theme-prev`.
