@@ -6,6 +6,11 @@
 //!
 //! Scaffold: [`color`] and [`button`]. More components follow `docs/PARITY.md`.
 
+pub mod foundation;
+mod generated;
+pub use foundation::{Colors, Face, Foundation, Metrics, Size, Type};
+pub use generated::{PanelStyle, TagStyle};
+
 use dodai_core::{ButtonVariant, ControlState, ItemState, Theme, Tone};
 use xilem::style::Style;
 use xilem::view::{button as masonry_button, flex_row, label, sized_box};
@@ -54,14 +59,14 @@ pub fn tag<State: 'static>(
     tone: Tone,
     solid: bool,
 ) -> impl WidgetView<State> {
-    let tok = theme.tag(tone, solid);
+    let tok = TagStyle::of(theme, tone, solid);
     sized_box(
         label(display(theme, text.into()))
             .text_size(theme.typography.size_xs)
-            .color(color(tok.foreground)),
+            .color(tok.foreground),
     )
-    .background_color(fill(tok.background))
-    .border(fill(tok.border), f64::from(theme.shape.border_width))
+    .background_color(tok.background)
+    .border(tok.border, f64::from(theme.shape.border_width))
     .corner_radius(f64::from(theme.shape.radius))
     .padding(f64::from(theme.spacing.sm))
 }
@@ -72,10 +77,10 @@ pub fn panel<State: 'static, V: WidgetView<State>>(
     focused: bool,
     child: V,
 ) -> impl WidgetView<State> {
-    let tok = theme.panel(focused);
+    let tok = PanelStyle::of(theme, focused);
     sized_box(child)
-        .background_color(color(tok.background))
-        .border(color(tok.border), f64::from(theme.shape.border_width))
+        .background_color(tok.background)
+        .border(tok.border, f64::from(theme.shape.border_width))
         .corner_radius(f64::from(theme.shape.radius))
         .padding(f64::from(theme.spacing.md))
 }
