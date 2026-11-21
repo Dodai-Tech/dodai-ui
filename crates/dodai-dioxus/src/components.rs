@@ -694,3 +694,73 @@ pub fn Icon(props: IconProps) -> Element {
         None => rsx! {},
     }
 }
+
+/// Menu properties.
+#[derive(Props, Clone, PartialEq)]
+pub struct MenuProps {
+    pub rows: Vec<dodai_core::menu::MenuRow>,
+    /// The highlighted row (controlled).
+    #[props(default)]
+    pub active: usize,
+    /// The highlight moved (arrow, Home, End or hover); the app updates `active`.
+    #[props(default)]
+    pub onactive: EventHandler<usize>,
+    /// A row was picked (click, Enter or Space).
+    #[props(default)]
+    pub onpick: EventHandler<usize>,
+}
+
+/// Popup action list. Keys follow the shared rule of `dodai_core::menu`.
+#[component]
+pub fn Menu(props: MenuProps) -> Element {
+    let (rows, active) = (props.rows.clone(), props.active);
+    let (onactive, onpick) = (props.onactive, props.onpick);
+    rsx! {
+        div {
+            class: "dodai-menu",
+            role: "menu",
+            tabindex: "0",
+            onkeydown: move |e| {
+                let key = e.key().to_string();
+                match dodai_core::menu::step(&key, &rows, active) {
+                    Some(dodai_core::menu::Step::Move(i)) => { e.prevent_default(); onactive.call(i) }
+                    Some(dodai_core::menu::Step::Pick(i)) => { e.prevent_default(); onpick.call(i) }
+                    None => {}
+                }
+            },
+            for (i, r, pickable) in props.rows.iter().enumerate().map(|(i, r)| (i, r, r.pickable())) {
+                if r.separator {
+                    div { key: "{i}", class: "dodai-menu__sep", role: "separator" }
+                } else {
+                    div {
+                        key: "{i}",
+                        class: menu_item_class(r, i == props.active),
+                        role: "menuitem",
+                        "aria-disabled": "{r.disabled}",
+                        onmouseenter: move |_| if pickable { onactive.call(i) },
+                        onclick: move |_| if pickable { onpick.call(i) },
+                        span { class: "dodai-menu__check",
+                            if r.checked { Icon { icon: dodai_icons::IconId::Check, size: 14 } }
+                        }
+                        span { class: "dodai-menu__label", "{r.label}" }
+                        if let Some(k) = &r.shortcut { span { class: "dodai-menu__key", "{k}" } }
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn menu_item_class(r: &dodai_core::menu::MenuRow, active: bool) -> String {
+    let mut c = String::from("dodai-menu__item");
+    for (on, extra) in [
+        (r.disabled, " dodai-menu__item--disabled"),
+        (r.danger, " dodai-menu__item--danger"),
+        (active, " dodai-menu__item--active"),
+    ] {
+        if on {
+            c.push_str(extra);
+        }
+    }
+    c
+}

@@ -261,3 +261,64 @@ pub fn StyledProgress(props: &StyledProgressProps) -> Html {
         props.value,
     )))
 }
+
+#[derive(Properties, PartialEq)]
+pub struct MenuProps {
+    pub rows: Vec<dodai_core::menu::MenuRow>,
+    /// The highlighted row (controlled).
+    #[prop_or_default]
+    pub active: usize,
+    /// The highlight moved (arrow, Home, End or hover); the app updates `active`.
+    #[prop_or_default]
+    pub onactive: Callback<usize>,
+    /// A row was picked (click, Enter or Space).
+    #[prop_or_default]
+    pub onpick: Callback<usize>,
+}
+
+/// Popup action list. Keys follow the shared rule of `dodai_core::menu`.
+#[function_component]
+pub fn Menu(props: &MenuProps) -> Html {
+    let (rows, active) = (props.rows.clone(), props.active);
+    let (onactive, onpick) = (props.onactive.clone(), props.onpick.clone());
+    let onkeydown = {
+        let (onactive, onpick) = (onactive.clone(), onpick.clone());
+        move |e: KeyboardEvent| match dodai_core::menu::step(&e.key(), &rows, active) {
+            Some(dodai_core::menu::Step::Move(i)) => {
+                e.prevent_default();
+                onactive.emit(i)
+            }
+            Some(dodai_core::menu::Step::Pick(i)) => {
+                e.prevent_default();
+                onpick.emit(i)
+            }
+            None => {}
+        }
+    };
+    html! {
+        <div class="dodai-menu" role="menu" tabindex="0" {onkeydown}>
+        { for props.rows.iter().enumerate().map(|(i, r)| {
+            if r.separator {
+                return html! { <div key={i} class="dodai-menu__sep" role="separator"></div> };
+            }
+            let pickable = r.pickable();
+            let class = join(&[
+                "dodai-menu__item",
+                if r.disabled { "dodai-menu__item--disabled" } else { "" },
+                if r.danger { "dodai-menu__item--danger" } else { "" },
+                if i == props.active { "dodai-menu__item--active" } else { "" },
+            ]);
+            let (hover, pick) = (onactive.clone(), onpick.clone());
+            html! {
+                <div key={i} {class} role="menuitem" aria-disabled={r.disabled.to_string()}
+                     onmouseenter={move |_| if pickable { hover.emit(i) }}
+                     onclick={move |_| if pickable { pick.emit(i) }}>
+                    <span class="dodai-menu__check">{ if r.checked { "\u{2713}" } else { "" } }</span>
+                    <span class="dodai-menu__label">{ r.label.clone() }</span>
+                    if let Some(k) = &r.shortcut { <span class="dodai-menu__key">{ k.clone() }</span> }
+                </div>
+            }
+        }) }
+        </div>
+    }
+}

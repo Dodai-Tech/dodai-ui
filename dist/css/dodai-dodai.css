@@ -185,7 +185,7 @@ code,pre,.dodai-mono{font-family:var(--dodai-font-mono)}
 /* List */
 .dodai-menu{display:flex;flex-direction:column;min-width:220px;padding:var(--dodai-space-xs);border:var(--dodai-border-width) solid var(--dodai-border);border-radius:var(--dodai-radius);background:var(--dodai-surface-raised)}
 .dodai-menu__item{display:flex;align-items:center;gap:var(--dodai-space-sm);padding:var(--dodai-space-sm) var(--dodai-space-md);border-radius:var(--dodai-inner-radius);color:var(--dodai-text);cursor:pointer;outline:none;transition:background .12s,color .12s}
-.dodai-menu__item:hover,.dodai-menu__item:focus-visible{background:var(--dodai-selection)}
+.dodai-menu__item:hover,.dodai-menu__item:focus-visible,.dodai-menu__item--active{background:var(--dodai-selection)}
 .dodai-menu__item--danger{color:var(--dodai-danger)}
 .dodai-menu__item--disabled{opacity:.45;pointer-events:none}
 .dodai-menu__check{display:inline-flex;width:14px;flex:none}

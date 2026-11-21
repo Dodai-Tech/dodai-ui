@@ -33,6 +33,7 @@ mod kit;
 mod knob;
 pub mod markdown;
 pub mod math;
+pub mod menu;
 pub mod orientation;
 pub mod paging;
 mod palette;

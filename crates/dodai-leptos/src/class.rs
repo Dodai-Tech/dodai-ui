@@ -87,6 +87,28 @@ pub fn tab(active: bool) -> &'static str {
     }
 }
 
+/// Class for a menu row.
+pub fn menu_item(row: &dodai_core::menu::MenuRow, active: bool) -> String {
+    join(&[
+        "dodai-menu__item",
+        if row.disabled {
+            "dodai-menu__item--disabled"
+        } else {
+            ""
+        },
+        if row.danger {
+            "dodai-menu__item--danger"
+        } else {
+            ""
+        },
+        if active {
+            "dodai-menu__item--active"
+        } else {
+            ""
+        },
+    ])
+}
+
 /// Class for a panel.
 pub fn panel(focused: bool, raised: bool) -> String {
     join(&[
@@ -134,6 +156,11 @@ mod tests {
             "dodai-progress dodai-progress--danger"
         );
         assert_eq!(tab(true), "dodai-tab dodai-tab--active");
+        let row = dodai_core::menu::MenuRow::new("Delete").danger();
+        assert_eq!(
+            menu_item(&row, true),
+            "dodai-menu__item dodai-menu__item--danger dodai-menu__item--active"
+        );
         assert_eq!(percent(150.0), "100%");
         assert_eq!(percent(f32::NAN), "0%");
     }
