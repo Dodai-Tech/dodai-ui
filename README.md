@@ -207,6 +207,19 @@ and `Oscilloscope`, `Spectrum`, `RadarScope`, `HexMap`, `RingStack`, `DotMatrix`
 2. Register it in one place: a feature plus an entry in `dodai_core::themes::systems()`. The switcher, `themes::all()`, `by_id()` and the `dist` export pick it up; adapters need no change.
 3. `just test`: the shared contrast/uniqueness tests in `crates/dodai-core/tests` run on it. Add the design's own conformance tests next to its spec.
 
+## Generated toolkit glue
+
+A component's tokens are described once, on the token struct in `dodai-core`, with `#[derive(TokenSpec)]` (crate `dodai-spec`, behind core's `spec` feature):
+
+```rust
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "spec", derive(dodai_spec::TokenSpec))]
+#[cfg_attr(feature = "spec", token_spec(resolver = "tag", args(tone: Tone, solid: bool), doc = "Tag / badge."))]
+pub struct TagTokens { pub background: Option<Color>, pub foreground: Color }
+```
+
+The compiler checks the resolver against `Theme` and that fields are `Color` or `Option<Color>`. `cargo run -p dodai-gen` writes each toolkit's `generated.rs` (`TagStyle::of(theme, tone, solid)`, native colours); CI runs it with `--check`. To add a component: derive on its token struct, list it in `component_spec::all()`, run the generator. Only toolkits whose drawing takes native colours are targets (xilem today); drawing stays hand-written.
+
 ## Development
 
 ```sh
