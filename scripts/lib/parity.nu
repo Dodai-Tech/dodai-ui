@@ -99,6 +99,8 @@ export def render-parity []: nothing -> string {
             sizes: (uses $src 'sizes\(\)|size_entries|--sz-')
             look: (uses $src 'look\(\)|--look-')
             nav: (uses $src 'navigation\(\)|--nav-')
+            motion: (uses $src 'motion::|Easing|transition:|@keyframes|animation:|animate\(|Animation')
+            keys: (uses $src 'roving::|Key(?:board)?Event|on_key|keydown|ArrowLeft')
             missing: ($comps | where { $in not-in $have })
         }
     })
@@ -116,6 +118,9 @@ export def render-parity []: nothing -> string {
         "* **showcase**: `model` toolkits draw the whole showcase model (a new `Node` variant will not compile"
         "  until they handle it); `own page` ones hand-write a smaller page."
         "* **sizes / look / nav**: how often the toolkit reads the `Sizes`, `Look` and navigation tokens."
+        "* **motion**: uses of the shared motion system (`dodai_core::motion`), CSS transitions/keyframes or animation APIs."
+        "* **keys**: uses of the shared roving-focus rule (`dodai_core::roving`) or keyboard event handling."
+        "  Both are rough counts, not coverage: they show a toolkit is at zero, not that a non-zero one is complete."
         ""
         $table
         ""

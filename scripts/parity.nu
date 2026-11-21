@@ -10,6 +10,7 @@
 #   2. Component coverage: every public gpui component (the reference) against each toolkit's
 #      public items (`pub struct|enum|fn`, Slint `component`, topcoat `.dodai-*` CSS classes).
 #   3. Token use: whether the toolkit reads Sizes / Look / navigation tokens / the shape layer.
+#   4. Motion and keyboard use: the shared `dodai_core::motion` / `dodai_core::roving` rules.
 
 use lib/parity.nu *
 
