@@ -781,21 +781,11 @@ name = "dodai-core"
 version = "0.1.6"
 dependencies = [
  "dodai-fx",
- "dodai-spec",
 ]
 
 [[package]]
 name = "dodai-fx"
 version = "0.1.6"
-
-[[package]]
-name = "dodai-spec"
-version = "0.1.6"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.119",
-]
 
 [[package]]
 name = "dodai-xilem"

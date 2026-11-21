@@ -119,6 +119,30 @@ impl TuiTheme {
             .bg(self.color(p.background))
     }
 
+    /// Paint the whole `area` as the app root: the canvas colour, and for a design with a
+    /// gradient canvas (Dodai) its mesh as each cell's background, so the gradient shows in a
+    /// terminal too. Call it first in a frame, then draw over it.
+    pub fn paint_canvas(&self, buf: &mut ratatui::buffer::Buffer, area: ratatui::layout::Rect) {
+        let mesh = dodai_core::MESH_SIZE;
+        let px = dodai_core::backdrop_mesh(&self.theme, mesh.0, mesh.1);
+        let base = self.base();
+        for y in 0..area.height {
+            for x in 0..area.width {
+                let Some(cell) = buf.cell_mut((area.x + x, area.y + y)) else {
+                    continue;
+                };
+                cell.set_style(base);
+                if let Some(px) = &px {
+                    let u = (x as usize * mesh.0) / area.width.max(1) as usize;
+                    let v = (y as usize * mesh.1) / area.height.max(1) as usize;
+                    let i = (v * mesh.0 + u) * 4;
+                    let c = LColor::rgba(px[i], px[i + 1], px[i + 2], px[i + 3]);
+                    cell.set_bg(self.color(c));
+                }
+            }
+        }
+    }
+
     pub fn surface(&self) -> Style {
         let p = &self.theme.palette;
         Style::new()
@@ -427,6 +451,21 @@ mod tests {
             dodai_core::themes::cyberpunk::yellow(),
             ColorDepth::TrueColor,
         )
+    }
+
+    #[test]
+    fn the_canvas_shows_a_gradient_only_for_a_meshed_design() {
+        use ratatui::{buffer::Buffer, layout::Rect};
+        let area = Rect::new(0, 0, 40, 12);
+        let paint = |t: dodai_core::Theme| {
+            let mut buf = Buffer::empty(area);
+            TuiTheme::with_depth(t, ColorDepth::TrueColor).paint_canvas(&mut buf, area);
+            let mut bgs: Vec<_> = buf.content().iter().map(|c| c.bg).collect();
+            bgs.dedup();
+            bgs.len()
+        };
+        assert_eq!(paint(dodai_core::themes::cyberpunk::yellow()), 1);
+        assert!(paint(dodai_core::dodai::light()) > 1);
     }
 
     #[test]

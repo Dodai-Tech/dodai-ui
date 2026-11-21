@@ -242,6 +242,28 @@ impl IcedTheme {
         }
     }
 
+    /// The app root: the canvas colour, the design's mesh (with the `frost` feature) under
+    /// `content`, and the scanlines over it. This is the default way to build a window's view,
+    /// so a design with a gradient canvas (Dodai) always shows it.
+    pub fn root<'a, Message: 'a>(
+        &self,
+        content: impl Into<iced::Element<'a, Message>>,
+    ) -> iced::Element<'a, Message> {
+        let canvas = container("")
+            .width(iced::Length::Fill)
+            .height(iced::Length::Fill)
+            .style(self.background());
+        let mut layers = iced::widget::stack![canvas];
+        #[cfg(feature = "frost")]
+        if let Some(b) = self.backdrop_view() {
+            layers = layers.push(b);
+        }
+        let page = container(content)
+            .width(iced::Length::Fill)
+            .height(iced::Length::Fill);
+        layers.push(page).push(self.scanlines()).into()
+    }
+
     /// App background container.
     pub fn background(&self) -> impl Fn(&IcedBaseTheme) -> container::Style + 'static {
         let p = &self.theme.palette;

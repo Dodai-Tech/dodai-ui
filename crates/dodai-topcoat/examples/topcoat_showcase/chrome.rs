@@ -278,9 +278,7 @@ pub fn app(m: &mut Showcase) -> String {
         surface: m.surface(),
     };
     let css = dodai_topcoat::multi_theme_stylesheet(std::slice::from_ref(&theme));
-    let backdrop = dodai_topcoat::backdrop_css(&theme).map_or(String::new(), |b| {
-        format!("background-image:{b};background-attachment:fixed;background-size:100% 100%")
-    });
+    let backdrop = dodai_topcoat::root_style(&theme);
     let wallpaper = if m.wallpaper() {
         format!(
             "background:url({}) center/cover fixed",

@@ -401,3 +401,13 @@ export component LScanlines inherits Rectangle {
         background: #00000030;
     }
 }
+
+// The design's canvas mesh stretched over the window; put it first in the window. Draws nothing
+// for a design with a flat canvas.
+export component LBackdrop inherits Image {
+    source: Theme.backdrop;
+    visible: Theme.has-backdrop;
+    image-fit: fill;
+    width: 100%;
+    height: 100%;
+}

@@ -139,6 +139,9 @@ pub fn generate_theme_slint(theme: &Theme) -> String {
         ));
     }
     s.push_str(
+        "    /// The design's canvas mesh, drawn by `LBackdrop`; set by `install_theme!`.\n    in-out property <image> backdrop;\n    in-out property <bool> has-backdrop: false;\n",
+    );
+    s.push_str(
         "    /// Implemented by `install_theme!` (upper-cases); used when `uppercase` is set.\n    pure callback label-case(string) -> string;\n}\n",
     );
     s

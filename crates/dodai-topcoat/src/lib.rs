@@ -621,6 +621,14 @@ pub fn glass_vars(g: &dodai_core::Glass) -> String {
     s
 }
 
+/// Inline style that lights a page root with the theme's canvas mesh, fixed to the window;
+/// empty for a design with a flat canvas. Every web toolkit's theme root uses it.
+pub fn root_style(t: &Theme) -> String {
+    backdrop_css(t).map_or(String::new(), |b| {
+        format!("background-image:{b};background-attachment:fixed;background-size:100% 100%")
+    })
+}
+
 /// The theme's canvas mesh (see [`dodai_core::mesh_pixels`]) as a CSS `background-image` value of
 /// radial gradients, stretched over the element like the picture the native toolkits stretch
 /// over the window. `None` for a design with a flat canvas.
@@ -1060,6 +1068,9 @@ mod tests {
             assert_eq!(css.is_some(), t.surface_style.backdrop > 0.0, "{}", t.id());
             if let Some(css) = css {
                 assert_eq!(css.matches("radial-gradient(").count(), 4, "{}", t.id());
+                assert!(root_style(&t).contains("background-attachment:fixed"));
+            } else {
+                assert!(root_style(&t).is_empty());
             }
         }
     }

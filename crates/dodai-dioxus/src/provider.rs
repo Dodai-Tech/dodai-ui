@@ -176,9 +176,7 @@ pub fn ThemeProvider(props: ThemeProviderProps) -> Element {
     let list = handle.switcher.read().themes().to_vec();
     let css = scoped_stylesheet(&themes_with_glow(&list, Some(handle.glow())));
     // A design with a canvas mesh lights the page with it, fixed to the window.
-    let backdrop = dodai_topcoat::backdrop_css(&handle.theme()).map_or(String::new(), |b| {
-        format!("background-image:{b};background-attachment:fixed;background-size:100% 100%")
-    });
+    let backdrop = dodai_topcoat::root_style(&handle.theme());
     rsx! {
         style { "{css}" }
         div { class: "dodai-root {props.class}", style: backdrop, "data-theme": handle.id(), {props.children} }

@@ -338,7 +338,7 @@ pub use snap_stack::{can_turn, snap_page, SnapStack, TURN_AT};
 #[cfg(feature = "components")]
 mod icon_names;
 #[cfg(any(feature = "dodai", feature = "frost"))]
-pub use backdrop::backdrop;
+pub use backdrop::{backdrop, root};
 #[cfg(feature = "components")]
 pub use controls::{nearest_thumb, range_update};
 pub use direction::{direction, is_rtl, set_direction, Direction};

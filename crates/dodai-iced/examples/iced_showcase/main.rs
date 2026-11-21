@@ -14,8 +14,7 @@ use std::time::Instant;
 
 use dodai_iced::IcedTheme;
 use dodai_showcase_model::{Action, Showcase, Value};
-use iced::widget::{container, stack};
-use iced::{event, keyboard, Element, Length, Subscription, Task, Theme as IcedBase};
+use iced::{event, keyboard, Element, Subscription, Task, Theme as IcedBase};
 
 pub struct App {
     pub model: Showcase,
@@ -298,18 +297,7 @@ fn subscription(_app: &App) -> Subscription<Msg> {
 
 fn view(app: &App) -> Element<'_, Msg> {
     // The canvas, the backdrop (the design's mesh or the frost demo's picture), then the app.
-    let canvas = container("")
-        .width(Length::Fill)
-        .height(Length::Fill)
-        .style(app.lt.background());
-    let mut layers = stack![canvas];
-    if let Some(b) = app.lt.backdrop_view() {
-        layers = layers.push(b);
-    }
-    let page = container(chrome::window(app))
-        .width(Length::Fill)
-        .height(Length::Fill);
-    layers.push(page).push(app.lt.scanlines()).into()
+    app.lt.root(chrome::window(app))
 }
 
 /// The Dodai UI logo as the window icon (Windows and Linux title bars and task bars; macOS

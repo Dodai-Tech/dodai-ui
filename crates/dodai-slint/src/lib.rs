@@ -27,6 +27,16 @@ pub fn color(c: Rgba) -> slint::Color {
     slint::Color::from_argb_u8(c[3], c[0], c[1], c[2])
 }
 
+/// The design's canvas mesh as a Slint image (`None` for a flat canvas); `install_theme!`
+/// pushes it into `Theme.backdrop`, which `LBackdrop` draws.
+pub fn backdrop_image(theme: &dodai_core::Theme) -> Option<slint::Image> {
+    let (w, h) = dodai_core::MESH_SIZE;
+    let px = dodai_core::backdrop_mesh(theme, w, h)?;
+    let buf =
+        slint::SharedPixelBuffer::<slint::Rgba8Pixel>::clone_from_slice(&px, w as u32, h as u32);
+    Some(slint::Image::from_rgba8(buf))
+}
+
 /// Convert a colour list to a Slint model.
 pub fn colors(v: &[Rgba]) -> slint::ModelRc<slint::Color> {
     slint::ModelRc::new(slint::VecModel::from(
@@ -118,5 +128,8 @@ macro_rules! install_theme {
         g.set_input_border($crate::colors(&v.input_border));
         g.set_input_text($crate::color(v.input_text));
         g.set_input_placeholder($crate::color(v.input_placeholder));
+        let backdrop = $crate::backdrop_image($theme);
+        g.set_has_backdrop(backdrop.is_some());
+        g.set_backdrop(backdrop.unwrap_or_default());
     }};
 }

@@ -1,7 +1,7 @@
 //! Themed button, tag, panel and tabs in a xilem window.
 //! `cargo run -p dodai-xilem --example xilem_showcase`.
 
-use dodai_core::{themes, ButtonVariant, Theme, Tone};
+use dodai_core::{ButtonVariant, Theme, Tone};
 use dodai_xilem::{button, color, panel, tabs, tag};
 use xilem::style::Style;
 use xilem::view::{flex_col, flex_row, label};
@@ -46,12 +46,12 @@ fn view(app: &mut App) -> impl WidgetView<App> + use<> {
             label(format!("Tab {}", app.tab + 1)).color(color(t.palette.text)),
         ),
     ));
-    panel(&t, false, body)
+    dodai_xilem::root(&t, panel(&t, false, body))
 }
 
 fn main() -> Result<(), EventLoopError> {
     let app = App {
-        theme: themes::cyberpunk::yellow(),
+        theme: dodai_core::dodai::light(),
         tab: 0,
         clicks: 0,
     };

@@ -72,6 +72,9 @@ export global Theme {
     in-out property <[color]> input-border: [#626262ff, #00f0ffff];
     in-out property <color> input-text: #ffffffff;
     in-out property <color> input-placeholder: #7a7a7aff;
+    /// The design's canvas mesh, drawn by `LBackdrop`; set by `install_theme!`.
+    in-out property <image> backdrop;
+    in-out property <bool> has-backdrop: false;
     /// Implemented by `install_theme!` (upper-cases); used when `uppercase` is set.
     pure callback label-case(string) -> string;
 }

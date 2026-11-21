@@ -46,7 +46,7 @@ mod testing;
 pub use button::Button;
 pub use controls::{Checkbox, ProgressBar, Radio, Slider, Spinner, Toggle};
 #[cfg(feature = "icons")]
-pub use glass::{frost_shapes, glass_of, paint_backdrop};
+pub use glass::{frost_shapes, glass_of, paint_backdrop, root};
 pub use icon::Icon;
 pub use install::{active_theme, apply_to_style, install, visuals};
 pub use list::{Divider, ListItem};

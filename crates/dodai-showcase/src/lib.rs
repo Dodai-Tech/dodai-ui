@@ -21,8 +21,8 @@ use dodai_core::{ButtonVariant, Tone};
 use dodai_gpui::{
     cycle_next, cycle_prev, fuzzy_filter, glow_intensity, hsla, set_glow_intensity, set_scanlines,
     theme_of, Accordion, BottomSheet, Breadcrumb, BubblePlacement, Button, ButtonGroup, Card,
-    CardVariant, Carousel, Checkbox, Dialog, DialogCard, Divider, DodaiStyled, DodaiTooltip, Fab,
-    FabSize, Heading, IconButton, InputBox, Knob, Label, ListItem, LoadingIndicator, Mono, Muted,
+    CardVariant, Carousel, Checkbox, Dialog, DialogCard, Divider, DodaiTooltip, Fab, FabSize,
+    Heading, IconButton, InputBox, Knob, Label, ListItem, LoadingIndicator, Mono, Muted,
     Orientation, Pagination, Panel, ProgressBar, Radio, ResponsiveShell, SearchBar, Segmented,
     SideSheet, Slider, SplitButton, Stepper, Tabs, Tag, Toggle, TopAppBar,
 };
@@ -696,7 +696,7 @@ impl Render for Showcase {
                 }
             });
         }
-        div()
+        dodai_gpui::root(&t)
             .id("root")
             .track_focus(&self.focus)
             .on_key_down(cx.listener(|s, e: &KeyDownEvent, w, cx| {
@@ -717,11 +717,7 @@ impl Render for Showcase {
                     }
                 }
             }))
-            .relative()
-            .size_full()
-            .dodai_background(&t)
             .flex()
-            .children(dodai_gpui::backdrop(&t))
             .child(
                 ResponsiveShell::new("shell")
                     .breakpoint(SHELL_BREAKPOINT)

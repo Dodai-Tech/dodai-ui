@@ -5,7 +5,7 @@ use std::{cell::RefCell, rc::Rc};
 
 slint::slint! {
     import { Theme, LButton, LPanel, LTag, LTabs, LToggle, LCheckbox, LRadio, LProgress, LSpinner,
-             LSlider, LInput, LListItem, LDivider, LTooltip, LText, LScanlines } from "ui/dodai.slint";
+             LSlider, LInput, LListItem, LDivider, LTooltip, LText, LScanlines, LBackdrop } from "ui/dodai.slint";
     export { Theme }
 
     export component Showcase inherits Window {
@@ -25,6 +25,8 @@ slint::slint! {
         callback pick-theme(int);
         callback cycle(bool);
         callback glow(float);
+
+        LBackdrop {}
 
         FocusScope {
             key-pressed(e) => {

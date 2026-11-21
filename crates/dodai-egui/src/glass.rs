@@ -45,6 +45,20 @@ fn mesh_of(theme: &Theme) -> Option<Rc<Vec<u8>>> {
     )))
 }
 
+/// The app root: a central panel with the design's canvas mesh painted behind `add_contents`.
+/// This is the default way to start a frame, so a design with a gradient canvas (Dodai) always
+/// shows it.
+pub fn root<R>(
+    ui: &mut Ui,
+    theme: &Theme,
+    add_contents: impl FnOnce(&mut Ui) -> R,
+) -> egui::InnerResponse<R> {
+    egui::CentralPanel::default().show(ui, |ui| {
+        paint_backdrop(ui, theme, ui.ctx().content_rect());
+        add_contents(ui)
+    })
+}
+
 /// Draw the design's canvas mesh over `rect` (normally the whole window, as the first thing a
 /// frame paints) and remember it as the picture panes frost. Does nothing for a design with a
 /// flat canvas.

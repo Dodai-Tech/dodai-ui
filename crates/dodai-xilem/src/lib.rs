@@ -77,6 +77,32 @@ pub fn tag<State: 'static>(
     shaped!(view, theme, fill: tok.background, border: tok.border, pad: theme.spacing.sm)
 }
 
+/// The design's canvas mesh as an image (`None` for a flat canvas).
+fn mesh(theme: &Theme) -> Option<xilem::ImageBrush> {
+    use xilem::masonry::peniko::{Blob, ImageAlphaType, ImageData};
+    let (w, h) = dodai_core::MESH_SIZE;
+    let px = dodai_core::backdrop_mesh(theme, w, h)?;
+    Some(xilem::ImageBrush::new(ImageData {
+        data: Blob::from(px),
+        format: xilem::ImageFormat::Rgba8,
+        alpha_type: ImageAlphaType::Alpha,
+        width: w as u32,
+        height: h as u32,
+    }))
+}
+
+/// The app root: the canvas colour with the design's mesh stretched under `content`. This is
+/// the default way to start a window, so a design with a gradient canvas (Dodai) always shows
+/// it.
+pub fn root<State: 'static, V: WidgetView<State>>(
+    theme: &Theme,
+    content: V,
+) -> impl WidgetView<State> {
+    use xilem::view::{image, zstack, ObjectFit};
+    let canvas = mesh(theme).map(|m| image(m).fit(ObjectFit::Fill));
+    sized_box(zstack((canvas, content))).background_color(color(theme.palette.background))
+}
+
 /// Panel: the surface, border and radius of a container around `child`.
 pub fn panel<State: 'static, V: WidgetView<State>>(
     theme: &Theme,

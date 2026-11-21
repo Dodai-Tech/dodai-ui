@@ -95,7 +95,7 @@ pub fn ThemeProvider(props: &ThemeProviderProps) -> Html {
     html! {
         <ContextProvider<ThemeContext> context={ctx}>
             if props.inject_css { <style>{ theme_css(&theme) }</style> }
-            <div class="dodai-root" data-theme={theme.id()}>{ props.children.clone() }</div>
+            <div class="dodai-root" data-theme={theme.id()} style={dodai_topcoat::root_style(&theme)}>{ props.children.clone() }</div>
         </ContextProvider<ThemeContext>>
     }
 }

@@ -70,8 +70,12 @@ pub fn ThemeProvider(
         .iter()
         .find(|t| t.id() == theme)
         .is_some_and(|t| t.effects.scanlines);
+    let backdrop = themes
+        .iter()
+        .find(|t| t.id() == theme)
+        .map_or(String::new(), dodai_topcoat::root_style);
     view! {
-        <div class="dodai-root" data-theme=theme data-scanlines=if scan { "1" } else { "0" }>
+        <div class="dodai-root" data-theme=theme style=backdrop data-scanlines=if scan { "1" } else { "0" }>
             <style>{css}</style>
             {children()}
         </div>

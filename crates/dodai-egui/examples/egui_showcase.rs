@@ -221,7 +221,8 @@ impl eframe::App for App {
         let ctx = &root.ctx().clone();
         self.theme.handle_keys(ctx);
         self.theme.install(ctx);
-        egui::CentralPanel::default().show(root, |ui| {
+        let theme = self.theme.switcher.current().clone();
+        dodai_egui::root(root, &theme, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
                 let name = self.theme.switcher.current().name();
                 let logo = self.logo.get_or_insert_with(|| {

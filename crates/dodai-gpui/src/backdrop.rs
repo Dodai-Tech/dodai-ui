@@ -70,6 +70,19 @@ pub fn backdrop(t: &Theme) -> Option<impl IntoElement> {
     }))
 }
 
+/// The app root: relative and full size, painted with the design's canvas colour and mesh (the
+/// [`backdrop`]) under whatever children the caller adds. This is the default way to start a
+/// window, so a design with a gradient canvas (Dodai) always shows it.
+pub fn root(t: &Theme) -> gpui::Div {
+    use crate::DodaiStyled;
+    use gpui::{ParentElement, Styled};
+    gpui::div()
+        .relative()
+        .size_full()
+        .dodai_background(t)
+        .children(backdrop(t))
+}
+
 /// `image` stretched over its (relative) parent.
 fn cover(image: Arc<RenderImage>) -> gpui::Div {
     gpui::div()

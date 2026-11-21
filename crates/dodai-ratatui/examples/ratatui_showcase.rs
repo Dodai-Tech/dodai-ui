@@ -20,7 +20,7 @@ use dodai_ratatui::{
 use ratatui::{
     layout::{Constraint, Layout, Rect},
     text::{Line, Span},
-    widgets::{Block, ListState, Paragraph},
+    widgets::{ListState, Paragraph},
     DefaultTerminal, Frame,
 };
 
@@ -100,7 +100,7 @@ fn run(term: &mut DefaultTerminal, app: &mut App) -> io::Result<()> {
 fn draw(f: &mut Frame, app: &mut App) {
     let t = &app.tui;
     let area = f.area();
-    f.render_widget(Block::new().style(t.base()), area);
+    t.paint_canvas(f.buffer_mut(), area);
 
     let [head, body, foot] = Layout::vertical([
         Constraint::Length(2),
