@@ -10,7 +10,8 @@ def main [--check] {
     mut stale = []
     for t in ($spec.target | transpose name target) {
         let path = ($root | path join $t.target.path)
-        let text = (render $spec $t.target)
+        let text = (render $spec $t.target | rustfmt --edition 2021 --emit stdout | lines | skip 0 | str join "\n")
+        let text = $"($text)\n"
         if $check {
             if (not ($path | path exists)) or ((open --raw $path) != $text) { $stale = ($stale | append $t.target.path) }
         } else {
