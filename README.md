@@ -27,7 +27,7 @@ Also in the repository but **not part of the first release**: `dodai-charts` (70
 renderer-agnostic maths), `dodai-dash` (a dashboard engine: a TOML and JSON dashboard format, validation against your own metrics, view models; no storage and no rendering; see its [README](crates/dodai-dash/README.md)), `dodai-ratatui` (a terminal adapter, still small) and the egui,
 slint, yew, leptos and freya adapters.
 
-**Started:** [`dodai-xilem`](crates/dodai-xilem) for [xilem](https://github.com/linebender/xilem) (masonry widgets, vello renderer). Scaffold only: colour conversion and a themed button.
+**Started:** [`dodai-xilem`](crates/dodai-xilem) for [xilem](https://github.com/linebender/xilem) (masonry widgets, vello renderer). Colour conversion, button, tag, panel and tabs; run the `xilem_showcase` example.
 
 ## Status (0.1)
 

@@ -6,9 +6,9 @@
 //!
 //! Scaffold: [`color`] and [`button`]. More components follow `docs/PARITY.md`.
 
-use dodai_core::{ButtonVariant, ControlState, Theme};
+use dodai_core::{ButtonVariant, ControlState, ItemState, Theme, Tone};
 use xilem::style::Style;
-use xilem::view::{button as masonry_button, label};
+use xilem::view::{button as masonry_button, flex_row, label, sized_box};
 use xilem::{Color, WidgetView};
 
 /// A token colour as a vello/peniko colour.
@@ -32,11 +32,7 @@ pub fn button<State: 'static>(
     let idle = theme.button(variant, ControlState::Idle);
     let pressed = theme.button(variant, ControlState::Pressed);
     let off = theme.button(variant, ControlState::Disabled);
-    let text = if theme.typography.uppercase_labels {
-        text.into().to_uppercase()
-    } else {
-        text.into()
-    };
+    let text = display(theme, text.into());
     masonry_button::<State, (), _>(
         label(text)
             .text_size(theme.typography.size_md)
@@ -49,6 +45,79 @@ pub fn button<State: 'static>(
     .border(fill(idle.border), f64::from(theme.shape.border_width))
     .corner_radius(f64::from(theme.shape.radius))
     .padding(f64::from(theme.button_padding()))
+}
+
+/// Status tag: solid or outlined in a [`Tone`].
+pub fn tag<State: 'static>(
+    theme: &Theme,
+    text: impl Into<String>,
+    tone: Tone,
+    solid: bool,
+) -> impl WidgetView<State> {
+    let tok = theme.tag(tone, solid);
+    sized_box(
+        label(display(theme, text.into()))
+            .text_size(theme.typography.size_xs)
+            .color(color(tok.foreground)),
+    )
+    .background_color(fill(tok.background))
+    .border(fill(tok.border), f64::from(theme.shape.border_width))
+    .corner_radius(f64::from(theme.shape.radius))
+    .padding(f64::from(theme.spacing.sm))
+}
+
+/// Panel: the surface, border and radius of a container around `child`.
+pub fn panel<State: 'static, V: WidgetView<State>>(
+    theme: &Theme,
+    focused: bool,
+    child: V,
+) -> impl WidgetView<State> {
+    let tok = theme.panel(focused);
+    sized_box(child)
+        .background_color(color(tok.background))
+        .border(color(tok.border), f64::from(theme.shape.border_width))
+        .corner_radius(f64::from(theme.shape.radius))
+        .padding(f64::from(theme.spacing.md))
+}
+
+/// Tab strip: one button per label, the active one filled from the tab tokens. `on_select`
+/// gets the index of the clicked tab.
+pub fn tabs<State: 'static>(
+    theme: &Theme,
+    labels: &[&str],
+    active: usize,
+    on_select: impl Fn(&mut State, usize) + Clone + Send + Sync + 'static,
+) -> impl WidgetView<State> {
+    let items: Vec<_> = labels
+        .iter()
+        .enumerate()
+        .map(|(i, text)| {
+            let tok = theme.tab(ItemState::of(i == active, false));
+            let on_select = on_select.clone();
+            masonry_button::<State, (), _>(
+                label(display(theme, (*text).to_string()))
+                    .text_size(theme.typography.size_md)
+                    .color(color(tok.foreground)),
+                move |state: &mut State| on_select(state, i),
+            )
+            .background_color(fill(tok.background))
+            .border(fill(tok.indicator), f64::from(theme.shape.border_width))
+            .corner_radius(f64::from(theme.shape.radius))
+            .padding(f64::from(theme.spacing.md))
+        })
+        .collect();
+    flex_row(items).gap(xilem::masonry::properties::types::Length::px(f64::from(
+        theme.spacing.xs,
+    )))
+}
+
+/// A label as the design writes it (some designs set labels in capitals).
+fn display(theme: &Theme, text: String) -> String {
+    if theme.typography.uppercase_labels {
+        text.to_uppercase()
+    } else {
+        text
+    }
 }
 
 #[cfg(test)]
@@ -64,6 +133,14 @@ mod tests {
             a: 4,
         });
         assert_eq!(c.to_rgba8().to_u8_array(), [1, 2, 3, 4]);
+    }
+
+    #[test]
+    fn tag_panel_and_tabs_build() {
+        let t = Theme::default();
+        let _ = tag::<()>(&t, "New", Tone::Info, true);
+        let _ = panel::<(), _>(&t, false, label("x"));
+        let _ = tabs(&t, &["a", "b"], 1, |_: &mut (), _| {});
     }
 
     #[test]
