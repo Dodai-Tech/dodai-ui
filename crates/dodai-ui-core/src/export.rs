@@ -252,6 +252,26 @@ fn button_tokens(t: &Theme) -> Vec<(String, String)> {
     v
 }
 
+/// The `kit` group: how every [`Kit`](crate::Kit) box (card, alert, chip, row, ...) looks, as
+/// `<kit>-{bg,fg,border,pad-x,pad-y}`. The same data the toolkits draw from, so a design file
+/// binds to it instead of copying values.
+fn kit_tokens(t: &Theme) -> Vec<(String, String)> {
+    let col = |c: Option<Color>| match c {
+        Some(c) => tok("color", js(&color(c))),
+        None => tok("color", js("#00000000")),
+    };
+    let mut v = Vec::new();
+    for kit in crate::Kit::all() {
+        let (k, s) = (kit.name(), t.kit(kit, false));
+        v.push((format!("{k}-bg"), col(s.fill)));
+        v.push((format!("{k}-fg"), col(Some(s.fg))));
+        v.push((format!("{k}-border"), col(s.border)));
+        v.push((format!("{k}-pad-x"), px(s.padding.0)));
+        v.push((format!("{k}-pad-y"), px(s.padding.1)));
+    }
+    v
+}
+
 /// The `look` group: the structural flags of the design (which components take which form).
 fn look_tokens(t: &Theme) -> Vec<(String, String)> {
     let l = t.look();
@@ -401,9 +421,9 @@ pub fn mode_tokens_json(t: &Theme) -> String {
     let (shape, effect) = (shape_tokens(t), effect_tokens(t));
     let (motion, surface) = (motion_tokens(t), surface_tokens(t));
     let (size, look, nav) = (size_tokens(t), look_tokens(t), nav_tokens(t));
-    let button = button_tokens(t);
+    let (button, kit) = (button_tokens(t), kit_tokens(t));
     format!(
-        "{{{},{},{},{},{},{},{},{},{},{},{}}}\n",
+        "{{{},{},{},{},{},{},{},{},{},{},{},{}}}\n",
         group("color", &colors),
         group("font", &font),
         group("space", &space),
@@ -415,6 +435,7 @@ pub fn mode_tokens_json(t: &Theme) -> String {
         group("look", &look),
         group("nav", &nav),
         group("button", &button),
+        group("kit", &kit),
     )
 }
 
