@@ -3,6 +3,8 @@
 //! ```text
 //! dist/tokens/dodai.tokens.json   W3C DTCG tokens, all themes
 //! dist/tokens/<theme>.tokens.json one file per theme
+//! dist/design/<system>/<theme>.tokens.json  a design tool's layout: a folder is a collection,
+//!                                      a file a mode (OpenPencil, Figma)
 //! dist/tokens/dodai-<system>.tokens.json  one design system only (cyberpunk, material)
 //! dist/css/dodai.css              custom properties + component CSS, all themes
 //! dist/css/dodai-<system>.css     the same, for one design system only
@@ -13,7 +15,7 @@
 //!
 //! `cargo run -p dodai-ui-topcoat --example export -- dist`
 
-use dodai_ui_core::export::{design_tokens_json, theme_tokens_json};
+use dodai_ui_core::export::{design_tokens_json, mode_tokens_json, theme_tokens_json};
 use dodai_ui_core::themes;
 use std::{fs, path::PathBuf};
 
@@ -49,6 +51,10 @@ fn main() {
         );
     }
     for t in &all {
+        write(
+            out.join(format!("design/{}/{}.tokens.json", t.meta.family, t.id())),
+            mode_tokens_json(t),
+        );
         write(
             out.join(format!("tokens/{}.tokens.json", t.id())),
             format!("{{{}}}\n", theme_tokens_json(t)),

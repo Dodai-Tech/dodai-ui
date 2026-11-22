@@ -300,15 +300,20 @@ fn motion_tokens(t: &Theme) -> Vec<(String, String)> {
     let motion = vec![
         (
             "duration".to_string(),
-            tok("duration", js(&format!("{}ms", m.duration.as_millis()))),
+            tok("duration", duration_value(m.duration)),
         ),
         (
             "delay".to_string(),
-            tok("duration", js(&format!("{}ms", m.delay.as_millis()))),
+            tok("duration", duration_value(m.delay)),
         ),
         ("easing".to_string(), tok("string", js(&m.easing.to_css()))),
     ];
     motion
+}
+
+/// A DTCG duration value: `{"value": 160, "unit": "ms"}`, as the format's 2025 draft writes it.
+fn duration_value(d: std::time::Duration) -> String {
+    format!("{{\"value\":{},\"unit\":\"ms\"}}", d.as_millis())
 }
 
 /// The `surface` group: textures and effect strengths.
@@ -389,20 +394,16 @@ fn surface_tokens(t: &Theme) -> Vec<(String, String)> {
     surface
 }
 
-/// One theme as a DTCG group (`color`, `font`, `space`, `shape`, `effect`).
-pub fn theme_tokens_json(t: &Theme) -> String {
+/// The groups of one theme, without a wrapping name: the shape of a design-tool token file,
+/// where the file (not a group) is the mode.
+pub fn mode_tokens_json(t: &Theme) -> String {
     let (colors, font, space) = (colour_tokens(t), font_tokens(t), space_tokens(t));
     let (shape, effect) = (shape_tokens(t), effect_tokens(t));
     let (motion, surface) = (motion_tokens(t), surface_tokens(t));
     let (size, look, nav) = (size_tokens(t), look_tokens(t), nav_tokens(t));
     let button = button_tokens(t);
-
     format!(
-        "{}:{{\"$description\":{},\"$extensions\":{{\"dodai.mode\":{},\"dodai.family\":{}}},{},{},{},{},{},{},{},{},{},{},{}}}",
-        js(t.id()),
-        js(t.meta.description),
-        js(if t.is_dark() { "dark" } else { "light" }),
-        js(t.meta.family),
+        "{{{},{},{},{},{},{},{},{},{},{},{}}}\n",
         group("color", &colors),
         group("font", &font),
         group("space", &space),
@@ -414,6 +415,23 @@ pub fn theme_tokens_json(t: &Theme) -> String {
         group("look", &look),
         group("nav", &nav),
         group("button", &button),
+    )
+}
+
+/// One theme as a DTCG group (`color`, `font`, `space`, `shape`, `effect`).
+pub fn theme_tokens_json(t: &Theme) -> String {
+    let inner = mode_tokens_json(t);
+    let inner = inner
+        .trim_end()
+        .strip_prefix('{')
+        .and_then(|i| i.strip_suffix('}'))
+        .unwrap_or_default();
+    format!(
+        "{}:{{\"$description\":{},\"$extensions\":{{\"dodai.mode\":{},\"dodai.family\":{}}},{inner}}}",
+        js(t.id()),
+        js(t.meta.description),
+        js(if t.is_dark() { "dark" } else { "light" }),
+        js(t.meta.family),
     )
 }
 
