@@ -8,7 +8,7 @@ export def toolkits []: nothing -> table {
         { id: dioxus,  crate: dodai-dioxus,  kind: rust,  model: "crates/dodai-dioxus/examples/dioxus_showcase/render.rs" }
         { id: bevy,    crate: dodai-bevy,    kind: rust,  model: "crates/dodai-bevy/examples/bevy_showcase/render.rs" }
         { id: topcoat, crate: dodai-topcoat, kind: css,   model: "crates/dodai-topcoat/examples/topcoat_showcase/render.rs" }
-        { id: egui,    crate: dodai-egui,    kind: rust,  model: "" }
+        { id: egui,    crate: dodai-egui,    kind: rust,  model: "crates/dodai-egui/examples/egui_showcase/render.rs" }
         { id: freya,   crate: dodai-freya,   kind: rust,  model: "" }
         { id: slint,   crate: dodai-slint,   kind: slint, model: "" }
         { id: leptos,  crate: dodai-leptos,  kind: rust,  model: "" }

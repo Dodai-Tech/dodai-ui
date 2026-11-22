@@ -30,3 +30,8 @@ egui = "0.37"
 [dev-dependencies]
 dodai-core = { workspace = true, features = ["cyberpunk", "material", "neobrutalism", "dodai"] }
 eframe = "0.37"
+egui_extras = { version = "0.37", default-features = false, features = ["image"] }
+image = { version = "0.25", default-features = false, features = ["png"] }
+dodai-showcase-model = { workspace = true }
+dodai-shaders = { workspace = true }
+dodai-icons = { workspace = true, features = ["theme", "cyberpunk", "material", "neobrutalism"] }

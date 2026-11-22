@@ -41,36 +41,49 @@ impl Icon {
     }
 }
 
+/// Draw `id` (the active design's pack) into `rect`, tinted `tint`.
+pub(crate) fn paint(ui: &Ui, rect: egui::Rect, id: IconId, filled: bool, tint: Color32) {
+    if !ui.is_rect_visible(rect) {
+        return;
+    }
+    let t = active_theme(ui.ctx());
+    let px = (rect.width() * ui.ctx().pixels_per_point())
+        .round()
+        .max(8.0) as u32;
+    let set = t.look().icons;
+    let key = egui::Id::unique(("dodai-egui/icon", id, set as u8, filled, px));
+    let tex: Option<TextureHandle> = ui.ctx().data_mut(|d| d.get_temp(key));
+    let tex = tex.or_else(|| {
+        glyph_for(id, set, filled).map(|g| {
+            let rgba: Vec<u8> = g
+                .coverage(px)
+                .iter()
+                .flat_map(|&a| [255, 255, 255, a])
+                .collect();
+            let img = ColorImage::from_rgba_unmultiplied([px as usize, px as usize], &rgba);
+            let h = ui
+                .ctx()
+                .load_texture(format!("icon-{key:?}"), img, TextureOptions::LINEAR);
+            ui.ctx().data_mut(|d| d.insert_temp(key, h.clone()));
+            h
+        })
+    });
+    if let Some(tex) = tex {
+        ui.painter().image(
+            tex.id(),
+            rect,
+            egui::Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(1.0, 1.0)),
+            tint,
+        );
+    }
+}
+
 impl Widget for Icon {
     fn ui(self, ui: &mut Ui) -> Response {
         let t = active_theme(ui.ctx());
         let (rect, resp) = ui.allocate_exact_size(vec2(self.size, self.size), Sense::hover());
-        let px = (self.size * ui.ctx().pixels_per_point()).round().max(8.0) as u32;
-        let set = t.look().icons;
-        let key = egui::Id::unique(("dodai-egui/icon", self.id, set as u8, self.filled, px));
-        let tex: Option<TextureHandle> = ui.ctx().data_mut(|d| d.get_temp(key));
-        let tex = match tex {
-            Some(t) => Some(t),
-            None => glyph_for(self.id, set, self.filled).map(|g| {
-                let cov = g.coverage(px);
-                let rgba: Vec<u8> = cov.iter().flat_map(|&a| [255, 255, 255, a]).collect();
-                let img = ColorImage::from_rgba_unmultiplied([px as usize, px as usize], &rgba);
-                let h = ui
-                    .ctx()
-                    .load_texture(format!("icon-{key:?}"), img, TextureOptions::LINEAR);
-                ui.ctx().data_mut(|d| d.insert_temp(key, h.clone()));
-                h
-            }),
-        };
-        if let (Some(tex), true) = (tex, ui.is_rect_visible(rect)) {
-            let tint = self.color.unwrap_or_else(|| color32(t.palette.text));
-            ui.painter().image(
-                tex.id(),
-                rect,
-                egui::Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(1.0, 1.0)),
-                tint,
-            );
-        }
+        let tint = self.color.unwrap_or_else(|| color32(t.palette.text));
+        paint(ui, rect, self.id, self.filled, tint);
         resp
     }
 }

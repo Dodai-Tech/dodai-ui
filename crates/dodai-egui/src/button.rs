@@ -2,7 +2,7 @@
 
 use crate::paint::{add_all, box_shapes_for, color32, control_state, layout, sense};
 use crate::{active_theme, display_text};
-use dodai_core::{ButtonVariant, ControlState};
+use dodai_core::{ButtonVariant, ControlSize, ControlState};
 use egui::{vec2, Align2, Response, Ui, Widget};
 
 /// Themed button: every [`ButtonVariant`], optionally disabled.
@@ -11,6 +11,9 @@ pub struct Button {
     variant: ButtonVariant,
     enabled: bool,
     min_width: f32,
+    size: ControlSize,
+    #[cfg(feature = "icons")]
+    icon: Option<dodai_icons::IconId>,
 }
 
 impl Button {
@@ -21,6 +24,9 @@ impl Button {
             variant: ButtonVariant::Primary,
             enabled: true,
             min_width: 0.0,
+            size: ControlSize::Medium,
+            #[cfg(feature = "icons")]
+            icon: None,
         }
     }
     /// Choose the emphasis.
@@ -33,6 +39,17 @@ impl Button {
         self.enabled = e;
         self
     }
+    /// Small, medium or large: the design's height, padding and text size.
+    pub fn size(mut self, size: ControlSize) -> Self {
+        self.size = size;
+        self
+    }
+    /// An icon before the label; alone (empty label) the button is square.
+    #[cfg(feature = "icons")]
+    pub fn icon(mut self, icon: dodai_icons::IconId) -> Self {
+        self.icon = Some(icon);
+        self
+    }
     /// Minimum width.
     pub fn min_width(mut self, w: f32) -> Self {
         self.min_width = w;
@@ -43,11 +60,30 @@ impl Button {
 impl Widget for Button {
     fn ui(self, ui: &mut Ui) -> Response {
         let t = active_theme(ui.ctx());
-        let g = layout(ui, display_text(&t, &self.text), t.typography.size_md);
-        let size = vec2(
-            (g.size().x + 2.0 * t.spacing.lg).max(self.min_width),
-            t.shape.control_height,
-        );
+        let m = t.control_metrics(self.size);
+        let g = layout(ui, display_text(&t, &self.text), m.text_size);
+        #[cfg(feature = "icons")]
+        let lead = self.icon.map(|_| {
+            m.icon_size
+                + if self.text.is_empty() {
+                    0.0
+                } else {
+                    t.spacing.sm
+                }
+        });
+        #[cfg(not(feature = "icons"))]
+        let lead: Option<f32> = None;
+        let label_w = if self.text.is_empty() {
+            0.0
+        } else {
+            g.size().x
+        };
+        let width = match (lead, self.text.is_empty()) {
+            (Some(_), true) => m.height,
+            (Some(l), false) => label_w + l + 2.0 * m.padding,
+            (None, _) => label_w + 2.0 * m.padding,
+        };
+        let size = vec2(width.max(self.min_width), m.height);
         let (rect, resp) = ui.allocate_exact_size(size, sense(self.enabled));
         let state = control_state(&resp, self.enabled);
         if self.enabled {
@@ -69,10 +105,26 @@ impl Widget for Button {
                     Some(dodai_core::SurfaceClass::Button),
                 ),
             );
-            let pos = Align2::CENTER_CENTER
-                .align_size_within_rect(g.size(), rect)
+            let content = vec2(label_w + lead.unwrap_or(0.0), g.size().y.max(m.icon_size));
+            let left = Align2::CENTER_CENTER
+                .align_size_within_rect(content, rect)
                 .min;
-            ui.painter().galley(pos, g, color32(tok.foreground));
+            #[cfg(feature = "icons")]
+            if let Some(icon) = self.icon {
+                let r = egui::Rect::from_min_size(
+                    egui::pos2(left.x, rect.center().y - m.icon_size / 2.0),
+                    vec2(m.icon_size, m.icon_size),
+                );
+                crate::icon::paint(ui, r, icon, false, color32(tok.foreground));
+            }
+            if label_w > 0.0 {
+                let x = left.x + lead.unwrap_or(0.0);
+                ui.painter().galley(
+                    egui::pos2(x, rect.center().y - g.size().y / 2.0),
+                    g,
+                    color32(tok.foreground),
+                );
+            }
         }
         resp
     }
