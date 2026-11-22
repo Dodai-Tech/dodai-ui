@@ -1,11 +1,9 @@
 //! Every Dodai component in Freya. Keys: `t`/`T` next/prev theme, `+`/`-` glow.
 //! Run: `cargo run -p dodai-freya --example freya_showcase`
 
-use dodai_core::themes;
 use dodai_icons::IconId;
 
 use dodai_core::{ButtonVariant, Tone};
-use dodai_freya::paint::color;
 use dodai_freya::*;
 use freya::prelude::*;
 
@@ -24,7 +22,7 @@ fn main() {
 }
 
 fn app() -> impl IntoElement {
-    let dodai = use_init_dodai(themes::cyberpunk::yellow());
+    let dodai = use_init_dodai(dodai_core::dodai::light());
     let t = dodai.theme();
     let mut tab = use_state(|| 0usize);
     let mut on = use_state(|| true);
@@ -130,10 +128,7 @@ fn app() -> impl IntoElement {
             .into_element()
     }));
 
-    rect()
-        .width(Size::fill())
-        .height(Size::fill())
-        .background(color(t.palette.background))
+    dodai_freya::paint::root(&t)
         .on_global_key_down(move |e: Event<KeyboardEventData>| match &e.key {
             Key::Character(c) if c == "t" => dodai.next(),
             Key::Character(c) if c == "T" => dodai.prev(),

@@ -334,6 +334,46 @@ pub fn backdrop_mesh(theme: &Theme, w: usize, h: usize) -> Option<Vec<u8>> {
         .then(|| mesh_pixels(theme.palette.background, style.wash, style.backdrop, w, h))
 }
 
+/// The canvas mesh of `theme` as an SVG document (canvas colour plus one radial gradient per
+/// blob, stretched to its viewport), `None` for a flat canvas. For toolkits that can show an
+/// SVG but not raw pixels.
+pub fn backdrop_svg(theme: &Theme) -> Option<String> {
+    let style = &theme.surface_style;
+    if style.backdrop <= 0.0 {
+        return None;
+    }
+    let (w, h) = (MESH_SIZE.0 as f32, MESH_SIZE.1 as f32);
+    let blobs = mesh_blobs(style.wash, style.backdrop);
+    let mut defs = String::new();
+    let mut body = format!(
+        "<rect width=\"{w}\" height=\"{h}\" fill=\"{}\"/>",
+        theme.palette.background.to_hex()
+    );
+    for (i, b) in blobs.iter().enumerate() {
+        defs.push_str(&format!(
+            "<radialGradient id=\"b{i}\" gradientUnits=\"userSpaceOnUse\" cx=\"{}\" cy=\"{}\" r=\"{}\">",
+            b.x * w,
+            b.y * h,
+            b.r * h
+        ));
+        for s in 0..=8 {
+            let d = s as f32 / 8.0;
+            defs.push_str(&format!(
+                "<stop offset=\"{d}\" stop-color=\"{}\" stop-opacity=\"{:.3}\"/>",
+                b.color.to_hex(),
+                b.alpha_at(d)
+            ));
+        }
+        defs.push_str("</radialGradient>");
+        body.push_str(&format!(
+            "<rect width=\"{w}\" height=\"{h}\" fill=\"url(#b{i})\"/>"
+        ));
+    }
+    Some(format!(
+        "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 {w} {h}\" preserveAspectRatio=\"none\"><defs>{defs}</defs>{body}</svg>"
+    ))
+}
+
 /// The picture a frosted design sits on, `w`×`h` RGBA: its canvas mesh with fine, faint detail in
 /// the design's own colours (hairlines and crisp dots), so the blur under a glass surface has
 /// something to show. A smooth canvas alone has nothing to blur.

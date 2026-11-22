@@ -82,8 +82,8 @@ pub use dodai_fx::{
     Texture,
 };
 pub use glass::{
-    backdrop_mesh, design_picture, frost_scene, glass_picture, mesh_blobs, mesh_pixels,
-    surface_glass, Glass, MeshBlob, SurfaceMode, MESH_SIZE,
+    backdrop_mesh, backdrop_svg, design_picture, frost_scene, glass_picture, mesh_blobs,
+    mesh_pixels, surface_glass, Glass, MeshBlob, SurfaceMode, MESH_SIZE,
 };
 pub use kit::{busy, Kit, KitStyle};
 pub use knob::{

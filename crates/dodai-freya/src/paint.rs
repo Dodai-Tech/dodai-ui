@@ -6,6 +6,31 @@ use dodai_core::{Color as Rgba, Theme};
 use freya::prelude::*;
 
 /// Token colour → Freya colour (straight alpha, `0..=255`).
+/// The app root: full size, the canvas colour, and for a design with a gradient canvas (Dodai)
+/// its mesh stretched behind whatever children the caller adds. This is the default way to
+/// start a window.
+pub fn root(theme: &Theme) -> Rect {
+    let base = rect()
+        .width(Size::fill())
+        .height(Size::fill())
+        .background(color(theme.palette.background));
+    match dodai_core::backdrop_svg(theme) {
+        Some(svg) => base.child(
+            rect()
+                .position(Position::new_absolute())
+                .width(Size::fill())
+                .height(Size::fill())
+                .child(
+                    SvgViewer::new(Bytes::from(svg.into_bytes()))
+                        .show_loader(false)
+                        .width(Size::fill())
+                        .height(Size::fill()),
+                ),
+        ),
+        None => base,
+    }
+}
+
 pub fn color(c: Rgba) -> Color {
     Color::from_argb(c.a, c.r, c.g, c.b)
 }

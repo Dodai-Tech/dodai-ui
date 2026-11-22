@@ -59,6 +59,22 @@ impl UiGlass {
 #[require(Node, ImageNode)]
 pub struct UiBackdrop;
 
+impl UiBackdrop {
+    /// The backdrop node: absolute and full size. Spawn it first under the root node of a window
+    /// (`root.spawn(UiBackdrop::node())`) so a design with a gradient canvas (Dodai) shows it.
+    pub fn node() -> impl Bundle {
+        (
+            UiBackdrop,
+            Node {
+                position_type: PositionType::Absolute,
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                ..default()
+            },
+        )
+    }
+}
+
 /// The child image of a frosted surface, and what it was drawn for.
 #[derive(Component, Debug, Clone, PartialEq)]
 pub(crate) struct FrostImage {
