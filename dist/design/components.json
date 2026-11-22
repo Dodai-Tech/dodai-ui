@@ -78,7 +78,8 @@
     {
       "name": "BottomSheet",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -136,6 +137,7 @@
       "toolkits": [
         "gpui",
         "iced",
+        "dioxus",
         "bevy",
         "topcoat"
       ]
@@ -164,7 +166,8 @@
     {
       "name": "Column",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -188,7 +191,8 @@
     {
       "name": "ContextMenu",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -283,7 +287,8 @@
     {
       "name": "DropdownMenu",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -314,7 +319,8 @@
     {
       "name": "FileDropZone",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -326,7 +332,8 @@
     {
       "name": "FormField",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -344,7 +351,8 @@
     {
       "name": "FullScreenDialog",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -369,7 +377,8 @@
     {
       "name": "HoverCard",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -388,7 +397,8 @@
     {
       "name": "IconBadge",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -401,19 +411,22 @@
     {
       "name": "Image",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
       "name": "IndeterminateBar",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
       "name": "InputBox",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -492,7 +505,8 @@
     {
       "name": "LoadingIndicator",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -516,6 +530,7 @@
       "name": "MenuItem",
       "toolkits": [
         "gpui",
+        "dioxus",
         "bevy",
         "leptos"
       ]
@@ -523,7 +538,8 @@
     {
       "name": "ModalDrawer",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -555,37 +571,43 @@
     {
       "name": "NavigationBar",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
       "name": "NavigationDrawer",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
       "name": "NavigationItem",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
       "name": "NavigationRail",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
       "name": "NumberStepper",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
       "name": "OtpInput",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -642,6 +664,7 @@
       "name": "ProgressBar",
       "toolkits": [
         "gpui",
+        "dioxus",
         "egui"
       ]
     },
@@ -674,7 +697,8 @@
     {
       "name": "RichTooltip",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -754,13 +778,15 @@
       "name": "Shimmer",
       "toolkits": [
         "gpui",
+        "dioxus",
         "bevy"
       ]
     },
     {
       "name": "SideSheet",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -820,7 +846,8 @@
     {
       "name": "SplitButton",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -849,6 +876,7 @@
       "name": "Table",
       "toolkits": [
         "gpui",
+        "dioxus",
         "topcoat"
       ]
     },
@@ -900,6 +928,7 @@
       "name": "Text",
       "toolkits": [
         "gpui",
+        "dioxus",
         "bevy",
         "freya",
         "slint",
@@ -958,7 +987,8 @@
     {
       "name": "TimelineEvent",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -1007,7 +1037,8 @@
     {
       "name": "TreeRow",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
