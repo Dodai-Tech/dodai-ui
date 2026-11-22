@@ -18,7 +18,8 @@
       "name": "Accordion",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
@@ -47,7 +48,8 @@
         "gpui",
         "iced",
         "dioxus",
-        "bevy"
+        "bevy",
+        "leptos"
       ]
     },
     {
@@ -65,21 +67,24 @@
       "name": "Banner",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "BottomAppBar",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "BottomSheet",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
@@ -121,7 +126,8 @@
       "name": "Carousel",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
@@ -140,14 +146,16 @@
         "iced",
         "dioxus",
         "bevy",
-        "topcoat"
+        "topcoat",
+        "leptos"
       ]
     },
     {
       "name": "Clock",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
@@ -163,49 +171,56 @@
       "name": "ColorPicker",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "Column",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "Combobox",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "Command",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "CommandPalette",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "ContextMenu",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "CountUp",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
@@ -221,35 +236,40 @@
       "name": "DateInput",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "DatePicker",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "DateTimePicker",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "DateTimeRangePicker",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "DesignSystemSelector",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
@@ -257,6 +277,7 @@
       "toolkits": [
         "gpui",
         "dioxus",
+        "leptos",
         "ratatui"
       ]
     },
@@ -264,7 +285,8 @@
       "name": "DialogCard",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
@@ -287,7 +309,8 @@
       "toolkits": [
         "gpui",
         "dioxus",
-        "bevy"
+        "bevy",
+        "leptos"
       ]
     },
     {
@@ -295,91 +318,104 @@
       "toolkits": [
         "gpui",
         "dioxus",
-        "freya"
+        "freya",
+        "leptos"
       ]
     },
     {
       "name": "DropdownMenu",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "EntryScope",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "Fab",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "FabMenu",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "Feed",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "FileDropZone",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "Follow",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "FormField",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "FrostLayer",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "FrostedScene",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "FullScreenDialog",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "GlowLayer",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
@@ -399,7 +435,8 @@
       "name": "HoverCard",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
@@ -419,49 +456,56 @@
       "name": "IconBadge",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "IconButton",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "Image",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "IndeterminateBar",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "InputBox",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "Interact",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "Kbd",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
@@ -471,7 +515,8 @@
         "iced",
         "dioxus",
         "bevy",
-        "topcoat"
+        "topcoat",
+        "leptos"
       ]
     },
     {
@@ -492,7 +537,8 @@
       "name": "Lazy",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
@@ -523,21 +569,24 @@
       "name": "Live",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "LoadingIndicator",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "Markdown",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
@@ -564,7 +613,8 @@
       "name": "ModalDrawer",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
@@ -597,63 +647,72 @@
       "name": "NavigationBar",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "NavigationDrawer",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "NavigationItem",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "NavigationRail",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "NumberStepper",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "OtpInput",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "Overscroll",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "OverscrollFeel",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "PageGrid",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
@@ -685,7 +744,8 @@
       "name": "Popover",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
@@ -693,7 +753,8 @@
       "toolkits": [
         "gpui",
         "dioxus",
-        "egui"
+        "egui",
+        "leptos"
       ]
     },
     {
@@ -703,7 +764,8 @@
         "iced",
         "dioxus",
         "bevy",
-        "topcoat"
+        "topcoat",
+        "leptos"
       ]
     },
     {
@@ -720,14 +782,16 @@
       "name": "ResponsiveShell",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "RichTooltip",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
@@ -737,6 +801,7 @@
         "iced",
         "dioxus",
         "slint",
+        "leptos",
         "ratatui"
       ]
     },
@@ -744,28 +809,32 @@
       "name": "ScrollArea",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "ScrollSpy",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "SearchBar",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "SearchView",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
@@ -786,28 +855,32 @@
         "dioxus",
         "bevy",
         "topcoat",
-        "freya"
+        "freya",
+        "leptos"
       ]
     },
     {
       "name": "SelectOption",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "SelectionMarker",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "SelectionTrack",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
@@ -815,14 +888,16 @@
       "toolkits": [
         "gpui",
         "dioxus",
-        "bevy"
+        "bevy",
+        "leptos"
       ]
     },
     {
       "name": "SideSheet",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
@@ -863,7 +938,8 @@
       "name": "SnapStack",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
@@ -884,14 +960,16 @@
       "name": "SplitButton",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "SplitPane",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
@@ -908,7 +986,8 @@
       "name": "Stopwatch",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
@@ -916,7 +995,8 @@
       "toolkits": [
         "gpui",
         "dioxus",
-        "topcoat"
+        "topcoat",
+        "leptos"
       ]
     },
     {
@@ -955,14 +1035,16 @@
       "name": "TagField",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "TapTempo",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
@@ -973,6 +1055,7 @@
         "bevy",
         "freya",
         "slint",
+        "leptos",
         "xilem"
       ]
     },
@@ -993,7 +1076,8 @@
       "name": "ThemeSelector",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
@@ -1002,6 +1086,7 @@
         "gpui",
         "dioxus",
         "egui",
+        "leptos",
         "yew"
       ]
     },
@@ -1009,14 +1094,16 @@
       "name": "TimeInput",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "TimePicker",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
@@ -1033,35 +1120,40 @@
       "name": "TimelineEvent",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "Timer",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "Toast",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "Toolbar",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "TopAppBar",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
@@ -1078,14 +1170,16 @@
       "name": "TreeNavigation",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {
       "name": "TreeRow",
       "toolkits": [
         "gpui",
-        "dioxus"
+        "dioxus",
+        "leptos"
       ]
     },
     {

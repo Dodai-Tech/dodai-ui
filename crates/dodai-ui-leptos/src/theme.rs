@@ -3,6 +3,8 @@
 use dodai_ui_core::Theme;
 use dodai_ui_topcoat::{multi_theme_stylesheet, theme_vars, COMPONENTS_CSS};
 use leptos::prelude::*;
+use leptos::reactive::owner::Owner;
+use leptos::tachys::reactive_graph::OwnedView;
 
 /// Glow intensities addressable through `data-glow` on `<html>`.
 pub const GLOW_LEVELS: [f32; 5] = [0.0, 0.5, 1.0, 1.5, 2.0];
@@ -60,12 +62,19 @@ pub fn ThemeProvider(
     children: Children,
 ) -> impl IntoView {
     let css = install_css(&themes);
-    if let Some(t) = themes.iter().find(|t| t.id() == theme) {
-        provide_context(crate::GlassContext {
-            theme: t.clone(),
-            fx: t.resolve_surface(&surface),
-        });
-    }
+    // The children are built under their own owner that carries the context: components run
+    // when the view renders, after this function has returned.
+    let owner = Owner::current().map_or_else(Owner::new, |o| o.child());
+    let body = owner.with(|| {
+        if let Some(t) = themes.iter().find(|t| t.id() == theme) {
+            provide_context(crate::GlassContext {
+                theme: t.clone(),
+                fx: t.resolve_surface(&surface),
+            });
+        }
+        children()
+    });
+    let body = OwnedView::new_with_owner(body, owner);
     let scan = themes
         .iter()
         .find(|t| t.id() == theme)
@@ -77,7 +86,7 @@ pub fn ThemeProvider(
     view! {
         <div class="dodai-root" data-theme=theme style=backdrop data-scanlines=if scan { "1" } else { "0" }>
             <style>{css}</style>
-            {children()}
+            {body}
         </div>
     }
 }
