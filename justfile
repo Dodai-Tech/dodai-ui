@@ -629,3 +629,10 @@ _release-initial remotes:
     [ -n "$skipped" ] && echo "ℹ️  Skipped:$skipped"
     [ -n "$failed" ] && { echo "⚠️  Release $tag failed to push to:$failed"; exit 1; }
     echo "✅ Release $tag pushed to: $remotes — Release workflows will start."
+
+# Regenerate the design-tool files: tokens, component catalog, and the OpenPencil/Figma .fig.
+design:
+    cargo run -q -p dodai-ui-topcoat --example export -- dist
+    rm -rf crates/dist
+    nu scripts/design.nu catalog
+    nu scripts/design.nu build

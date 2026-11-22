@@ -132,3 +132,18 @@ export def render-parity []: nothing -> string {
         $details
     ] | str join "\n"
 }
+
+# Every reference component with the toolkits that expose it: `{ name, toolkits: [id] }`.
+export def component-matrix []: nothing -> table {
+    let comps = (component-names (crate-src dodai-ui-gpui rust))
+    let have = (toolkits | each { |t|
+        let src = (crate-src $t.crate $t.kind)
+        {
+            id: $t.id
+            has: (if $t.id == gpui { $comps } else { $comps | where { |c| exposes $src $c $t.kind } })
+        }
+    })
+    $comps | each { |c|
+        { name: $c, toolkits: ($have | where { $c in $in.has } | get id) }
+    }
+}

@@ -1,0 +1,1023 @@
+{
+  "toolkits": [
+    "gpui",
+    "iced",
+    "dioxus",
+    "bevy",
+    "topcoat",
+    "egui",
+    "freya",
+    "slint",
+    "leptos",
+    "yew",
+    "ratatui",
+    "xilem"
+  ],
+  "components": [
+    {
+      "name": "Accordion",
+      "toolkits": [
+        "gpui",
+        "dioxus"
+      ]
+    },
+    {
+      "name": "Alert",
+      "toolkits": [
+        "gpui",
+        "dioxus",
+        "leptos",
+        "yew"
+      ]
+    },
+    {
+      "name": "Avatar",
+      "toolkits": [
+        "gpui",
+        "iced",
+        "dioxus",
+        "topcoat",
+        "leptos",
+        "yew"
+      ]
+    },
+    {
+      "name": "AxisGizmo",
+      "toolkits": [
+        "gpui",
+        "iced",
+        "dioxus",
+        "bevy"
+      ]
+    },
+    {
+      "name": "Badge",
+      "toolkits": [
+        "gpui",
+        "dioxus",
+        "topcoat",
+        "leptos",
+        "yew",
+        "ratatui"
+      ]
+    },
+    {
+      "name": "Banner",
+      "toolkits": [
+        "gpui",
+        "dioxus"
+      ]
+    },
+    {
+      "name": "BottomAppBar",
+      "toolkits": [
+        "gpui",
+        "dioxus"
+      ]
+    },
+    {
+      "name": "BottomSheet",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "Breadcrumb",
+      "toolkits": [
+        "gpui",
+        "dioxus",
+        "topcoat",
+        "leptos",
+        "yew"
+      ]
+    },
+    {
+      "name": "Button",
+      "toolkits": [
+        "gpui",
+        "iced",
+        "dioxus",
+        "bevy",
+        "topcoat",
+        "egui",
+        "slint",
+        "leptos",
+        "yew",
+        "ratatui",
+        "xilem"
+      ]
+    },
+    {
+      "name": "Card",
+      "toolkits": [
+        "gpui",
+        "dioxus",
+        "leptos",
+        "yew"
+      ]
+    },
+    {
+      "name": "Carousel",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "Chip",
+      "toolkits": [
+        "gpui",
+        "dioxus",
+        "leptos",
+        "yew"
+      ]
+    },
+    {
+      "name": "CircularProgress",
+      "toolkits": [
+        "gpui",
+        "iced",
+        "bevy",
+        "topcoat"
+      ]
+    },
+    {
+      "name": "Clock",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "CodeBlock",
+      "toolkits": [
+        "gpui",
+        "dioxus",
+        "leptos",
+        "yew"
+      ]
+    },
+    {
+      "name": "ColorPicker",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "Column",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "Combobox",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "Command",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "CommandPalette",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "ContextMenu",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "CountUp",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "DataTable",
+      "toolkits": [
+        "gpui",
+        "dioxus",
+        "leptos",
+        "yew"
+      ]
+    },
+    {
+      "name": "DateInput",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "DatePicker",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "DateTimePicker",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "DateTimeRangePicker",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "DesignSystemSelector",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "Dialog",
+      "toolkits": [
+        "gpui",
+        "dioxus",
+        "ratatui"
+      ]
+    },
+    {
+      "name": "DialogCard",
+      "toolkits": [
+        "gpui",
+        "dioxus"
+      ]
+    },
+    {
+      "name": "Divider",
+      "toolkits": [
+        "gpui",
+        "iced",
+        "dioxus",
+        "bevy",
+        "topcoat",
+        "egui",
+        "slint",
+        "leptos",
+        "yew",
+        "ratatui"
+      ]
+    },
+    {
+      "name": "DodaiTheme",
+      "toolkits": [
+        "gpui",
+        "bevy"
+      ]
+    },
+    {
+      "name": "DodaiTooltip",
+      "toolkits": [
+        "gpui",
+        "freya"
+      ]
+    },
+    {
+      "name": "DropdownMenu",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "EntryScope",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "Fab",
+      "toolkits": [
+        "gpui",
+        "dioxus"
+      ]
+    },
+    {
+      "name": "FabMenu",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "Feed",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "FileDropZone",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "Follow",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "FormField",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "FrostLayer",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "FrostedScene",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "FullScreenDialog",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "GlowLayer",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "Heading",
+      "toolkits": [
+        "gpui",
+        "iced",
+        "dioxus",
+        "bevy",
+        "topcoat",
+        "freya",
+        "leptos",
+        "yew"
+      ]
+    },
+    {
+      "name": "HoverCard",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "Icon",
+      "toolkits": [
+        "gpui",
+        "iced",
+        "dioxus",
+        "bevy",
+        "topcoat",
+        "egui",
+        "leptos",
+        "yew"
+      ]
+    },
+    {
+      "name": "IconBadge",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "IconButton",
+      "toolkits": [
+        "gpui",
+        "dioxus"
+      ]
+    },
+    {
+      "name": "Image",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "IndeterminateBar",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "InputBox",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "Interact",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "Kbd",
+      "toolkits": [
+        "gpui",
+        "dioxus"
+      ]
+    },
+    {
+      "name": "Knob",
+      "toolkits": [
+        "gpui",
+        "iced",
+        "dioxus",
+        "bevy",
+        "topcoat"
+      ]
+    },
+    {
+      "name": "Label",
+      "toolkits": [
+        "gpui",
+        "iced",
+        "dioxus",
+        "bevy",
+        "topcoat",
+        "freya",
+        "leptos",
+        "yew",
+        "ratatui"
+      ]
+    },
+    {
+      "name": "Lazy",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "List",
+      "toolkits": [
+        "gpui",
+        "dioxus",
+        "topcoat",
+        "freya",
+        "leptos",
+        "yew"
+      ]
+    },
+    {
+      "name": "ListItem",
+      "toolkits": [
+        "gpui",
+        "iced",
+        "dioxus",
+        "bevy",
+        "egui",
+        "slint",
+        "leptos",
+        "yew"
+      ]
+    },
+    {
+      "name": "Live",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "LoadingIndicator",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "Markdown",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "Menu",
+      "toolkits": [
+        "gpui",
+        "iced",
+        "dioxus",
+        "topcoat",
+        "leptos",
+        "yew"
+      ]
+    },
+    {
+      "name": "MenuItem",
+      "toolkits": [
+        "gpui",
+        "bevy",
+        "leptos"
+      ]
+    },
+    {
+      "name": "ModalDrawer",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "Mono",
+      "toolkits": [
+        "gpui",
+        "dioxus",
+        "bevy",
+        "topcoat",
+        "freya",
+        "leptos",
+        "yew"
+      ]
+    },
+    {
+      "name": "Muted",
+      "toolkits": [
+        "gpui",
+        "iced",
+        "dioxus",
+        "bevy",
+        "topcoat",
+        "freya",
+        "leptos",
+        "yew",
+        "ratatui"
+      ]
+    },
+    {
+      "name": "NavigationBar",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "NavigationDrawer",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "NavigationItem",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "NavigationRail",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "NumberStepper",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "OtpInput",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "Overscroll",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "OverscrollFeel",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "PageGrid",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "Pagination",
+      "toolkits": [
+        "gpui",
+        "dioxus",
+        "topcoat",
+        "leptos",
+        "yew"
+      ]
+    },
+    {
+      "name": "Panel",
+      "toolkits": [
+        "gpui",
+        "iced",
+        "dioxus",
+        "bevy",
+        "topcoat",
+        "egui",
+        "slint",
+        "leptos",
+        "yew",
+        "xilem"
+      ]
+    },
+    {
+      "name": "Popover",
+      "toolkits": [
+        "gpui",
+        "dioxus"
+      ]
+    },
+    {
+      "name": "ProgressBar",
+      "toolkits": [
+        "gpui",
+        "egui"
+      ]
+    },
+    {
+      "name": "RangeSlider",
+      "toolkits": [
+        "gpui",
+        "iced",
+        "dioxus",
+        "bevy",
+        "topcoat"
+      ]
+    },
+    {
+      "name": "Rating",
+      "toolkits": [
+        "gpui",
+        "dioxus",
+        "topcoat",
+        "leptos",
+        "yew"
+      ]
+    },
+    {
+      "name": "ResponsiveShell",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "RichTooltip",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "Scanlines",
+      "toolkits": [
+        "gpui",
+        "iced",
+        "slint",
+        "ratatui"
+      ]
+    },
+    {
+      "name": "ScrollArea",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "ScrollSpy",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "SearchBar",
+      "toolkits": [
+        "gpui",
+        "dioxus"
+      ]
+    },
+    {
+      "name": "SearchView",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "Segmented",
+      "toolkits": [
+        "gpui",
+        "iced",
+        "dioxus",
+        "topcoat",
+        "leptos",
+        "yew"
+      ]
+    },
+    {
+      "name": "Select",
+      "toolkits": [
+        "gpui",
+        "dioxus",
+        "bevy",
+        "topcoat",
+        "freya"
+      ]
+    },
+    {
+      "name": "SelectOption",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "SelectionMarker",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "SelectionTrack",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "Shimmer",
+      "toolkits": [
+        "gpui",
+        "bevy"
+      ]
+    },
+    {
+      "name": "SideSheet",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "Skeleton",
+      "toolkits": [
+        "gpui",
+        "iced",
+        "dioxus",
+        "topcoat",
+        "leptos",
+        "yew"
+      ]
+    },
+    {
+      "name": "Slider",
+      "toolkits": [
+        "gpui",
+        "iced",
+        "dioxus",
+        "bevy",
+        "topcoat",
+        "egui",
+        "slint",
+        "leptos",
+        "yew"
+      ]
+    },
+    {
+      "name": "Snackbar",
+      "toolkits": [
+        "gpui",
+        "dioxus",
+        "leptos",
+        "yew"
+      ]
+    },
+    {
+      "name": "SnapStack",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "Spinner",
+      "toolkits": [
+        "gpui",
+        "iced",
+        "dioxus",
+        "bevy",
+        "topcoat",
+        "egui",
+        "slint",
+        "leptos",
+        "yew"
+      ]
+    },
+    {
+      "name": "SplitButton",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "SplitPane",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "Stepper",
+      "toolkits": [
+        "gpui",
+        "dioxus",
+        "topcoat",
+        "leptos",
+        "yew"
+      ]
+    },
+    {
+      "name": "Stopwatch",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "Table",
+      "toolkits": [
+        "gpui",
+        "topcoat"
+      ]
+    },
+    {
+      "name": "Tabs",
+      "toolkits": [
+        "gpui",
+        "iced",
+        "dioxus",
+        "bevy",
+        "topcoat",
+        "egui",
+        "slint",
+        "leptos",
+        "yew",
+        "ratatui",
+        "xilem"
+      ]
+    },
+    {
+      "name": "Tag",
+      "toolkits": [
+        "gpui",
+        "iced",
+        "dioxus",
+        "bevy",
+        "topcoat",
+        "egui",
+        "slint",
+        "leptos",
+        "yew",
+        "ratatui",
+        "xilem"
+      ]
+    },
+    {
+      "name": "TagField",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "TapTempo",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "Text",
+      "toolkits": [
+        "gpui",
+        "bevy",
+        "freya",
+        "slint",
+        "xilem"
+      ]
+    },
+    {
+      "name": "TextInput",
+      "toolkits": [
+        "gpui",
+        "iced",
+        "dioxus",
+        "bevy",
+        "topcoat",
+        "egui",
+        "leptos",
+        "yew"
+      ]
+    },
+    {
+      "name": "ThemeSelector",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "ThemeSwitcherBar",
+      "toolkits": [
+        "gpui",
+        "egui",
+        "yew"
+      ]
+    },
+    {
+      "name": "TimeInput",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "TimePicker",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "Timeline",
+      "toolkits": [
+        "gpui",
+        "dioxus",
+        "topcoat",
+        "leptos",
+        "yew"
+      ]
+    },
+    {
+      "name": "TimelineEvent",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "Timer",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "Toast",
+      "toolkits": [
+        "gpui",
+        "dioxus"
+      ]
+    },
+    {
+      "name": "Toolbar",
+      "toolkits": [
+        "gpui",
+        "dioxus"
+      ]
+    },
+    {
+      "name": "TopAppBar",
+      "toolkits": [
+        "gpui",
+        "dioxus"
+      ]
+    },
+    {
+      "name": "TreeItem",
+      "toolkits": [
+        "gpui",
+        "dioxus",
+        "topcoat",
+        "leptos",
+        "yew"
+      ]
+    },
+    {
+      "name": "TreeNavigation",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "TreeRow",
+      "toolkits": [
+        "gpui"
+      ]
+    },
+    {
+      "name": "TreeView",
+      "toolkits": [
+        "gpui",
+        "dioxus",
+        "leptos",
+        "yew"
+      ]
+    }
+  ]
+}

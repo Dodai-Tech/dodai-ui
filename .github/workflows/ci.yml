@@ -329,6 +329,8 @@ jobs:
       - run: nu scripts/tests/run_all.nu
       # docs/PARITY.md is generated; a model renderer must also name every Node variant.
       - run: nu scripts/parity.nu --check
+      # The design-tool catalog (dist/design/components.json) comes from the same measurement.
+      - run: nu scripts/design.nu check
       - run: cargo run -q -p dodai-ui-gen -- --check
 
   docs:

@@ -14,3 +14,4 @@ fuzz/artifacts/
 /crates/dodai-ui-freya/target
 /tools/shaders-kernels/target
 /crates/dodai-ui-xilem/target
+dist/design/*.fig
