@@ -22,7 +22,7 @@
 
 use bevy::prelude::*;
 use bevy::ui::FocusPolicy;
-use dodai_core::ButtonVariant;
+use dodai_core::{ButtonVariant, ControlSize};
 
 use crate::widgets::{
     divider, text, ButtonSpec, ControlEvent, ControlKind, ControlPointer, TextRole,
@@ -170,6 +170,7 @@ pub(crate) fn build_bars(
                 .spawn((
                     ButtonSpec::new(m.label.clone(), ButtonVariant::Ghost)
                         .square(true)
+                        .size(ControlSize::XSmall)
                         .bundle(),
                     UiMenuTitle(i),
                 ))
@@ -212,28 +213,20 @@ fn spawn_panel(commands: &mut Commands, title: Entity, menu: usize, items: &[Men
             column_gap: Val::Px(24.0),
             ..default()
         };
-        let entry = if item.enabled {
-            commands.spawn(
-                ButtonSpec::new(item.label.clone(), ButtonVariant::Ghost)
-                    .square(true)
-                    .bundle(),
-            )
-        } else {
-            commands.spawn(
-                ButtonSpec::new(item.label.clone(), ButtonVariant::Ghost)
-                    .square(true)
-                    .disabled(true)
-                    .bundle(),
-            )
-        }
-        .insert((
-            UiMenuEntry {
-                id: item.id.clone(),
-                menu,
-            },
-            row,
-        ))
-        .id();
+        let spec = ButtonSpec::new(item.label.clone(), ButtonVariant::Ghost)
+            .square(true)
+            .size(ControlSize::XSmall)
+            .disabled(!item.enabled);
+        let entry = commands
+            .spawn(spec.bundle())
+            .insert((
+                UiMenuEntry {
+                    id: item.id.clone(),
+                    menu,
+                },
+                row,
+            ))
+            .id();
         if !item.shortcut.is_empty() {
             let s = commands
                 .spawn(text(item.shortcut.clone(), TextRole::Caption))
