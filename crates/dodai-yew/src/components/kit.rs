@@ -417,6 +417,49 @@ pub fn Stepper(props: &StepperProps) -> Html {
     }
 }
 
+/// A node of [`TreeView`].
+#[derive(Clone, PartialEq)]
+pub struct TreeItem {
+    pub label: AttrValue,
+    pub icon: Option<IconId>,
+    pub children: Vec<TreeItem>,
+    pub open: bool,
+    /// Drawn as the selected row.
+    pub selected: bool,
+}
+
+fn tree_branch(item: &TreeItem) -> Html {
+    let leaf = item.children.is_empty();
+    let row = html! {
+        <KitBox kit={Kit::Row { selected: item.selected }}>
+            if leaf { <span style="width:14px"></span> }
+            else { <span class="dodai-tree__chev"><Icon icon={IconId::ChevronRight} size={14} /></span> }
+            if let Some(i) = item.icon { <Icon icon={i} size={16} /> }
+            <span>{ item.label.clone() }</span>
+        </KitBox>
+    };
+    if leaf {
+        return row;
+    }
+    html! {
+        <details open={item.open}>
+            <summary>{ row }</summary>
+            <div class="dodai-tree__children">{ for item.children.iter().map(tree_branch) }</div>
+        </details>
+    }
+}
+
+#[derive(Properties, PartialEq)]
+pub struct TreeViewProps {
+    pub items: Vec<TreeItem>,
+}
+
+/// Expandable tree.
+#[function_component]
+pub fn TreeView(props: &TreeViewProps) -> Html {
+    html! { <div class="dodai-tree">{ for props.items.iter().map(tree_branch) }</div> }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

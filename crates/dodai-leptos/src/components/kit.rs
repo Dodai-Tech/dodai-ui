@@ -336,6 +336,50 @@ pub fn Stepper(
     }
 }
 
+/// A node of [`TreeView`].
+#[derive(Clone, PartialEq)]
+pub struct TreeItem {
+    pub label: String,
+    pub icon: Option<IconId>,
+    pub children: Vec<TreeItem>,
+    pub open: bool,
+    /// Drawn as the selected row.
+    pub selected: bool,
+}
+
+fn tree_branch(item: TreeItem) -> AnyView {
+    let leaf = item.children.is_empty();
+    let row = view! {
+        <KitBox kit=Kit::Row { selected: item.selected }>
+            {if leaf {
+                view! { <span style="width:14px"></span> }.into_any()
+            } else {
+                view! { <span class="dodai-tree__chev"><Icon icon=IconId::ChevronRight size=14 /></span> }.into_any()
+            }}
+            {item.icon.map(|i| view! { <Icon icon=i size=16 /> })}
+            <span>{item.label}</span>
+        </KitBox>
+    };
+    if leaf {
+        return row.into_any();
+    }
+    let kids = item.children.into_iter().map(tree_branch).collect_view();
+    view! {
+        <details open=item.open>
+            <summary>{row}</summary>
+            <div class="dodai-tree__children">{kids}</div>
+        </details>
+    }
+    .into_any()
+}
+
+/// Expandable tree.
+#[component]
+pub fn TreeView(items: Vec<TreeItem>) -> impl IntoView {
+    let rows = items.into_iter().map(tree_branch).collect_view();
+    view! { <div class="dodai-tree">{rows}</div> }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
