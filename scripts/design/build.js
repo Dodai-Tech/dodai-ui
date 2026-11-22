@@ -79,6 +79,8 @@ variantNames.forEach((variant, row) => {
     const c = figma.createComponent();
     c.name = `Variant=${variant}, State=${state}`;
     c.layoutMode = 'HORIZONTAL';
+    c.layoutSizingHorizontal = 'HUG';
+    c.layoutSizingVertical = 'HUG';
     c.primaryAxisAlignItems = 'CENTER';
     c.counterAxisAlignItems = 'CENTER';
     c.paddingLeft = c.paddingRight = 20;
@@ -88,9 +90,11 @@ variantNames.forEach((variant, row) => {
     bindFill(c, `button/${variant}-${state}-bg`);
     bindStroke(c, `button/${variant}-${state}-border`);
     c.appendChild(text('Button', 15, `button/${variant}-${state}-fg`));
+    c.primaryAxisSizingMode = 'AUTO';
+    c.counterAxisSizingMode = 'AUTO';
     buttons.appendChild(c);
-    c.x = col * 140;
-    c.y = row * 64;
+    c.x = col * 150;
+    c.y = row * 70;
     comps.push(c);
   });
 });
