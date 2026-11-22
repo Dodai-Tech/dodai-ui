@@ -636,3 +636,4 @@ design:
     rm -rf crates/dist
     nu scripts/design.nu catalog
     nu scripts/design.nu build
+    nu scripts/design.nu spec
