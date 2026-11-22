@@ -120,7 +120,8 @@
     {
       "name": "Carousel",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -145,7 +146,8 @@
     {
       "name": "Clock",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -160,7 +162,8 @@
     {
       "name": "ColorPicker",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -173,19 +176,22 @@
     {
       "name": "Combobox",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
       "name": "Command",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
       "name": "CommandPalette",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -198,7 +204,8 @@
     {
       "name": "CountUp",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -213,31 +220,36 @@
     {
       "name": "DateInput",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
       "name": "DatePicker",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
       "name": "DateTimePicker",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
       "name": "DateTimeRangePicker",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
       "name": "DesignSystemSelector",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -274,6 +286,7 @@
       "name": "DodaiTheme",
       "toolkits": [
         "gpui",
+        "dioxus",
         "bevy"
       ]
     },
@@ -281,6 +294,7 @@
       "name": "DodaiTooltip",
       "toolkits": [
         "gpui",
+        "dioxus",
         "freya"
       ]
     },
@@ -307,13 +321,15 @@
     {
       "name": "FabMenu",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
       "name": "Feed",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -339,13 +355,15 @@
     {
       "name": "FrostLayer",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
       "name": "FrostedScene",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -358,7 +376,8 @@
     {
       "name": "GlowLayer",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -512,7 +531,8 @@
     {
       "name": "Markdown",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -625,7 +645,8 @@
     {
       "name": "PageGrid",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -691,7 +712,8 @@
     {
       "name": "ResponsiveShell",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -706,6 +728,7 @@
       "toolkits": [
         "gpui",
         "iced",
+        "dioxus",
         "slint",
         "ratatui"
       ]
@@ -713,7 +736,8 @@
     {
       "name": "ScrollArea",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -732,7 +756,8 @@
     {
       "name": "SearchView",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -759,19 +784,22 @@
     {
       "name": "SelectOption",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
       "name": "SelectionMarker",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
       "name": "SelectionTrack",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -853,7 +881,8 @@
     {
       "name": "SplitPane",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -869,7 +898,8 @@
     {
       "name": "Stopwatch",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -915,13 +945,15 @@
     {
       "name": "TagField",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
       "name": "TapTempo",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -951,13 +983,15 @@
     {
       "name": "ThemeSelector",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
       "name": "ThemeSwitcherBar",
       "toolkits": [
         "gpui",
+        "dioxus",
         "egui",
         "yew"
       ]
@@ -965,13 +999,15 @@
     {
       "name": "TimeInput",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
       "name": "TimePicker",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -994,7 +1030,8 @@
     {
       "name": "Timer",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -1031,7 +1068,8 @@
     {
       "name": "TreeNavigation",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {

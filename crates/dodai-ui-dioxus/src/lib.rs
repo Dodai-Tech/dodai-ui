@@ -11,15 +11,18 @@
 //! Switch themes with [`use_theme`] (`next`/`prev`/`select`), which updates `data-theme`.
 
 mod components;
+mod content;
 mod gizmo;
 mod kit;
 mod knob;
 mod navigation;
 mod provider;
 mod surfaces;
+mod time;
 mod widgets;
 
 pub use components::*;
+pub use content::*;
 /// A surface as a CSS `background-image` (see [`dodai_ui_topcoat::surface_background`]).
 pub use dodai_ui_topcoat::surface_background;
 pub use gizmo::*;
@@ -28,4 +31,5 @@ pub use knob::*;
 pub use navigation::*;
 pub use provider::*;
 pub use surfaces::*;
+pub use time::*;
 pub use widgets::*;
