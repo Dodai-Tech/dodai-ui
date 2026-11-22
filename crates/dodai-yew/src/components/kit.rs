@@ -3,8 +3,9 @@
 //! ([`dodai_topcoat::kit_style`]), so every design restyles them.
 
 use crate::{use_glass, use_theme};
-use dodai_core::{CardVariant, Kit, SurfaceClass, Tone};
+use dodai_core::{CardVariant, Kit, StepState, SurfaceClass, Tone};
 use dodai_icons::IconId;
+pub use dodai_topcoat::html::{page_slots, star_fills};
 use yew::prelude::*;
 
 /// The classes of a box that looks like `kit`.
@@ -209,6 +210,213 @@ pub fn CodeBlock(props: &CodeBlockProps) -> Html {
     }
 }
 
+/// One step of [`Steps`].
+#[derive(Clone, PartialEq)]
+pub struct StepItem {
+    pub title: AttrValue,
+    pub detail: Option<AttrValue>,
+}
+
+#[derive(Properties, PartialEq)]
+pub struct StepsProps {
+    pub steps: Vec<StepItem>,
+    pub current: usize,
+}
+
+/// Numbered step indicator; steps before `current` show a check.
+#[function_component]
+pub fn Steps(props: &StepsProps) -> Html {
+    let n = props.steps.len();
+    html! {
+        <div class="dodai-steps">
+            { for props.steps.iter().enumerate().map(|(i, s)| {
+                let state = StepState::of(i, props.current);
+                html! {
+                    <>
+                        <KitBox kit={Kit::StepDot(state)} style="width:28px;height:28px;padding:0;justify-content:center;">
+                            if state == StepState::Done {
+                                <Icon icon={IconId::Check} size={16} />
+                            } else {
+                                <span class="dodai-sm">{ i + 1 }</span>
+                            }
+                        </KitBox>
+                        <div class="dodai-col-text">
+                            <span class="dodai-label">{ s.title.clone() }</span>
+                            if let Some(d) = &s.detail { <span class="dodai-caption">{ d.clone() }</span> }
+                        </div>
+                        if i + 1 < n { <span class="dodai-steps__line"></span> }
+                    </>
+                }
+            }) }
+        </div>
+    }
+}
+
+#[derive(Properties, PartialEq)]
+pub struct BreadcrumbProps {
+    pub items: Vec<AttrValue>,
+}
+
+/// Breadcrumb trail; the last item is the current page.
+#[function_component]
+pub fn Breadcrumb(props: &BreadcrumbProps) -> Html {
+    let n = props.items.len();
+    html! {
+        <nav class="dodai-crumbs" aria-label="Breadcrumb">
+            { for props.items.iter().enumerate().map(|(i, it)| html! {
+                <>
+                    <span aria-current={ if i + 1 == n { "page" } else { "false" } }>{ it.clone() }</span>
+                    if i + 1 < n { <Icon icon={IconId::ChevronRight} size={14} /> }
+                </>
+            }) }
+        </nav>
+    }
+}
+
+#[derive(Properties, PartialEq)]
+pub struct PaginationProps {
+    pub pages: usize,
+    pub page: usize,
+    /// Gets the page to show.
+    #[prop_or_default]
+    pub onselect: Callback<usize>,
+}
+
+/// Page selector with previous and next.
+#[function_component]
+pub fn Pagination(props: &PaginationProps) -> Html {
+    let (pages, page) = (props.pages, props.page);
+    let go = |to: usize| {
+        let cb = props.onselect.clone();
+        Callback::from(move |_: MouseEvent| cb.emit(to))
+    };
+    html! {
+        <nav class="dodai-pager" aria-label="Pagination">
+            <button class="dodai-btn dodai-btn--ghost dodai-btn--sm dodai-btn--icon" disabled={page == 0} onclick={go(page.saturating_sub(1))}>
+                <Icon icon={IconId::ChevronLeft} size={16} />
+            </button>
+            { for page_slots(page, pages).into_iter().map(|slot| match slot {
+                Some(i) => {
+                    let kit = Kit::Page { selected: i == page };
+                    html! { <button class={format!("{} dodai-kit--press", kit_class(kit))} style={dodai_topcoat::kit_style(kit)} onclick={go(i)}>{ i + 1 }</button> }
+                }
+                None => html! { <span class="dodai-muted">{ "…" }</span> },
+            }) }
+            <button class="dodai-btn dodai-btn--ghost dodai-btn--sm dodai-btn--icon" disabled={page + 1 >= pages} onclick={go((page + 1).min(pages.saturating_sub(1)))}>
+                <Icon icon={IconId::ChevronRight} size={16} />
+            </button>
+        </nav>
+    }
+}
+
+#[derive(Properties, PartialEq)]
+pub struct DataTableProps {
+    pub columns: Vec<AttrValue>,
+    pub rows: Vec<Vec<AttrValue>>,
+}
+
+/// Data table with a header row and banded body rows.
+#[function_component]
+pub fn DataTable(props: &DataTableProps) -> Html {
+    let cols = props.columns.len();
+    let grid = format!("display:grid;grid-template-columns:repeat({cols},1fr);");
+    html! {
+        <div class="dodai-datatable" role="table">
+            <KitBox kit={Kit::TableHead} style={format!("--cols:{cols};{grid}")}>
+                { for props.columns.iter().map(|c| html! { <span class="dodai-label">{ c.clone() }</span> }) }
+            </KitBox>
+            { for props.rows.iter().enumerate().map(|(i, r)| html! {
+                <KitBox kit={Kit::TableRow(i % 2 == 1)} style={grid.clone()}>
+                    { for r.iter().map(|c| html! { <span>{ c.clone() }</span> }) }
+                </KitBox>
+            }) }
+        </div>
+    }
+}
+
+/// One event of [`Timeline`].
+#[derive(Clone, PartialEq)]
+pub struct TimelineItem {
+    pub title: AttrValue,
+    pub time: AttrValue,
+    pub detail: Option<AttrValue>,
+    pub tone: Option<Tone>,
+}
+
+#[derive(Properties, PartialEq)]
+pub struct TimelineProps {
+    pub events: Vec<TimelineItem>,
+}
+
+/// Events down a line.
+#[function_component]
+pub fn Timeline(props: &TimelineProps) -> Html {
+    html! {
+        <div class="dodai-timeline">
+            { for props.events.iter().map(|e| html! {
+                <div class="dodai-timeline__item">
+                    <KitBox kit={Kit::Dot(e.tone)}><div></div></KitBox>
+                    <div class="dodai-col-text">
+                        <span>{ e.title.clone() }</span>
+                        <span class="dodai-caption">{ e.time.clone() }</span>
+                        if let Some(d) = &e.detail { <span class="dodai-muted">{ d.clone() }</span> }
+                    </div>
+                </div>
+            }) }
+        </div>
+    }
+}
+
+#[derive(Properties, PartialEq)]
+pub struct RatingProps {
+    pub value: f32,
+    #[prop_or(5)]
+    pub max: u8,
+}
+
+/// Star rating.
+#[function_component]
+pub fn Rating(props: &RatingProps) -> Html {
+    html! {
+        <span class="dodai-rating" role="img" aria-label={format!("{} of {}", props.value, props.max)}>
+            { for star_fills(props.value, props.max).into_iter().map(|on| html! { <Icon icon={IconId::Star} size={20} filled={on} /> }) }
+        </span>
+    }
+}
+
+/// The value after pressing a stepper button, kept inside `min..=max`.
+pub fn stepped(value: i32, by: i32, min: i32, max: i32) -> i32 {
+    (value + by).clamp(min, max)
+}
+
+#[derive(Properties, PartialEq)]
+pub struct StepperProps {
+    pub value: i32,
+    #[prop_or_default]
+    pub min: i32,
+    #[prop_or(20)]
+    pub max: i32,
+    #[prop_or_default]
+    pub onchange: Callback<i32>,
+}
+
+/// − / value / + counter.
+#[function_component]
+pub fn Stepper(props: &StepperProps) -> Html {
+    let (v, min, max) = (props.value, props.min, props.max);
+    let go = |by: i32| {
+        let cb = props.onchange.clone();
+        Callback::from(move |_: MouseEvent| cb.emit(stepped(v, by, min, max)))
+    };
+    html! {
+        <span class="dodai-stepper">
+            <button class="dodai-btn dodai-btn--outline dodai-btn--sm dodai-btn--icon" aria-label="Decrease" disabled={v <= min} onclick={go(-1)}>{ "−" }</button>
+            <span>{ v }</span>
+            <button class="dodai-btn dodai-btn--outline dodai-btn--sm dodai-btn--icon" aria-label="Increase" disabled={v >= max} onclick={go(1)}>{ "+" }</button>
+        </span>
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -218,6 +426,13 @@ mod tests {
         assert!(kit_class(Kit::Card(CardVariant::Elevated)).contains("dodai-kit--elevated"));
         assert!(kit_class(Kit::Popup).contains("dodai-kit--popup"));
         assert_eq!(kit_class(Kit::Code), "dodai-kit");
+    }
+
+    #[test]
+    fn a_stepper_stays_in_range() {
+        assert_eq!(stepped(5, 1, 0, 5), 5);
+        assert_eq!(stepped(0, -1, 0, 5), 0);
+        assert_eq!(stepped(2, 1, 0, 5), 3);
     }
 
     #[test]
