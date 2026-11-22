@@ -27,6 +27,7 @@ pub mod glass;
 pub mod kit;
 pub mod knob;
 pub mod material;
+pub mod menu;
 pub mod plot;
 pub mod plugin;
 pub mod shimmer;
@@ -51,6 +52,9 @@ pub mod prelude {
     pub use crate::glass::{DodaiGlass, UiBackdrop, UiGlass};
     pub use crate::kit::{kit, kit_pressable, Kit, UiKit, UiPress};
     pub use crate::knob::{knob, UiKnob};
+    pub use crate::menu::{
+        menu_bar, MenuEvent, MenuItem, MenuSpec, UiMenuBar, UiMenuEntry, UiMenuPanel, UiMenuTitle,
+    };
     pub use crate::plot::{plot, PlotLine};
     pub use crate::plugin::{theme_hotkeys, DodaiSet, DodaiUiPlugin, ScanlineOverlay};
     pub use crate::shimmer::Shimmer;

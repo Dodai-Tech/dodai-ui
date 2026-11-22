@@ -90,6 +90,13 @@ impl Plugin for DodaiUiPlugin {
             crate::glass::frost_layers.after(bevy::ui::UiSystems::Layout),
         )
         .add_message::<ControlEvent>()
+        .add_message::<crate::menu::MenuEvent>()
+        .add_systems(
+            Update,
+            (crate::menu::build_bars, crate::menu::drive_menus)
+                .chain()
+                .after(button_input),
+        )
         .add_systems(Startup, spawn_tooltip)
         .add_systems(
             Update,
