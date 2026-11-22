@@ -460,6 +460,134 @@ pub fn TreeView(props: &TreeViewProps) -> Html {
     html! { <div class="dodai-tree">{ for props.items.iter().map(tree_branch) }</div> }
 }
 
+#[derive(Properties, PartialEq)]
+pub struct BadgeProps {
+    #[prop_or_default]
+    pub children: Html,
+}
+
+/// Count badge.
+#[function_component]
+pub fn Badge(props: &BadgeProps) -> Html {
+    html! { <span class="dodai-badge">{ props.children.clone() }</span> }
+}
+
+#[derive(Properties, PartialEq)]
+pub struct SkeletonProps {
+    /// `0` fills the width.
+    #[prop_or_default]
+    pub width: u32,
+    #[prop_or(16)]
+    pub height: u32,
+}
+
+/// Loading placeholder.
+#[function_component]
+pub fn Skeleton(props: &SkeletonProps) -> Html {
+    let w = if props.width == 0 {
+        "100%".to_string()
+    } else {
+        format!("{}px", props.width)
+    };
+    let style = format!(
+        "width:{w};height:{}px;{}background:var(--dodai-kit-skeleton-bg)",
+        props.height,
+        dodai_topcoat::kit_style(Kit::Skeleton)
+    );
+    html! { <span class="dodai-skeleton" {style}></span> }
+}
+
+#[derive(Properties, PartialEq)]
+pub struct EmptyStateProps {
+    pub title: AttrValue,
+    pub detail: AttrValue,
+}
+
+/// Empty state.
+#[function_component]
+pub fn EmptyState(props: &EmptyStateProps) -> Html {
+    html! {
+        <div class="dodai-empty">
+            <Icon icon={IconId::Folder} size={32} />
+            <span class="dodai-label">{ props.title.clone() }</span>
+            <span class="dodai-muted">{ props.detail.clone() }</span>
+        </div>
+    }
+}
+
+#[derive(Properties, PartialEq)]
+pub struct BadgedProps {
+    pub icon: IconId,
+    #[prop_or_default]
+    pub count: Option<(u32, Tone)>,
+    #[prop_or_default]
+    pub dot: Option<Tone>,
+}
+
+/// A ghost icon button with a count or dot badge.
+#[function_component]
+pub fn Badged(props: &BadgedProps) -> Html {
+    html! {
+        <span class="dodai-badged">
+            <button class="dodai-btn dodai-btn--ghost dodai-btn--md dodai-btn--icon">
+                <Icon icon={props.icon} size={18} />
+            </button>
+            if let Some((n, tone)) = props.count { <KitBox kit={Kit::Count(tone)}>{ n }</KitBox> }
+            else if let Some(tone) = props.dot { <KitBox kit={Kit::Dot(Some(tone))}><span></span></KitBox> }
+        </span>
+    }
+}
+
+#[derive(Properties, PartialEq)]
+pub struct SegmentedProps {
+    pub labels: Vec<AttrValue>,
+    pub selected: usize,
+    /// Gets the index of the option pressed.
+    #[prop_or_default]
+    pub onselect: Callback<usize>,
+}
+
+/// A segmented control: the options in one bordered strip, the picked one filled with a check
+/// on tonal designs. Empty outside a [`ThemeProvider`](crate::ThemeProvider).
+#[function_component]
+pub fn Segmented(props: &SegmentedProps) -> Html {
+    let Some(ctx) = use_theme() else {
+        return html! {};
+    };
+    let theme = &ctx.theme;
+    let tonal = theme.look().tonal;
+    let h = if tonal {
+        theme.sizes().segmented_height
+    } else {
+        theme.shape.control_height - 6.0
+    };
+    let gap = if tonal { 0.0 } else { theme.spacing.half() };
+    let upper = if theme.typography.uppercase_labels {
+        "text-transform:uppercase;"
+    } else {
+        ""
+    };
+    let size = theme.typography.size_md;
+    html! {
+        <KitBox kit={Kit::Segmented} style={format!("display:inline-flex;align-self:flex-start;flex:none;gap:{gap}px")}>
+            { for props.labels.iter().enumerate().map(|(i, l)| {
+                let kit = Kit::Segment { selected: i == props.selected };
+                let style = format!(
+                    "{}height:{h}px;display:flex;align-items:center;white-space:nowrap;{upper}font-size:{size}px",
+                    dodai_topcoat::kit_style(kit)
+                );
+                let cb = props.onselect.clone();
+                html! {
+                    <button class={format!("{} dodai-kit--press", kit_class(kit))} {style} onclick={Callback::from(move |_: MouseEvent| cb.emit(i))}>
+                        if i == props.selected && tonal { { "\u{2713} " } }
+                        { l.clone() }
+                    </button>
+                }
+            }) }
+        </KitBox>
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

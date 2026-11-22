@@ -380,6 +380,128 @@ pub fn TreeView(items: Vec<TreeItem>) -> impl IntoView {
     view! { <div class="dodai-tree">{rows}</div> }
 }
 
+/// Count badge.
+#[component]
+pub fn Badge(children: Children) -> impl IntoView {
+    view! { <span class="dodai-badge">{children()}</span> }
+}
+
+/// Loading placeholder; `width == 0` fills the width.
+#[component]
+pub fn Skeleton(
+    #[prop(default = 0)] width: u32,
+    #[prop(default = 16)] height: u32,
+) -> impl IntoView {
+    let w = if width == 0 {
+        "100%".to_string()
+    } else {
+        format!("{width}px")
+    };
+    let style = format!(
+        "width:{w};height:{height}px;{}background:var(--dodai-kit-skeleton-bg)",
+        dodai_topcoat::kit_style(Kit::Skeleton)
+    );
+    view! { <span class="dodai-skeleton" style=style></span> }
+}
+
+/// Empty state.
+#[component]
+pub fn EmptyState(#[prop(into)] title: String, #[prop(into)] detail: String) -> impl IntoView {
+    view! {
+        <div class="dodai-empty">
+            <Icon icon=IconId::Folder size=32 />
+            <span class="dodai-label">{title}</span>
+            <span class="dodai-muted">{detail}</span>
+        </div>
+    }
+}
+
+/// A ghost icon button with a count or dot badge.
+#[component]
+pub fn Badged(
+    icon: IconId,
+    #[prop(optional)] count: Option<(u32, Tone)>,
+    #[prop(optional)] dot: Option<Tone>,
+) -> impl IntoView {
+    let mark = match (count, dot) {
+        (Some((n, tone)), _) => {
+            Some(view! { <KitBox kit=Kit::Count(tone)>{n}</KitBox> }.into_any())
+        }
+        (None, Some(tone)) => {
+            Some(view! { <KitBox kit=Kit::Dot(Some(tone))><span></span></KitBox> }.into_any())
+        }
+        _ => None,
+    };
+    view! {
+        <span class="dodai-badged">
+            <button class="dodai-btn dodai-btn--ghost dodai-btn--md dodai-btn--icon">
+                <Icon icon=icon size=18 />
+            </button>
+            {mark}
+        </span>
+    }
+}
+
+/// A tooltip bubble shown in place.
+#[component]
+pub fn TooltipBubble(#[prop(into)] text: String, #[prop(optional)] rich: bool) -> impl IntoView {
+    view! { <KitBox kit=Kit::Tooltip { rich }>{text}</KitBox> }
+}
+
+/// A segmented control: the options in one bordered strip, the picked one filled with a check
+/// on tonal designs. Empty outside a [`ThemeProvider`](crate::ThemeProvider).
+#[component]
+pub fn Segmented(
+    labels: Vec<String>,
+    selected: usize,
+    #[prop(optional, into)] on_select: Option<Callback<usize>>,
+) -> impl IntoView {
+    let theme = use_context::<crate::GlassContext>()?.theme;
+    let tonal = theme.look().tonal;
+    let h = if tonal {
+        theme.sizes().segmented_height
+    } else {
+        theme.shape.control_height - 6.0
+    };
+    let gap = if tonal { 0.0 } else { theme.spacing.half() };
+    let upper = if theme.typography.uppercase_labels {
+        "text-transform:uppercase;"
+    } else {
+        ""
+    };
+    let size = theme.typography.size_md;
+    let segs = labels
+        .into_iter()
+        .enumerate()
+        .map(|(i, l)| {
+            let kit = Kit::Segment { selected: i == selected };
+            let style = format!(
+                "{}height:{h}px;display:flex;align-items:center;white-space:nowrap;{upper}font-size:{size}px",
+                dodai_topcoat::kit_style(kit)
+            );
+            view! {
+                <button
+                    class=format!("{} dodai-kit--press", kit_class(kit))
+                    style=style
+                    on:click=move |_| {
+                        if let Some(cb) = on_select {
+                            cb.run(i);
+                        }
+                    }
+                >
+                    {(i == selected && tonal).then_some("\u{2713} ")}
+                    {l}
+                </button>
+            }
+        })
+        .collect_view();
+    Some(view! {
+        <KitBox kit=Kit::Segmented style=format!("display:inline-flex;align-self:flex-start;flex:none;gap:{gap}px")>
+            {segs}
+        </KitBox>
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
