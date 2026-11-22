@@ -4,6 +4,7 @@
 #   nu scripts/design.nu catalog   write dist/design/components.json (every component and the toolkits that have it)
 #   nu scripts/design.nu build     write dist/design/dodai.fig (tokens as variables, component catalog, Button)
 #   nu scripts/design.nu spec      write dist/design/spec/<system>.md, the written spec of every design system
+#   nu scripts/design.nu verify    fail when the built .fig does not carry exactly the token variables
 #   nu scripts/design.nu check     fail when dist/design/components.json is stale (CI)
 #
 # Tokens come from `cargo run -p dodai-ui-topcoat --example export -- dist` (dist/design/<system>/<theme>.tokens.json):
@@ -28,7 +29,12 @@ def "main check" [] {
     if (not ("dist/design/components.json" | path exists)) or ((open --raw dist/design/components.json) != $want) {
         error make { msg: "dist/design/components.json is stale: run `nu scripts/design.nu catalog` and commit it" }
     }
-    print "design catalog: up to date"
+    for f in (spec-files) {
+        if (not ($f.path | path exists)) or ((open --raw $f.path) != $f.text) {
+            error make { msg: $"($f.path) is stale: run `nu scripts/design.nu spec` and commit it" }
+        }
+    }
+    print "design catalog and spec: up to date"
 }
 
 def "main build" [--out: string = "dist/design/dodai.fig"] {
@@ -75,8 +81,16 @@ def table-md [group: record]: nothing -> string {
     ["| token | value |", "| --- | --- |"] | append ($r | each { |x| $"| `($x.name)` | `($x.value)` |" }) | str join "\n"
 }
 
+# component name -> gpui source file (the reference implementation), one scan for all.
+def gpui-sources []: nothing -> record {
+    ^rg -o --no-heading --no-line-number '^pub (struct|enum|fn|type) [A-Z][A-Za-z0-9]*' crates/dodai-ui-gpui/src | lines
+        | each { |l| let p = ($l | parse -r '^(?<file>[^:]+):pub \w+ (?<name>\w+)$'); if ($p | is-empty) { null } else { $p | first } }
+        | compact | reduce --fold {} { |r, acc| if ($acc | get -o $r.name | is-empty) { $acc | insert $r.name $r.file } else { $acc } }
+}
+
 def spec-md [system: string, base: record, themes: list<string>]: nothing -> string {
     let comps = (open dist/design/components.json)
+    let src = (gpui-sources)
     let groups = [
         [color "Colour roles (default theme)"] [font Typography] [space Spacing] [shape Shape] [effect Effects]
         [motion Motion] [surface "Surface treatments"] [size "Control sizes"] [look "Look switches"] [nav Navigation]
@@ -84,7 +98,7 @@ def spec-md [system: string, base: record, themes: list<string>]: nothing -> str
     let sections = ($groups | each { |g|
         if ($base | get -o $g.0 | is-empty) { "" } else { $"## ($g.1)\n\n(table-md ($base | get $g.0))\n" }
     })
-    let kits = ($base.kit | columns | each { |c| $c | str replace -r '-(bg|fg|border|pad-x|pad-y)$' '' } | uniq)
+    let kits = ($base.kit | columns | each { |c| $c | split row '-' | first } | uniq)
     let btn = ($base.button | columns | each { |c| $c | str replace -r '-(bg|fg|border)$' '' } | uniq)
     [
         $"# (($system | str capitalize)) design system"
@@ -97,24 +111,43 @@ def spec-md [system: string, base: record, themes: list<string>]: nothing -> str
         $"## Button \(($btn | length) variant/state looks\)\n\n($btn | each { |b| $'`($b)`' } | str join ', ')\n"
         $"## Surface families \(Kit, ($kits | length)\)\n\n($kits | each { |b| $'`($b)`' } | str join ', ')\n"
         $"## Components \(($comps.components | length)\)\n"
-        "| component | toolkits |"
-        "| --- | --- |"
-        ...($comps.components | each { |c| $"| ($c.name) | ($c.toolkits | str join ', ') |" })
+        "| component | toolkits | gpui reference |"
+        "| --- | --- | --- |"
+        ...($comps.components | each { |c| let src = ($src | get -o $c.name | default "-"); $"| ($c.name) | ($c.toolkits | str join ', ') | `($src)` |" })
     ] | str join "\n"
 }
 
-def "main spec" [] {
-    mkdir dist/design/spec
-    for entry in (ls dist/design | where type == dir | where { ($in.name | path basename) != "spec" } | sort-by name) {
+def spec-files []: nothing -> list<record> {
+    ls dist/design | where type == dir | where { ($in.name | path basename) != "spec" } | sort-by name | each { |entry|
         let system = ($entry.name | path basename)
         let files = (glob $"($entry.name | path expand)/*.tokens.json" | sort)
         let themes = ($files | each { |f| $f | path basename | str replace '.tokens.json' '' })
         let base = (open $"dist/design/($system)/($system).tokens.json")
-        spec-md $system $base $themes | save --force $"dist/design/spec/($system).md"
-        print $"wrote dist/design/spec/($system).md"
+        { path: $"dist/design/spec/($system).md", text: (spec-md $system $base $themes), system: $system, base: $base }
     }
 }
 
+def "main spec" [] {
+    mkdir dist/design/spec
+    for f in (spec-files) { $f.text | save --force $f.path; print $"wrote ($f.path)" }
+}
+
+# Count the token leaves of a group (a node with `$value` is a leaf).
+def leaves [node: record]: nothing -> int {
+    if ("$value" in ($node | columns)) { 1 } else { $node | values | each { |v| if ($v | describe | str starts-with "record") { leaves $v } else { 0 } } | math sum }
+}
+
+# The .fig must carry exactly the variables the token files define: the link between the
+# OpenPencil design and the implementation (the tokens are what every toolkit reads).
+def "main verify" [--fig: string = "dist/design/dodai.fig"] {
+    let want = (spec-files | each { |f| leaves $f.base } | math sum)
+    let got = (^openpencil variables $fig | lines | where { $in =~ '^\[[0-9]+\]' } | length)
+    if $want != $got {
+        error make { msg: $"($fig) has ($got) variables, the token files define ($want): run `just design`" }
+    }
+    print $"design file: ($got) variables match the token files"
+}
+
 def main [] {
-    print "usage: nu scripts/design.nu catalog | build | spec | check"
+    print "usage: nu scripts/design.nu catalog | build | spec | verify | check"
 }

@@ -637,3 +637,4 @@ design:
     nu scripts/design.nu catalog
     nu scripts/design.nu build
     nu scripts/design.nu spec
+    nu scripts/design.nu verify

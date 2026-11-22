@@ -240,139 +240,139 @@ Themes (modes): `material-amber-dark`, `material-amber-light`, `material-dark`, 
 
 `primary-idle`, `primary-hovered`, `primary-pressed`, `primary-focused`, `primary-disabled`, `secondary-idle`, `secondary-hovered`, `secondary-pressed`, `secondary-focused`, `secondary-disabled`, `outline-idle`, `outline-hovered`, `outline-pressed`, `outline-focused`, `outline-disabled`, `outlinesecondary-idle`, `outlinesecondary-hovered`, `outlinesecondary-pressed`, `outlinesecondary-focused`, `outlinesecondary-disabled`, `danger-idle`, `danger-hovered`, `danger-pressed`, `danger-focused`, `danger-disabled`, `scrim-idle`, `scrim-hovered`, `scrim-pressed`, `scrim-focused`, `scrim-disabled`, `ghost-idle`, `ghost-hovered`, `ghost-pressed`, `ghost-focused`, `ghost-disabled`
 
-## Surface families (Kit, 50)
+## Surface families (Kit, 21)
 
-`card-elevated`, `card-filled`, `card-outlined`, `snackbar`, `avatar`, `code`, `tooltip`, `tooltip-rich`, `step-done`, `step-current`, `step-todo`, `dot`, `skeleton`, `popup`, `select`, `table-head`, `table-row`, `table-row-band`, `fab`, `fab-extended`, `elevated`, `segmented`, `toolbar`, `toolbar-vibrant`, `toolbar-floating`, `toolbar-floating-vibrant`, `chip-off`, `row-off`, `page-off`, `segment-off`, `chip-on`, `row-on`, `page-on`, `segment-on`, `alert-info`, `alert-info-banner`, `dot-info`, `count-info`, `alert-success`, `alert-success-banner`, `dot-success`, `count-success`, `alert-warning`, `alert-warning-banner`, `dot-warning`, `count-warning`, `alert-danger`, `alert-danger-banner`, `dot-danger`, `count-danger`
+`card`, `snackbar`, `avatar`, `code`, `tooltip`, `step`, `dot`, `skeleton`, `popup`, `select`, `table`, `fab`, `elevated`, `segmented`, `toolbar`, `chip`, `row`, `page`, `segment`, `alert`, `count`
 
 ## Components (128)
 
-| component | toolkits |
-| --- | --- |
-| Accordion | gpui, dioxus, leptos, yew |
-| Alert | gpui, dioxus, leptos, yew |
-| Avatar | gpui, iced, dioxus, topcoat, leptos, yew |
-| AxisGizmo | gpui, iced, dioxus, bevy, leptos, yew |
-| Badge | gpui, dioxus, topcoat, leptos, yew, ratatui |
-| Banner | gpui, dioxus, leptos, yew |
-| BottomAppBar | gpui, dioxus, leptos, yew |
-| BottomSheet | gpui, dioxus, leptos, yew |
-| Breadcrumb | gpui, dioxus, topcoat, leptos, yew |
-| Button | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew, ratatui, xilem |
-| Card | gpui, dioxus, leptos, yew |
-| Carousel | gpui, dioxus, leptos, yew |
-| Chip | gpui, dioxus, leptos, yew |
-| CircularProgress | gpui, iced, dioxus, bevy, topcoat, leptos, yew |
-| Clock | gpui, dioxus, leptos, yew |
-| CodeBlock | gpui, dioxus, leptos, yew |
-| ColorPicker | gpui, dioxus, leptos, yew |
-| Column | gpui, dioxus, leptos, yew |
-| Combobox | gpui, dioxus, leptos, yew |
-| Command | gpui, dioxus, leptos, yew |
-| CommandPalette | gpui, dioxus, leptos, yew |
-| ContextMenu | gpui, dioxus, leptos, yew |
-| CountUp | gpui, dioxus, leptos, yew |
-| DataTable | gpui, dioxus, leptos, yew |
-| DateInput | gpui, dioxus, leptos, yew |
-| DatePicker | gpui, dioxus, leptos, yew |
-| DateTimePicker | gpui, dioxus, leptos, yew |
-| DateTimeRangePicker | gpui, dioxus, leptos, yew |
-| DesignSystemSelector | gpui, dioxus, leptos, yew |
-| Dialog | gpui, dioxus, leptos, yew, ratatui |
-| DialogCard | gpui, dioxus, leptos, yew |
-| Divider | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew, ratatui |
-| DodaiTheme | gpui, dioxus, bevy, leptos, yew |
-| DodaiTooltip | gpui, dioxus, freya, leptos, yew |
-| DropdownMenu | gpui, dioxus, leptos, yew |
-| EntryScope | gpui, dioxus, leptos, yew |
-| Fab | gpui, dioxus, leptos, yew |
-| FabMenu | gpui, dioxus, leptos, yew |
-| Feed | gpui, dioxus, leptos, yew |
-| FileDropZone | gpui, dioxus, leptos, yew |
-| Follow | gpui, dioxus, leptos, yew |
-| FormField | gpui, dioxus, leptos, yew |
-| FrostLayer | gpui, dioxus, leptos, yew |
-| FrostedScene | gpui, dioxus, leptos, yew |
-| FullScreenDialog | gpui, dioxus, leptos, yew |
-| GlowLayer | gpui, dioxus, leptos, yew |
-| Heading | gpui, iced, dioxus, bevy, topcoat, freya, leptos, yew |
-| HoverCard | gpui, dioxus, leptos, yew |
-| Icon | gpui, iced, dioxus, bevy, topcoat, egui, leptos, yew |
-| IconBadge | gpui, dioxus, leptos, yew |
-| IconButton | gpui, dioxus, leptos, yew |
-| Image | gpui, dioxus, leptos, yew |
-| IndeterminateBar | gpui, dioxus, leptos, yew |
-| InputBox | gpui, dioxus, leptos, yew |
-| Interact | gpui, dioxus, leptos, yew |
-| Kbd | gpui, dioxus, leptos, yew |
-| Knob | gpui, iced, dioxus, bevy, topcoat, leptos, yew |
-| Label | gpui, iced, dioxus, bevy, topcoat, freya, leptos, yew, ratatui |
-| Lazy | gpui, dioxus, leptos, yew |
-| List | gpui, dioxus, topcoat, freya, leptos, yew |
-| ListItem | gpui, iced, dioxus, bevy, egui, slint, leptos, yew |
-| Live | gpui, dioxus, leptos, yew |
-| LoadingIndicator | gpui, dioxus, leptos, yew |
-| Markdown | gpui, dioxus, leptos, yew |
-| Menu | gpui, iced, dioxus, topcoat, leptos, yew |
-| MenuItem | gpui, dioxus, bevy, leptos, yew |
-| ModalDrawer | gpui, dioxus, leptos, yew |
-| Mono | gpui, dioxus, bevy, topcoat, freya, leptos, yew |
-| Muted | gpui, iced, dioxus, bevy, topcoat, freya, leptos, yew, ratatui |
-| NavigationBar | gpui, dioxus, leptos, yew |
-| NavigationDrawer | gpui, dioxus, leptos, yew |
-| NavigationItem | gpui, dioxus, leptos, yew |
-| NavigationRail | gpui, dioxus, leptos, yew |
-| NumberStepper | gpui, dioxus, leptos, yew |
-| OtpInput | gpui, dioxus, leptos, yew |
-| Overscroll | gpui, dioxus, leptos, yew |
-| OverscrollFeel | gpui, dioxus, leptos, yew |
-| PageGrid | gpui, dioxus, leptos, yew |
-| Pagination | gpui, dioxus, topcoat, leptos, yew |
-| Panel | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew, xilem |
-| Popover | gpui, dioxus, leptos, yew |
-| ProgressBar | gpui, dioxus, egui, leptos, yew |
-| RangeSlider | gpui, iced, dioxus, bevy, topcoat, leptos, yew |
-| Rating | gpui, dioxus, topcoat, leptos, yew |
-| ResponsiveShell | gpui, dioxus, leptos, yew |
-| RichTooltip | gpui, dioxus, leptos, yew |
-| Scanlines | gpui, iced, dioxus, slint, leptos, yew, ratatui |
-| ScrollArea | gpui, dioxus, leptos, yew |
-| ScrollSpy | gpui, dioxus, leptos, yew |
-| SearchBar | gpui, dioxus, leptos, yew |
-| SearchView | gpui, dioxus, leptos, yew |
-| Segmented | gpui, iced, dioxus, topcoat, leptos, yew |
-| Select | gpui, dioxus, bevy, topcoat, freya, leptos, yew |
-| SelectOption | gpui, dioxus, leptos, yew |
-| SelectionMarker | gpui, dioxus, leptos, yew |
-| SelectionTrack | gpui, dioxus, leptos, yew |
-| Shimmer | gpui, dioxus, bevy, leptos, yew |
-| SideSheet | gpui, dioxus, leptos, yew |
-| Skeleton | gpui, iced, dioxus, topcoat, leptos, yew |
-| Slider | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew |
-| Snackbar | gpui, dioxus, leptos, yew |
-| SnapStack | gpui, dioxus, leptos, yew |
-| Spinner | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew |
-| SplitButton | gpui, dioxus, leptos, yew |
-| SplitPane | gpui, dioxus, leptos, yew |
-| Stepper | gpui, dioxus, topcoat, leptos, yew |
-| Stopwatch | gpui, dioxus, leptos, yew |
-| Table | gpui, dioxus, topcoat, leptos, yew |
-| Tabs | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew, ratatui, xilem |
-| Tag | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew, ratatui, xilem |
-| TagField | gpui, dioxus, leptos, yew |
-| TapTempo | gpui, dioxus, leptos, yew |
-| Text | gpui, dioxus, bevy, freya, slint, leptos, yew, xilem |
-| TextInput | gpui, iced, dioxus, bevy, topcoat, egui, leptos, yew |
-| ThemeSelector | gpui, dioxus, leptos, yew |
-| ThemeSwitcherBar | gpui, dioxus, egui, leptos, yew |
-| TimeInput | gpui, dioxus, leptos, yew |
-| TimePicker | gpui, dioxus, leptos, yew |
-| Timeline | gpui, dioxus, topcoat, leptos, yew |
-| TimelineEvent | gpui, dioxus, leptos, yew |
-| Timer | gpui, dioxus, leptos, yew |
-| Toast | gpui, dioxus, leptos, yew |
-| Toolbar | gpui, dioxus, leptos, yew |
-| TopAppBar | gpui, dioxus, leptos, yew |
-| TreeItem | gpui, dioxus, topcoat, leptos, yew |
-| TreeNavigation | gpui, dioxus, leptos, yew |
-| TreeRow | gpui, dioxus, leptos, yew |
-| TreeView | gpui, dioxus, leptos, yew |
+| component | toolkits | gpui reference |
+| --- | --- | --- |
+| Accordion | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/nav.rs` |
+| Alert | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/feedback.rs` |
+| Avatar | gpui, iced, dioxus, topcoat, leptos, yew | `crates/dodai-ui-gpui/src/data.rs` |
+| AxisGizmo | gpui, iced, dioxus, bevy, leptos, yew | `crates/dodai-ui-gpui/src/orientation.rs` |
+| Badge | gpui, dioxus, topcoat, leptos, yew, ratatui | `crates/dodai-ui-gpui/src/data.rs` |
+| Banner | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/display.rs` |
+| BottomAppBar | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/extras.rs` |
+| BottomSheet | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/sheets.rs` |
+| Breadcrumb | gpui, dioxus, topcoat, leptos, yew | `crates/dodai-ui-gpui/src/nav.rs` |
+| Button | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew, ratatui, xilem | `crates/dodai-ui-gpui/src/button.rs` |
+| Card | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/surfaces.rs` |
+| Carousel | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/carousel.rs` |
+| Chip | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/data.rs` |
+| CircularProgress | gpui, iced, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-ui-gpui/src/display.rs` |
+| Clock | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/time/clock.rs` |
+| CodeBlock | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/content.rs` |
+| ColorPicker | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/extras.rs` |
+| Column | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/datatable.rs` |
+| Combobox | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/command.rs` |
+| Command | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/command.rs` |
+| CommandPalette | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/command.rs` |
+| ContextMenu | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/popover.rs` |
+| CountUp | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/count.rs` |
+| DataTable | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/datatable.rs` |
+| DateInput | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/picker.rs` |
+| DatePicker | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/picker.rs` |
+| DateTimePicker | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/picker.rs` |
+| DateTimeRangePicker | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/picker.rs` |
+| DesignSystemSelector | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/select.rs` |
+| Dialog | gpui, dioxus, leptos, yew, ratatui | `crates/dodai-ui-gpui/src/overlay.rs` |
+| DialogCard | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/overlay.rs` |
+| Divider | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew, ratatui | `crates/dodai-ui-gpui/src/list.rs` |
+| DodaiTheme | gpui, dioxus, bevy, leptos, yew | `crates/dodai-ui-gpui/src/lib.rs` |
+| DodaiTooltip | gpui, dioxus, freya, leptos, yew | `crates/dodai-ui-gpui/src/panel.rs` |
+| DropdownMenu | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/popover.rs` |
+| EntryScope | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/motion.rs` |
+| Fab | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/surfaces.rs` |
+| FabMenu | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/surfaces.rs` |
+| Feed | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/live.rs` |
+| FileDropZone | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/extras.rs` |
+| Follow | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/follow.rs` |
+| FormField | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/forms.rs` |
+| FrostLayer | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/paint.rs` |
+| FrostedScene | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/frosted.rs` |
+| FullScreenDialog | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/sheets.rs` |
+| GlowLayer | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/paint.rs` |
+| Heading | gpui, iced, dioxus, bevy, topcoat, freya, leptos, yew | `crates/dodai-ui-gpui/src/text.rs` |
+| HoverCard | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/popover.rs` |
+| Icon | gpui, iced, dioxus, bevy, topcoat, egui, leptos, yew | `crates/dodai-ui-gpui/src/icons.rs` |
+| IconBadge | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/search.rs` |
+| IconButton | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/surfaces.rs` |
+| Image | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/display.rs` |
+| IndeterminateBar | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/feedback.rs` |
+| InputBox | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/panel.rs` |
+| Interact | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/interact.rs` |
+| Kbd | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/data.rs` |
+| Knob | gpui, iced, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-ui-gpui/src/knob.rs` |
+| Label | gpui, iced, dioxus, bevy, topcoat, freya, leptos, yew, ratatui | `crates/dodai-ui-gpui/src/text.rs` |
+| Lazy | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/lazy.rs` |
+| List | gpui, dioxus, topcoat, freya, leptos, yew | `crates/dodai-ui-gpui/src/list.rs` |
+| ListItem | gpui, iced, dioxus, bevy, egui, slint, leptos, yew | `crates/dodai-ui-gpui/src/list.rs` |
+| Live | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/live.rs` |
+| LoadingIndicator | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/expressive.rs` |
+| Markdown | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/markdown.rs` |
+| Menu | gpui, iced, dioxus, topcoat, leptos, yew | `crates/dodai-ui-gpui/src/menu.rs` |
+| MenuItem | gpui, dioxus, bevy, leptos, yew | `crates/dodai-ui-gpui/src/menu.rs` |
+| ModalDrawer | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/sheets.rs` |
+| Mono | gpui, dioxus, bevy, topcoat, freya, leptos, yew | `crates/dodai-ui-gpui/src/text.rs` |
+| Muted | gpui, iced, dioxus, bevy, topcoat, freya, leptos, yew, ratatui | `crates/dodai-ui-gpui/src/text.rs` |
+| NavigationBar | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/navigation.rs` |
+| NavigationDrawer | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/navigation.rs` |
+| NavigationItem | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/navigation.rs` |
+| NavigationRail | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/navigation.rs` |
+| NumberStepper | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/extras.rs` |
+| OtpInput | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/forms.rs` |
+| Overscroll | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/overscroll.rs` |
+| OverscrollFeel | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/overscroll.rs` |
+| PageGrid | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/page_grid.rs` |
+| Pagination | gpui, dioxus, topcoat, leptos, yew | `crates/dodai-ui-gpui/src/nav.rs` |
+| Panel | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew, xilem | `crates/dodai-ui-gpui/src/panel.rs` |
+| Popover | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/popover.rs` |
+| ProgressBar | gpui, dioxus, egui, leptos, yew | `crates/dodai-ui-gpui/src/controls/bars.rs` |
+| RangeSlider | gpui, iced, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-ui-gpui/src/range.rs` |
+| Rating | gpui, dioxus, topcoat, leptos, yew | `crates/dodai-ui-gpui/src/extras.rs` |
+| ResponsiveShell | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/shell.rs` |
+| RichTooltip | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/search.rs` |
+| Scanlines | gpui, iced, dioxus, slint, leptos, yew, ratatui | `crates/dodai-ui-gpui/src/scanlines.rs` |
+| ScrollArea | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/display.rs` |
+| ScrollSpy | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/spy.rs` |
+| SearchBar | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/surfaces.rs` |
+| SearchView | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/search.rs` |
+| Segmented | gpui, iced, dioxus, topcoat, leptos, yew | `crates/dodai-ui-gpui/src/nav.rs` |
+| Select | gpui, dioxus, bevy, topcoat, freya, leptos, yew | `crates/dodai-ui-gpui/src/select.rs` |
+| SelectOption | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/select.rs` |
+| SelectionMarker | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/selection.rs` |
+| SelectionTrack | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/selection.rs` |
+| Shimmer | gpui, dioxus, bevy, leptos, yew | `crates/dodai-ui-gpui/src/paint.rs` |
+| SideSheet | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/sheets.rs` |
+| Skeleton | gpui, iced, dioxus, topcoat, leptos, yew | `crates/dodai-ui-gpui/src/feedback.rs` |
+| Slider | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew | `crates/dodai-ui-gpui/src/controls/slider.rs` |
+| Snackbar | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/sheets.rs` |
+| SnapStack | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/snap_stack.rs` |
+| Spinner | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew | `crates/dodai-ui-gpui/src/feedback.rs` |
+| SplitButton | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/expressive.rs` |
+| SplitPane | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/layout.rs` |
+| Stepper | gpui, dioxus, topcoat, leptos, yew | `crates/dodai-ui-gpui/src/nav.rs` |
+| Stopwatch | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/time/stopwatch.rs` |
+| Table | gpui, dioxus, topcoat, leptos, yew | `crates/dodai-ui-gpui/src/data.rs` |
+| Tabs | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew, ratatui, xilem | `crates/dodai-ui-gpui/src/tabs.rs` |
+| Tag | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew, ratatui, xilem | `crates/dodai-ui-gpui/src/tag.rs` |
+| TagField | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/extras.rs` |
+| TapTempo | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/time/tap.rs` |
+| Text | gpui, dioxus, bevy, freya, slint, leptos, yew, xilem | `crates/dodai-ui-gpui/src/text.rs` |
+| TextInput | gpui, iced, dioxus, bevy, topcoat, egui, leptos, yew | `crates/dodai-ui-gpui/src/text_input.rs` |
+| ThemeSelector | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/select.rs` |
+| ThemeSwitcherBar | gpui, dioxus, egui, leptos, yew | `crates/dodai-ui-gpui/src/switcher.rs` |
+| TimeInput | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/picker.rs` |
+| TimePicker | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/picker.rs` |
+| Timeline | gpui, dioxus, topcoat, leptos, yew | `crates/dodai-ui-gpui/src/extras.rs` |
+| TimelineEvent | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/extras.rs` |
+| Timer | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/time/timer.rs` |
+| Toast | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/feedback.rs` |
+| Toolbar | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/extras.rs` |
+| TopAppBar | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/surfaces.rs` |
+| TreeItem | gpui, dioxus, topcoat, leptos, yew | `crates/dodai-ui-gpui/src/layout.rs` |
+| TreeNavigation | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/layout.rs` |
+| TreeRow | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/layout.rs` |
+| TreeView | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/layout.rs` |
