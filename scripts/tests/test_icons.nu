@@ -34,8 +34,8 @@ def "test icons: gui assets dir falls back" [] {
 }
 
 def "test icons: outputs name every asset" [] {
-    let out = outputs "dodai-ui" "crates/dodai-showcase/assets"
-    assert ("crates/dodai-showcase/assets/dodai-ui-macos-512.png" in $out)
+    let out = outputs "dodai-ui" "crates/dodai-ui-showcase/assets"
+    assert ("crates/dodai-ui-showcase/assets/dodai-ui-macos-512.png" in $out)
     assert ("packaging/macos/dodai-ui.icns" in $out)
     assert ("assets/icons/dodai-ui-16.png" in $out)
 }

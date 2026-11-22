@@ -1,6 +1,6 @@
-# dodai-gpui: gaps across the design systems
+# dodai-ui-gpui: gaps across the design systems
 
-Findings from a read of `dodai-gpui` (201 public components, ~39k lines, 189 tests, 80 showcase
+Findings from a read of `dodai-ui-gpui` (201 public components, ~39k lines, 189 tests, 80 showcase
 sections) against the four designs (Dodai, Material, Cyberpunk, Neo-Brutalism). Ordered by value.
 Nothing here was verified with live clicks or keys; it comes from code and the unit/layout tests.
 
@@ -114,7 +114,7 @@ Since the findings above were written:
   `elevation_layers`; Neo-Brutalism `choice_toggle` / `icon_button` / `fluid` / `elevation_layers`.
 - **Tests**: `tests/interaction.rs` covers `Menu`, `List`, `Popover` (open, Escape, outside click),
   `ThemeSwitcherBar` and the light/dark mode switch; `tests/pods_render.rs` lays out every dash
-  pod and look under every theme, `dodai-charts/tests/layout_all_themes.rs` does the same
+  pod and look under every theme, `dodai-ui-charts/tests/layout_all_themes.rs` does the same
   for the chart families, `render_smoke.rs` draws `FrostedScene`. Charts beyond the main families
   and the other instruments have degenerate-data tests only. `tests/no_new_spacing_literals.rs`
   stops new `px(<number>)` in components (38 lines remain: hairlines and zeros use

@@ -1,0 +1,255 @@
+//! [`DialogCard`] (the dialog box) and [`Dialog`] (card + full-window scrim).
+
+use crate::paint::{shaped, ShapeStyle};
+use crate::text::{first_family, format_label};
+use crate::{hsla, theme_of};
+use dodai_ui_core::Theme;
+use gpui::{
+    deferred, div, px, AnyElement, App, ElementId, InteractiveElement, IntoElement, MouseButton,
+    ParentElement, RenderOnce, SharedString, Styled, Window,
+};
+use std::rc::Rc;
+
+/// Paint style of the dialog box (pure): raised surface, strong border, glow, hard shadow.
+pub fn dialog_style(theme: &Theme) -> ShapeStyle {
+    let st = ShapeStyle::from_surface(theme, theme.dialog()).0;
+    if theme.look().soft_elevation {
+        return st.with_lift(theme, 3);
+    }
+    st
+}
+
+/// Scrim colour: the theme overlay colour, never fully opaque.
+pub fn scrim_color(theme: &Theme) -> gpui::Hsla {
+    hsla(theme.scrim())
+}
+
+/// Dialog box: title, body children, action row (right aligned).
+#[derive(IntoElement)]
+pub struct DialogCard {
+    title: SharedString,
+    body: Vec<AnyElement>,
+    actions: Vec<AnyElement>,
+    width: f32,
+    icon: Option<crate::icons::IconName>,
+    corners: Option<dodai_ui_core::Corners>,
+    surface: dodai_ui_core::Surface,
+}
+
+crate::corners_setter!(DialogCard);
+crate::surface_setter!(DialogCard);
+
+impl DialogCard {
+    /// Create a new [`DialogCard`].
+    pub fn new(title: impl Into<SharedString>) -> Self {
+        Self {
+            corners: None,
+            surface: dodai_ui_core::Surface::INHERIT,
+            title: title.into(),
+            body: Vec::new(),
+            actions: Vec::new(),
+            width: 420.0,
+            icon: None,
+        }
+    }
+    /// Material 3 icon header: a secondary-coloured icon above a centred title.
+    pub fn icon(mut self, i: crate::icons::IconName) -> Self {
+        self.icon = Some(i);
+        self
+    }
+    /// Footer action (usually a `Button`); order is left to right.
+    pub fn action(mut self, a: impl IntoElement) -> Self {
+        self.actions.push(a.into_any_element());
+        self
+    }
+    /// Width in px.
+    pub fn width(mut self, w: f32) -> Self {
+        self.width = w;
+        self
+    }
+}
+
+impl ParentElement for DialogCard {
+    fn extend(&mut self, elements: impl IntoIterator<Item = AnyElement>) {
+        self.body.extend(elements);
+    }
+}
+
+impl RenderOnce for DialogCard {
+    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        let motion = crate::motion::current(cx);
+        crate::motion::appear(self.build(cx), "DialogCard", motion)
+    }
+}
+
+impl DialogCard {
+    fn build(self, cx: &mut App) -> impl IntoElement {
+        let t = theme_of(cx);
+        let t = crate::apply_corners(t, self.corners);
+        let mut d = shaped(
+            &t.role_shape(dodai_ui_core::ShapeRole::Dialog),
+            dialog_style(&t).with_own_surface(
+                &t,
+                dodai_ui_core::SurfaceClass::Panel,
+                &self.surface,
+            ),
+        )
+        .w(px(self.width))
+        .p(px(t.spacing.lg))
+        .flex()
+        .flex_col()
+        .gap(px(t.spacing.md))
+        .font_family(first_family(t.typography.body))
+        .text_size(px(t.typography.size_md))
+        .text_color(hsla(t.palette.text))
+        .children(self.icon.map(|i| {
+            div().flex().justify_center().child(
+                crate::icons::Icon::new(i)
+                    .size(t.sizes().icon)
+                    .color(hsla(if t.look().tonal {
+                        t.palette.secondary
+                    } else {
+                        t.palette.primary
+                    })),
+            )
+        }))
+        .child({
+            let mut title = div()
+                .font_family(first_family(t.typography.display))
+                .text_size(px(if t.look().tonal {
+                    t.typography.size_xl
+                } else {
+                    t.typography.size_lg
+                }))
+                .child(format_label(&t.typography, &self.title));
+            if t.look().tonal {
+                title = crate::text::typeset(title, &t, dodai_ui_core::TypeRole::HeadlineSmall);
+            }
+            if self.icon.is_some() {
+                title.flex().justify_center()
+            } else {
+                title
+            }
+        })
+        .child(
+            div()
+                .flex()
+                .flex_col()
+                .gap(px(t.spacing.sm))
+                .text_color(hsla(if t.look().tonal {
+                    t.palette.roles.on_surface_variant
+                } else {
+                    t.palette.text_muted
+                }))
+                .children(self.body),
+        );
+        if !self.actions.is_empty() {
+            d = d.child(
+                div()
+                    .flex()
+                    .justify_end()
+                    .gap(px(t.spacing.sm))
+                    .children(self.actions),
+            );
+        }
+        if t.look().tonal {
+            d = crate::text::typeset(d, &t, dodai_ui_core::TypeRole::BodyMedium);
+        }
+        d
+    }
+}
+
+type DismissFn = Rc<dyn Fn(&mut Window, &mut App)>;
+
+/// Modal: scrim over the whole (relatively positioned) parent with a centred
+/// [`DialogCard`]. Clicking the scrim calls `on_dismiss`. Render it last in the
+/// root element; it sits above siblings via `deferred`.
+#[derive(IntoElement)]
+pub struct Dialog {
+    id: ElementId,
+    card: DialogCard,
+    on_dismiss: Option<DismissFn>,
+}
+
+impl Dialog {
+    /// Create a new [`Dialog`].
+    pub fn new(id: impl Into<ElementId>, card: DialogCard) -> Self {
+        Self {
+            id: id.into(),
+            card,
+            on_dismiss: None,
+        }
+    }
+    crate::callback!(
+        /// Called when the surface is dismissed.
+        on_dismiss
+    );
+    /// Texture and effects for the dialog box; see [`DialogCard::surface`].
+    pub fn surface(mut self, s: dodai_ui_core::Surface) -> Self {
+        self.card = self.card.surface(s);
+        self
+    }
+}
+
+impl RenderOnce for Dialog {
+    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        let t = theme_of(cx);
+        let dismiss = self.on_dismiss;
+        deferred(
+            div()
+                .id(self.id)
+                .absolute()
+                .top_0()
+                .left_0()
+                .size_full()
+                .occlude()
+                .bg(scrim_color(&t))
+                .flex()
+                .items_center()
+                .justify_center()
+                .on_mouse_down(MouseButton::Left, move |_, w, cx| {
+                    if let Some(f) = &dismiss {
+                        f(w, cx);
+                    }
+                })
+                .child(
+                    div()
+                        .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
+                        .child(self.card),
+                ),
+        )
+        .with_priority(100)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::testing::{light_rounded, square};
+
+    #[test]
+    fn scrim_is_translucent_and_themed() {
+        for t in [light_rounded(), square()] {
+            let s = scrim_color(&t);
+            assert!(s.a < 1.0 && s.a > 0.3);
+            // Material uses the `scrim` role (32 % black), the others the page colour.
+            if t.look().tonal {
+                assert_eq!(s.l, hsla(t.palette.roles.scrim).l);
+            } else {
+                assert_eq!(s.l, hsla(t.palette.background).l);
+            }
+        }
+    }
+
+    #[test]
+    fn dialog_follows_tokens() {
+        let l = dialog_style(&light_rounded());
+        assert!(l.glow.is_none() && l.shadow.is_none());
+        assert_eq!(
+            l.elevation.map(|e| e.0),
+            Some(3),
+            "M3 dialog is elevation 3"
+        );
+        assert!(dialog_style(&square()).shadow.is_some());
+    }
+}

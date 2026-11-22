@@ -63,18 +63,18 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         if: steps.rtd.outcome == 'failure'
       - uses: Swatinem/rust-cache@v2
-      - run: cargo run -q -p dodai-topcoat --example export -- dist
+      - run: cargo run -q -p dodai-ui-topcoat --example export -- dist
       - run: git diff --exit-code -- dist
       - run: test -z "$(git status --porcelain dist)"
 
-  # Base crates everything else depends on (dodai-core, dodai-icons, dodai-charts, dodai-instruments, dodai-dash, dodai-fx, dodai-frost).
+  # Base crates everything else depends on (dodai-ui-core, dodai-ui-icons, dodai-ui-charts, dodai-instruments, dodai-ui-dash, dodai-ui-fx, dodai-ui-frost).
   base:
     name: ${{ matrix.crate }}
     runs-on: codeberg-medium
     strategy:
       fail-fast: false
       matrix:
-        crate: [dodai-core, dodai-icons, dodai-charts, dodai-instruments, dodai-dash, dodai-fx, dodai-frost]
+        crate: [dodai-ui-core, dodai-ui-icons, dodai-ui-charts, dodai-instruments, dodai-ui-dash, dodai-ui-fx, dodai-ui-frost]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -92,13 +92,13 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.crate }}
-      - run: cargo clippy -p ${{ matrix.crate }} --all-targets ${{ (matrix.crate == 'dodai-core' || matrix.crate == 'dodai-dash') && '--all-features' || '' }} -- -D warnings
-      - run: cargo test -p ${{ matrix.crate }} ${{ (matrix.crate == 'dodai-core' || matrix.crate == 'dodai-dash') && '--all-features' || '' }}
-      - name: dodai-frost GPU feature (tests skip without an adapter)
-        if: matrix.crate == 'dodai-frost'
+      - run: cargo clippy -p ${{ matrix.crate }} --all-targets ${{ (matrix.crate == 'dodai-ui-core' || matrix.crate == 'dodai-ui-dash') && '--all-features' || '' }} -- -D warnings
+      - run: cargo test -p ${{ matrix.crate }} ${{ (matrix.crate == 'dodai-ui-core' || matrix.crate == 'dodai-ui-dash') && '--all-features' || '' }}
+      - name: dodai-ui-frost GPU feature (tests skip without an adapter)
+        if: matrix.crate == 'dodai-ui-frost'
         run: |
-          cargo clippy -p dodai-frost --all-targets --features gpu -- -D warnings
-          cargo test -p dodai-frost --features gpu
+          cargo clippy -p dodai-ui-frost --all-targets --features gpu -- -D warnings
+          cargo test -p dodai-ui-frost --features gpu
 
   # One job per dependent crate; runs only once the base crates are green.
   # `gui: true` crates need native libs on Linux and also run on macOS.
@@ -110,15 +110,15 @@ jobs:
       fail-fast: false
       matrix:
         os: [codeberg-medium]
-        crate: [dodai-ratatui, dodai-topcoat, dodai-dioxus, dodai-showcase-model]
+        crate: [dodai-ui-ratatui, dodai-ui-topcoat, dodai-ui-dioxus, dodai-ui-showcase-model]
         include:
-          - { crate: dodai-iced, os: codeberg-medium, gui: true }
-          - { crate: dodai-gpui, os: codeberg-medium, gui: true }
-          - { crate: dodai-charts, os: codeberg-medium, gui: true }
+          - { crate: dodai-ui-iced, os: codeberg-medium, gui: true }
+          - { crate: dodai-ui-gpui, os: codeberg-medium, gui: true }
+          - { crate: dodai-ui-charts, os: codeberg-medium, gui: true }
           - { crate: dodai-instruments, os: codeberg-medium, gui: true }
-          - { crate: dodai-showcase, os: codeberg-medium, gui: true }
-          - { crate: dodai-bevy, os: codeberg-medium, gui: true }
-          - { crate: dodai-shaders, os: codeberg-medium, gui: true }
+          - { crate: dodai-ui-showcase, os: codeberg-medium, gui: true }
+          - { crate: dodai-ui-bevy, os: codeberg-medium, gui: true }
+          - { crate: dodai-ui-shaders, os: codeberg-medium, gui: true }
     steps:
       - uses: actions/checkout@v4
       - name: Install Linux GUI system libraries
@@ -146,38 +146,38 @@ jobs:
       - run: cargo test -p ${{ matrix.crate }}
       # Slices must compile alone: the kit alone (what the chart and instrument crates use) has no components.
       - name: gpui feature slices
-        if: matrix.crate == 'dodai-gpui'
+        if: matrix.crate == 'dodai-ui-gpui'
         run: |
           cargo check -p dodai-instruments --no-default-features --features gpui
           cargo check -p dodai-instruments --no-default-features --features gpui,automotive
           cargo check -p dodai-instruments --no-default-features --features gpui,aviation
           cargo check -p dodai-instruments --no-default-features --features gpui,defense
-          cargo check -p dodai-gpui --no-default-features --features components
-          cargo check -p dodai-gpui --no-default-features --features shaders
-          cargo check -p dodai-gpui --no-default-features
-          cargo check -p dodai-gpui --no-default-features --features cyberpunk
-          cargo check -p dodai-gpui --no-default-features --features material
-          cargo check -p dodai-gpui --no-default-features --features components,cyberpunk
-          cargo check -p dodai-gpui --no-default-features --features components,material
-          cargo check -p dodai-gpui --no-default-features --features components,dodai
-          cargo check -p dodai-gpui --no-default-features --features components,neobrutalism
-          cargo check -p dodai-icons --no-default-features
-          cargo check -p dodai-icons --no-default-features --features theme
-          cargo check -p dodai-icons --no-default-features --features cyberpunk
-          cargo check -p dodai-icons --no-default-features --features material
-          cargo check -p dodai-icons --no-default-features --features cyberpunk,neobrutalism
-          cargo check -p dodai-core --features cyberpunk
-          cargo check -p dodai-core --features material
-          cargo check -p dodai-core --features neobrutalism
-          cargo check -p dodai-core --features dodai
+          cargo check -p dodai-ui-gpui --no-default-features --features components
+          cargo check -p dodai-ui-gpui --no-default-features --features shaders
+          cargo check -p dodai-ui-gpui --no-default-features
+          cargo check -p dodai-ui-gpui --no-default-features --features cyberpunk
+          cargo check -p dodai-ui-gpui --no-default-features --features material
+          cargo check -p dodai-ui-gpui --no-default-features --features components,cyberpunk
+          cargo check -p dodai-ui-gpui --no-default-features --features components,material
+          cargo check -p dodai-ui-gpui --no-default-features --features components,dodai
+          cargo check -p dodai-ui-gpui --no-default-features --features components,neobrutalism
+          cargo check -p dodai-ui-icons --no-default-features
+          cargo check -p dodai-ui-icons --no-default-features --features theme
+          cargo check -p dodai-ui-icons --no-default-features --features cyberpunk
+          cargo check -p dodai-ui-icons --no-default-features --features material
+          cargo check -p dodai-ui-icons --no-default-features --features cyberpunk,neobrutalism
+          cargo check -p dodai-ui-core --features cyberpunk
+          cargo check -p dodai-ui-core --features material
+          cargo check -p dodai-ui-core --features neobrutalism
+          cargo check -p dodai-ui-core --features dodai
 
   # Freya has its own workspace + lockfile (own Skia), so it is not in the matrix above.
   freya:
-    name: dodai-freya (own workspace)
+    name: dodai-ui-freya (own workspace)
     runs-on: codeberg-medium
     defaults:
       run:
-        working-directory: crates/dodai-freya
+        working-directory: crates/dodai-ui-freya
     steps:
       - uses: actions/checkout@v4
       - name: Install Linux GUI system libraries
@@ -190,12 +190,12 @@ jobs:
           components: clippy, rustfmt
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: crates/dodai-freya
+          workspaces: crates/dodai-ui-freya
       - run: cargo fmt --check
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test
 
-  # The declared `rust-version` must still build the GUI-free crates (dodai-frost needs wgpu, so it declares 1.87 itself).
+  # The declared `rust-version` must still build the GUI-free crates (dodai-ui-frost needs wgpu, so it declares 1.87 itself).
   msrv:
     name: msrv
     runs-on: codeberg-medium
@@ -217,14 +217,14 @@ jobs:
         with:
           toolchain: ${{ steps.msrv.outputs.version }}
       - uses: Swatinem/rust-cache@v2
-      - run: cargo check --locked -p dodai-core --all-features --all-targets
-      # dodai-fx without its `frost` features: dodai-frost needs a newer rustc (wgpu 30).
-      - run: cargo check --locked -p dodai-fx -p dodai-icons --all-targets
-      - run: cargo check --locked -p dodai-topcoat --lib
+      - run: cargo check --locked -p dodai-ui-core --all-features --all-targets
+      # dodai-ui-fx without its `frost` features: dodai-ui-frost needs a newer rustc (wgpu 30).
+      - run: cargo check --locked -p dodai-ui-fx -p dodai-ui-icons --all-targets
+      - run: cargo check --locked -p dodai-ui-topcoat --lib
       # charts and instruments: the agnostic library only; their tests and examples use gpui
       # (a dev-dependency), which needs a newer rustc than the declared MSRV.
-      - run: cargo check --locked -p dodai-charts -p dodai-instruments --lib
-      - run: cargo check --locked -p dodai-dash --all-features
+      - run: cargo check --locked -p dodai-ui-charts -p dodai-instruments --lib
+      - run: cargo check --locked -p dodai-ui-dash --all-features
 
   # Unused dependencies (cargo-machete scans every manifest, including freya and tools/).
   machete:
@@ -249,9 +249,9 @@ jobs:
           components: llvm-tools-preview
       - uses: Swatinem/rust-cache@v2
       - run: cargo install cargo-llvm-cov --locked
-      - run: cargo llvm-cov -p dodai-core --all-features --fail-under-lines 85
-      - run: cargo llvm-cov -p dodai-fx --all-features --fail-under-lines 85
-      - run: cargo llvm-cov -p dodai-charts --fail-under-lines 94
+      - run: cargo llvm-cov -p dodai-ui-core --all-features --fail-under-lines 85
+      - run: cargo llvm-cov -p dodai-ui-fx --all-features --fail-under-lines 85
+      - run: cargo llvm-cov -p dodai-ui-charts --fail-under-lines 94
 
   nu-tests:
     name: nushell tests
@@ -291,7 +291,7 @@ jobs:
         run: |
           for d in crates/*/; do
             p=$(basename "$d")
-            [ "$p" = dodai-freya ] && continue   # its own workspace
+            [ "$p" = dodai-ui-freya ] && continue   # its own workspace
             [ -f "$d/Cargo.toml" ] || continue
             cargo doc --no-deps -p "$p" || exit 1
           done

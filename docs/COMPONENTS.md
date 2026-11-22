@@ -2,7 +2,7 @@
 
 Goal: every Material Design 3 component (https://m3.material.io/components) plus
 Dodai extras, token-driven so any theme (Cyberpunk first, Material 3 planned)
-can restyle them. Reference implementation: `dodai-gpui`.
+can restyle them. Reference implementation: `dodai-ui-gpui`.
 
 Legend: ✅ done · 🟡 partial · ⬜ todo
 
@@ -40,7 +40,7 @@ Legend: ✅ done · 🟡 partial · ⬜ todo
 
 Beyond M3 (gpui): `TreeView`, `Table` (sort + select), `Combobox`, `NumberStepper`,
 `ColorPicker`, `FileDropZone`, `Timeline`, `Rating`, `TagField`, `SplitPane`,
-`CommandPalette`, `EmptyState`, `AxisGizmo` (3D orientation widget: axis balls, home, drag to orbit; also in `dodai-bevy` as `axis_gizmo`; geometry in `dodai_instruments::orientation`).
+`CommandPalette`, `EmptyState`, `AxisGizmo` (3D orientation widget: axis balls, home, drag to orbit; also in `dodai-ui-bevy` as `axis_gizmo`; geometry in `dodai_instruments::orientation`).
 
 Charts (gpui, `charts.rs`, palette `series` colours, glow on lines, themed bar shape):
 `LineChart` (area/smooth), `BarChart` (grouped/stacked/horizontal), `PieChart`
@@ -49,11 +49,11 @@ More (`charts_trend.rs`, `charts_flow.rs`, `charts_distribution.rs`, `charts_par
 `Candlestick`, `BoxPlot`, `RadialBar`, `Treemap`.
 Config: `.title()`, `.format()`, `.height()`; Line: `.y_range()`, `.stepped()`,
 `.stroke_width()`, `.grid()`; Bar: `.max()`, `.value_labels()`, `.bar_width()`.
-Showcase: `cargo run -p dodai-showcase`.
+Showcase: `cargo run -p dodai-ui-showcase`.
 
 ## Showcases in the other toolkits
 
-`dodai-showcase-model` describes the showcase as data (pages, sections, a demo widget tree and
+`dodai-ui-showcase-model` describes the showcase as data (pages, sections, a demo widget tree and
 the state every control writes to); bevy, iced and dioxus each draw it with their own components
 (`just run-bevy`, `just run-iced`, `just run-dioxus`). It covers Foundations, Shape, Surface effects
 (theme-wide glow strength and scanlines), Actions,
@@ -62,14 +62,14 @@ one-shot mixins as `Node::Plot` polylines that loop on their own, like gpui's pa
 play buttons), plus the knob, vertical sliders and scroll area. Not ported yet: charts, instruments,
 shaders, the textures, glitch, sheen and frost of Surface effects, the live entry card and the
 shape tuning controls. Shared token styles of the small boxes (cards, alerts, chips, avatars, code, tooltips,
-rows, steps, skeletons, popups) live in `dodai_core::Kit` (`Theme::kit`), so every toolkit and
+rows, steps, skeletons, popups) live in `dodai_ui_core::Kit` (`Theme::kit`), so every toolkit and
 the CSS read the same numbers.
 
 Dodai extras: `Knob` (rotary), `Kbd`, `Avatar`, `Table`, `Accordion`,
 `Alert`, `Skeleton`, `ThemeSelector`, `Scanlines`.
 
 Planned theme: **Material 3** (tonal palette, rounded shapes, no glow) — built with
-`dodai_core::themes::ThemeBuilder`; needs elevation/state-layer tokens in core.
+`dodai_ui_core::themes::ThemeBuilder`; needs elevation/state-layer tokens in core.
 
 
 ## Motion

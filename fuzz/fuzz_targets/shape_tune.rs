@@ -1,5 +1,5 @@
 #![no_main]
-use dodai_core::{BorderTint, ControlColour, CornerStyle, GradientMode, ShadowDir, ShapeTune};
+use dodai_ui_core::{BorderTint, ControlColour, CornerStyle, GradientMode, ShadowDir, ShapeTune};
 use libfuzzer_sys::fuzz_target;
 
 // Any tuning (NaN, negative, huge) applied to every built-in theme must not panic.
@@ -19,9 +19,9 @@ fuzz_target!(|d: (f32, [f32; 3], Option<f32>, Option<f32>, u8, bool, u8, u8, [f3
         density,
         cut_gap: width.map(|w| w * 0.5),
     };
-    for t in dodai_core::themes::all() {
+    for t in dodai_ui_core::themes::all() {
         let tuned = t.tuned(&tune);
-        let _ = tuned.scale(dodai_core::Scale::ListMax);
+        let _ = tuned.scale(dodai_ui_core::Scale::ListMax);
         // The tune read at paint time (tick gap, outlines, shadows, panel frame) never panics.
         let _ = (tuned.tick_gap(), tuned.hard_offset(), tuned.panel_frame(outline_all));
         let _ = tuned.outline(Some(tuned.palette.border), true);

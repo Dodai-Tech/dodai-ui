@@ -1,0 +1,19 @@
+[package]
+name         = "dodai-ui-spec"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+description  = "Derive macros for dodai-ui-core (component specs read from the token structs)"
+keywords     = ["theme", "design-system", "derive"]
+categories   = ["development-tools::procedural-macro-helpers"]
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn         = { version = "2", features = ["full"] }
+quote       = "1"
+proc-macro2 = "1"

@@ -4224,40 +4224,40 @@ dependencies = [
 ]
 
 [[package]]
-name = "dodai-bevy"
+name = "dodai-ui-bevy"
 version = "0.1.6"
 dependencies = [
  "bevy",
- "dodai-core",
- "dodai-frost",
- "dodai-fx",
- "dodai-icons",
- "dodai-shaders",
- "dodai-showcase-model",
+ "dodai-ui-core",
+ "dodai-ui-frost",
+ "dodai-ui-fx",
+ "dodai-ui-icons",
+ "dodai-ui-shaders",
+ "dodai-ui-showcase-model",
 ]
 
 [[package]]
-name = "dodai-charts"
+name = "dodai-ui-charts"
 version = "0.1.6"
 dependencies = [
- "dodai-core",
- "dodai-gpui",
+ "dodai-ui-core",
+ "dodai-ui-gpui",
  "gpui",
 ]
 
 [[package]]
-name = "dodai-core"
+name = "dodai-ui-core"
 version = "0.1.6"
 dependencies = [
- "dodai-fx",
- "dodai-spec",
+ "dodai-ui-fx",
+ "dodai-ui-spec",
 ]
 
 [[package]]
-name = "dodai-dash"
+name = "dodai-ui-dash"
 version = "0.1.6"
 dependencies = [
- "dodai-core",
+ "dodai-ui-core",
  "schemars",
  "serde",
  "serde_ignored",
@@ -4266,30 +4266,30 @@ dependencies = [
 ]
 
 [[package]]
-name = "dodai-dioxus"
+name = "dodai-ui-dioxus"
 version = "0.1.6"
 dependencies = [
  "axum",
  "dioxus",
  "dioxus-liveview",
  "dioxus-ssr",
- "dodai-core",
- "dodai-icons",
- "dodai-shaders",
- "dodai-showcase-model",
- "dodai-topcoat",
+ "dodai-ui-core",
+ "dodai-ui-icons",
+ "dodai-ui-shaders",
+ "dodai-ui-showcase-model",
+ "dodai-ui-topcoat",
  "tokio",
 ]
 
 [[package]]
-name = "dodai-egui"
+name = "dodai-ui-egui"
 version = "0.1.6"
 dependencies = [
- "dodai-core",
- "dodai-fx",
- "dodai-icons",
- "dodai-shaders",
- "dodai-showcase-model",
+ "dodai-ui-core",
+ "dodai-ui-fx",
+ "dodai-ui-icons",
+ "dodai-ui-shaders",
+ "dodai-ui-showcase-model",
  "eframe",
  "egui",
  "egui_extras",
@@ -4297,7 +4297,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "dodai-frost"
+name = "dodai-ui-frost"
 version = "0.1.6"
 dependencies = [
  "pollster 1.0.3",
@@ -4305,27 +4305,27 @@ dependencies = [
 ]
 
 [[package]]
-name = "dodai-fx"
+name = "dodai-ui-fx"
 version = "0.1.6"
 dependencies = [
- "dodai-frost",
+ "dodai-ui-frost",
 ]
 
 [[package]]
-name = "dodai-gen"
+name = "dodai-ui-gen"
 version = "0.1.6"
 dependencies = [
- "dodai-core",
+ "dodai-ui-core",
 ]
 
 [[package]]
-name = "dodai-gpui"
+name = "dodai-ui-gpui"
 version = "0.1.6"
 dependencies = [
- "dodai-core",
- "dodai-frost",
- "dodai-fx",
- "dodai-icons",
+ "dodai-ui-core",
+ "dodai-ui-frost",
+ "dodai-ui-fx",
+ "dodai-ui-icons",
  "gpui",
  "image",
  "jiff",
@@ -4333,43 +4333,43 @@ dependencies = [
 ]
 
 [[package]]
-name = "dodai-iced"
+name = "dodai-ui-iced"
 version = "0.1.6"
 dependencies = [
- "dodai-core",
- "dodai-frost",
- "dodai-fx",
- "dodai-icons",
- "dodai-shaders",
- "dodai-showcase-model",
+ "dodai-ui-core",
+ "dodai-ui-frost",
+ "dodai-ui-fx",
+ "dodai-ui-icons",
+ "dodai-ui-shaders",
+ "dodai-ui-showcase-model",
  "iced",
  "naga 27.0.3",
 ]
 
 [[package]]
-name = "dodai-icons"
+name = "dodai-ui-icons"
 version = "0.1.6"
 dependencies = [
- "dodai-core",
+ "dodai-ui-core",
 ]
 
 [[package]]
-name = "dodai-leptos"
+name = "dodai-ui-leptos"
 version = "0.1.6"
 dependencies = [
  "base64 0.22.1",
- "dodai-core",
- "dodai-icons",
- "dodai-topcoat",
+ "dodai-ui-core",
+ "dodai-ui-icons",
+ "dodai-ui-topcoat",
  "leptos",
 ]
 
 [[package]]
-name = "dodai-ratatui"
+name = "dodai-ui-ratatui"
 version = "0.1.6"
 dependencies = [
  "crossterm",
- "dodai-core",
+ "dodai-ui-core",
  "ratatui",
  "tui-chart",
  "tui-checkbox",
@@ -4381,15 +4381,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "dodai-shaders"
+name = "dodai-ui-shaders"
 version = "0.1.6"
 dependencies = [
  "base64 0.22.1",
  "bevy",
  "bytemuck",
  "dioxus",
- "dodai-core",
- "dodai-gpui",
+ "dodai-ui-core",
+ "dodai-ui-gpui",
  "gpui",
  "iced",
  "image",
@@ -4399,14 +4399,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "dodai-showcase"
+name = "dodai-ui-showcase"
 version = "0.1.6"
 dependencies = [
- "dodai-charts",
- "dodai-core",
- "dodai-gpui",
- "dodai-icons",
- "dodai-shaders",
+ "dodai-ui-charts",
+ "dodai-ui-core",
+ "dodai-ui-gpui",
+ "dodai-ui-icons",
+ "dodai-ui-shaders",
  "gpui",
  "objc2 0.6.5",
  "objc2-app-kit 0.3.2",
@@ -4414,39 +4414,39 @@ dependencies = [
 ]
 
 [[package]]
-name = "dodai-showcase-model"
+name = "dodai-ui-showcase-model"
 version = "0.1.6"
 dependencies = [
  "base64 0.22.1",
- "dodai-charts",
- "dodai-core",
- "dodai-frost",
- "dodai-icons",
- "dodai-shaders",
+ "dodai-ui-charts",
+ "dodai-ui-core",
+ "dodai-ui-frost",
+ "dodai-ui-icons",
+ "dodai-ui-shaders",
  "jiff",
  "png 0.18.1",
 ]
 
 [[package]]
-name = "dodai-showcase-web"
+name = "dodai-ui-showcase-web"
 version = "0.1.6"
 dependencies = [
- "dodai-core",
- "dodai-icons",
- "dodai-showcase-model",
- "dodai-topcoat",
+ "dodai-ui-core",
+ "dodai-ui-icons",
+ "dodai-ui-showcase-model",
+ "dodai-ui-topcoat",
 ]
 
 [[package]]
-name = "dodai-slint"
+name = "dodai-ui-slint"
 version = "0.1.6"
 dependencies = [
- "dodai-core",
+ "dodai-ui-core",
  "slint",
 ]
 
 [[package]]
-name = "dodai-spec"
+name = "dodai-ui-spec"
 version = "0.1.6"
 dependencies = [
  "proc-macro2",
@@ -4455,24 +4455,24 @@ dependencies = [
 ]
 
 [[package]]
-name = "dodai-topcoat"
+name = "dodai-ui-topcoat"
 version = "0.1.6"
 dependencies = [
- "dodai-core",
- "dodai-icons",
- "dodai-shaders",
- "dodai-showcase-model",
+ "dodai-ui-core",
+ "dodai-ui-icons",
+ "dodai-ui-shaders",
+ "dodai-ui-showcase-model",
  "png 0.18.1",
 ]
 
 [[package]]
-name = "dodai-yew"
+name = "dodai-ui-yew"
 version = "0.1.6"
 dependencies = [
  "base64 0.22.1",
- "dodai-core",
- "dodai-icons",
- "dodai-topcoat",
+ "dodai-ui-core",
+ "dodai-ui-icons",
+ "dodai-ui-topcoat",
  "tokio",
  "web-sys",
  "yew",

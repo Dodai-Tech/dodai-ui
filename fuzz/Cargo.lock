@@ -27,38 +27,38 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4e7648175b45a9a48536d676f68d918270699102aa8dab5496df06904c914600"
 
 [[package]]
-name = "dodai-charts"
+name = "dodai-ui-charts"
 version = "0.1.6"
 dependencies = [
- "dodai-core",
+ "dodai-ui-core",
 ]
 
 [[package]]
-name = "dodai-core"
+name = "dodai-ui-core"
 version = "0.1.6"
 dependencies = [
- "dodai-fx",
+ "dodai-ui-fx",
 ]
 
 [[package]]
-name = "dodai-fuzz"
+name = "dodai-ui-fuzz"
 version = "0.0.0"
 dependencies = [
- "dodai-charts",
- "dodai-core",
- "dodai-icons",
+ "dodai-ui-charts",
+ "dodai-ui-core",
+ "dodai-ui-icons",
  "libfuzzer-sys",
 ]
 
 [[package]]
-name = "dodai-fx"
+name = "dodai-ui-fx"
 version = "0.1.6"
 
 [[package]]
-name = "dodai-icons"
+name = "dodai-ui-icons"
 version = "0.1.6"
 dependencies = [
- "dodai-core",
+ "dodai-ui-core",
 ]
 
 [[package]]

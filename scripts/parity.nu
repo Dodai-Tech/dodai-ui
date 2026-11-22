@@ -5,12 +5,12 @@
 #   nu scripts/parity.nu --check   fail if docs/PARITY.md is stale (CI) or a model renderer drops a Node
 #
 # Three measurements:
-#   1. Model coverage: every `Node` variant of dodai-showcase-model against each toolkit that
+#   1. Model coverage: every `Node` variant of dodai-ui-showcase-model against each toolkit that
 #      walks the model (a renderer that stops matching a variant is a regression).
 #   2. Component coverage: every public gpui component (the reference) against each toolkit's
 #      public items (`pub struct|enum|fn`, Slint `component`, topcoat `.dodai-*` CSS classes).
 #   3. Token use: whether the toolkit reads Sizes / Look / navigation tokens / the shape layer.
-#   4. Motion and keyboard use: the shared `dodai_core::motion` / `dodai_core::roving` rules.
+#   4. Motion and keyboard use: the shared `dodai_ui_core::motion` / `dodai_ui_core::roving` rules.
 
 use lib/parity.nu *
 

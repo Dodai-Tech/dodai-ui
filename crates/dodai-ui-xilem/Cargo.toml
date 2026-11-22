@@ -1,0 +1,32 @@
+# Own workspace and lockfile: xilem's wgpu pulls naga 26 (with a host copy for vello_shaders),
+# which cannot share a graph with gpui (naga 25) and iced (naga 27) without a feature clash.
+[workspace]
+
+[package]
+name         = "dodai-ui-xilem"
+version      = "0.1.6"
+edition      = "2021"
+authors      = ["Sorin Irimies <sorinirimies@gmail.com>"]
+license      = "MIT"
+repository   = "https://github.com/Dodai-Tech/dodai-ui"
+# xilem 0.4 needs 1.88.
+rust-version = "1.88"
+description  = "xilem (masonry, vello) adapter for the Dodai UI design system"
+readme       = "README.md"
+keywords     = ["theme", "design-system", "xilem", "vello"]
+categories   = ["gui"]
+
+[features]
+default   = ["cyberpunk", "material", "neobrutalism", "dodai"]
+# Design systems to bundle (features of `dodai-ui-core`).
+cyberpunk    = ["dodai-ui-core/cyberpunk"]
+material     = ["dodai-ui-core/material"]
+neobrutalism = ["dodai-ui-core/neobrutalism"]
+dodai        = ["dodai-ui-core/dodai"]
+
+[dependencies]
+dodai-ui-core = { path = "../dodai-ui-core", version = "0.1.6", default-features = false }
+xilem = "0.4"
+
+[dev-dependencies]
+dodai-ui-core = { path = "../dodai-ui-core", version = "0.1.6", default-features = false, features = ["cyberpunk", "material", "neobrutalism", "dodai"] }

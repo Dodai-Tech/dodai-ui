@@ -54,11 +54,11 @@ jobs:
         if: steps.diff.outputs.changed == 'true'
         run: |
           cargo fmt --all -- --check
-          cargo clippy --locked --workspace --exclude dodai-bevy --all-targets -- -D warnings
-          cargo test --locked --workspace --exclude dodai-bevy
+          cargo clippy --locked --workspace --exclude dodai-ui-bevy --all-targets -- -D warnings
+          cargo test --locked --workspace --exclude dodai-ui-bevy
           nu scripts/tests/run_all.nu
-          cargo clippy --locked --manifest-path crates/dodai-freya/Cargo.toml --all-targets -- -D warnings
-          cargo test --locked --manifest-path crates/dodai-freya/Cargo.toml
+          cargo clippy --locked --manifest-path crates/dodai-ui-freya/Cargo.toml --all-targets -- -D warnings
+          cargo test --locked --manifest-path crates/dodai-ui-freya/Cargo.toml
       - name: Commit the lockfile
         if: steps.diff.outputs.changed == 'true' && steps.diff.outputs.release != 'true'
         run: nu scripts/ci/deps_update.nu commit "github-actions[bot]" "github-actions[bot]@users.noreply.github.com"

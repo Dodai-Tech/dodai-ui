@@ -1,0 +1,27 @@
+[package]
+name         = "dodai-ui-leptos"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+description  = "leptos adapter for the Dodai UI design system"
+readme       = "README.md"
+keywords     = ["theme", "design-system", "leptos", "cyberpunk"]
+categories   = ["gui"]
+
+[dependencies]
+dodai-ui-core = { workspace = true }
+dodai-ui-topcoat = { path = "../dodai-ui-topcoat" }
+dodai-ui-icons = { workspace = true, features = ["theme", "cyberpunk", "material", "material-rounded", "material-sharp", "neobrutalism"] }
+leptos = { version = "0.8", features = ["ssr"] }
+
+[[example]]
+name = "leptos_showcase"
+path = "examples/leptos_showcase.rs"
+
+[dev-dependencies]
+# The showcase page inlines the logo as a data: URL.
+base64 = "0.22"
+dodai-ui-core = { workspace = true, features = ["cyberpunk", "material"] }

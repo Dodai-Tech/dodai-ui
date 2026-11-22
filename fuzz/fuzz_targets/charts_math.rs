@@ -1,5 +1,5 @@
 #![no_main]
-use dodai_charts as c;
+use dodai_ui_charts as c;
 use libfuzzer_sys::fuzz_target;
 
 // Chart maths take caller data (NaN, infinities, empty, huge periods): never panic, never hang.

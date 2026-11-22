@@ -1,8 +1,8 @@
 #!/usr/bin/env nu
 # Typed icon names, generated from the committed icon data (no upstream needed):
-#   crates/dodai-icons/src/id.rs          `IconId`: the shared vocabulary = every Dodai
+#   crates/dodai-ui-icons/src/id.rs          `IconId`: the shared vocabulary = every Dodai
 #                                           (Cyberpunk) name + every Phosphor name
-#   crates/dodai-icons/src/material/symbol.rs  `MaterialSymbol`: Material's own catalogue
+#   crates/dodai-ui-icons/src/material/symbol.rs  `MaterialSymbol`: Material's own catalogue
 # Run from the repo root after regenerating icon data: `nu scripts/gen-icon-enums.nu`.
 use icon-names.nu [pascal key]
 
@@ -16,7 +16,7 @@ def table-names [path: string] {
 
 # Names of the hand-drawn Cyberpunk pack: `Variant, "name", "group" => ...`.
 def cyberpunk-names [] {
-  open crates/dodai-icons/src/cyberpunk.rs | lines
+  open crates/dodai-ui-icons/src/cyberpunk.rs | lines
     | each {|l| $l | parse -r '^\s+[A-Z]\w*, "(?<n>[a-z0-9_-]+)", "\w+" =>' | get -o n.0 | default null}
     | compact
 }
@@ -46,8 +46,8 @@ def emit-consts [ty: string, ctor: string, enum_name: string, names: list<string
   print $"($ty): ($rows | length) constants"
 }
 
-let vocab = ((cyberpunk-names) ++ (table-names crates/dodai-icons/src/phosphor/regular.rs))
-emit "IconId" "An icon of the shared vocabulary: every design system draws every one, in its own style." $vocab crates/dodai-icons/src/id.rs true
-emit "MaterialSymbol" "A Material Symbols catalogue icon." (table-names crates/dodai-icons/src/material/outlined.rs) crates/dodai-icons/src/material/symbol.rs false
+let vocab = ((cyberpunk-names) ++ (table-names crates/dodai-ui-icons/src/phosphor/regular.rs))
+emit "IconId" "An icon of the shared vocabulary: every design system draws every one, in its own style." $vocab crates/dodai-ui-icons/src/id.rs true
+emit "MaterialSymbol" "A Material Symbols catalogue icon." (table-names crates/dodai-ui-icons/src/material/outlined.rs) crates/dodai-ui-icons/src/material/symbol.rs false
 
-emit-consts "Icon" "of" "IconId" $vocab crates/dodai-gpui/src/icon_names.rs
+emit-consts "Icon" "of" "IconId" $vocab crates/dodai-ui-gpui/src/icon_names.rs

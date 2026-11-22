@@ -6,7 +6,7 @@
 #
 # The dodai crates are libraries: their users see the requirements in the manifests, never the
 # lockfile. So a raised requirement ships as a patch release; a lockfile-only change is not
-# released. Majors are never taken here (they are breaking: do them by hand). crates/dodai-freya
+# released. Majors are never taken here (they are breaking: do them by hand). crates/dodai-ui-freya
 # is its own workspace, pinned to one freya release; it is not touched.
 # ──────────────────────────────────────────────────────────────────────────────
 

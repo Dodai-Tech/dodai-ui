@@ -1,0 +1,24 @@
+[package]
+name                   = "dodai-ui-showcase-web"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+description            = "The Dodai showcase in the browser: the topcoat showcase page and its model compiled to WebAssembly, so a static site can run it."
+publish                = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+dodai-ui-core            = { workspace = true, features = ["cyberpunk", "material", "neobrutalism", "dodai"] }
+dodai-ui-icons           = { workspace = true, features = ["theme", "cyberpunk", "material", "neobrutalism", "symbols"] }
+dodai-ui-showcase-model  = { workspace = true }
+dodai-ui-topcoat         = { workspace = true }
+
+# lib.rs pulls the topcoat showcase sources in with #[path]; they use these crates, but the
+# files live outside this crate's directory so machete cannot see the use.
+[package.metadata.cargo-machete]
+ignored = ["dodai-ui-icons", "dodai-ui-topcoat"]

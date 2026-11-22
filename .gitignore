@@ -11,6 +11,6 @@ showcase.html
 fuzz/target/
 fuzz/corpus/
 fuzz/artifacts/
-/crates/dodai-freya/target
+/crates/dodai-ui-freya/target
 /tools/shaders-kernels/target
-/crates/dodai-xilem/target
+/crates/dodai-ui-xilem/target

@@ -1,32 +1,32 @@
 [workspace]
 members = [
-    "crates/dodai-core",
-    "crates/dodai-charts",
-    "crates/dodai-dash",
-    "crates/dodai-fx",
-    "crates/dodai-frost",
-    "crates/dodai-shaders",
-    "crates/dodai-icons",
-    "crates/dodai-ratatui",
-    "crates/dodai-iced",
-    "crates/dodai-gpui",
-    "crates/dodai-showcase",
-    "crates/dodai-showcase-model",
-    "crates/dodai-showcase-web",
-    "crates/dodai-topcoat",
-    "crates/dodai-egui",
-    "crates/dodai-slint",
-    "crates/dodai-dioxus",
-    "crates/dodai-leptos",
-    "crates/dodai-yew",
-    "crates/dodai-bevy",
-    "crates/dodai-spec",
-    "crates/dodai-gen",
+    "crates/dodai-ui-core",
+    "crates/dodai-ui-charts",
+    "crates/dodai-ui-dash",
+    "crates/dodai-ui-fx",
+    "crates/dodai-ui-frost",
+    "crates/dodai-ui-shaders",
+    "crates/dodai-ui-icons",
+    "crates/dodai-ui-ratatui",
+    "crates/dodai-ui-iced",
+    "crates/dodai-ui-gpui",
+    "crates/dodai-ui-showcase",
+    "crates/dodai-ui-showcase-model",
+    "crates/dodai-ui-showcase-web",
+    "crates/dodai-ui-topcoat",
+    "crates/dodai-ui-egui",
+    "crates/dodai-ui-slint",
+    "crates/dodai-ui-dioxus",
+    "crates/dodai-ui-leptos",
+    "crates/dodai-ui-yew",
+    "crates/dodai-ui-bevy",
+    "crates/dodai-ui-spec",
+    "crates/dodai-ui-gen",
 ]
 resolver = "2"
 # Own workspaces: freya (own Skia) and xilem (its wgpu/naga 26 does not unify with gpui and
 # iced), each with its own lockfile: see their Cargo.toml.
-exclude = ["crates/dodai-freya", "crates/dodai-xilem", "tools/shaders-kernels"]
+exclude = ["crates/dodai-ui-freya", "crates/dodai-ui-xilem", "tools/shaders-kernels"]
 
 [workspace.package]
 version      = "0.1.6"
@@ -52,16 +52,16 @@ objc2-app-kit    = { version = "0.3", default-features = false, features = ["std
 objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSData"] }
 
 # Internal crates
-dodai-spec    = { path = "crates/dodai-spec",  version = "0.1.6" }
-dodai-core    = { path = "crates/dodai-core",    version = "0.1.6" }
-dodai-fx = { path = "crates/dodai-fx", version = "0.1.6" }
-dodai-frost = { path = "crates/dodai-frost", version = "0.1.6" }
-dodai-charts      = { path = "crates/dodai-charts", version = "0.1.6" }
-dodai-shaders = { path = "crates/dodai-shaders", version = "0.1.6" }
-dodai-icons = { path = "crates/dodai-icons", version = "0.1.6", default-features = false }
-dodai-showcase-model = { path = "crates/dodai-showcase-model" }
-dodai-gpui    = { path = "crates/dodai-gpui",    version = "0.1.6", default-features = false }
-dodai-topcoat = { path = "crates/dodai-topcoat", version = "0.1.6" }
+dodai-ui-spec    = { path = "crates/dodai-ui-spec",  version = "0.1.6" }
+dodai-ui-core    = { path = "crates/dodai-ui-core",    version = "0.1.6" }
+dodai-ui-fx = { path = "crates/dodai-ui-fx", version = "0.1.6" }
+dodai-ui-frost = { path = "crates/dodai-ui-frost", version = "0.1.6" }
+dodai-ui-charts      = { path = "crates/dodai-ui-charts", version = "0.1.6" }
+dodai-ui-shaders = { path = "crates/dodai-ui-shaders", version = "0.1.6" }
+dodai-ui-icons = { path = "crates/dodai-ui-icons", version = "0.1.6", default-features = false }
+dodai-ui-showcase-model = { path = "crates/dodai-ui-showcase-model" }
+dodai-ui-gpui    = { path = "crates/dodai-ui-gpui",    version = "0.1.6", default-features = false }
+dodai-ui-topcoat = { path = "crates/dodai-ui-topcoat", version = "0.1.6" }
 
 [profile.dev]
 opt-level = 1
@@ -78,6 +78,6 @@ codegen-units = 1
 strip         = "symbols"
 
 # Shaders are per-pixel maths: always optimise them.
-[profile.dev.package.dodai-shaders]
+[profile.dev.package.dodai-ui-shaders]
 opt-level = 3
 

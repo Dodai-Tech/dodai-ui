@@ -70,8 +70,8 @@ jobs:
       # toolkits pull conflicting versions of shared crates when their features are unified).
       - name: Clippy and tests, crate by crate
         run: |
-          for c in dodai-fx dodai-core dodai-frost dodai-icons dodai-gpui dodai-shaders dodai-iced dodai-topcoat dodai-dioxus dodai-bevy; do
-            flags=""; [ "$c" = dodai-core ] && flags="--all-features"
+          for c in dodai-ui-fx dodai-ui-core dodai-ui-frost dodai-ui-icons dodai-ui-gpui dodai-ui-shaders dodai-ui-iced dodai-ui-topcoat dodai-ui-dioxus dodai-ui-bevy; do
+            flags=""; [ "$c" = dodai-ui-core ] && flags="--all-features"
             cargo clippy -p "$c" --all-targets $flags -- -D warnings
             cargo test -p "$c" --locked $flags
           done

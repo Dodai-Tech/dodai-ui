@@ -12,27 +12,27 @@ Neo-Brutalism and Dodai.
 
 | Crate | Framework | What you get |
 |---|---|---|
-| [`dodai-core`](crates/dodai-core) | none | `Theme`, `Palette`, tokens, `ThemeSwitcher`, WCAG contrast, ANSI-256 fallback, the four design systems (features) and `motion` (easing, springs, curves, stagger, entry effects, tweens) |
-| [`dodai-gpui`](crates/dodai-gpui) | GPUI 0.2 | The design system in gpui: `Global` theme store, `cx.dodai()`, `DodaiStyled`, 160+ components |
-| [`dodai-iced`](crates/dodai-iced) | Iced 0.14 | `IcedTheme` and a full component set: buttons, panels, tabs, inputs, lists, pickers, canvas chamfers, glow, frosted glass |
-| [`dodai-bevy`](crates/dodai-bevy) | Bevy 0.20 | `bevy_ui` components, a chamfer material with hard shadow, glass and scanlines |
-| [`dodai-dioxus`](crates/dodai-dioxus) | Dioxus 0.7 | Components and a theme provider, styled by `dodai-topcoat` |
-| [`dodai-topcoat`](crates/dodai-topcoat) | Topcoat / any web | CSS custom properties and `.dodai-*` component classes, `clip-path` chamfers, one stylesheet per design |
-| [`dodai-shaders`](crates/dodai-shaders) | wgpu | 196 pixel shaders written in Rust (rust-gpu to WGSL): painted and cel-shaded scenes, cyberpunk cityscapes, Material 3, Matrix, CRT/VHS monitors, sacred geometry, pixel-art scenes; they follow the theme palette. Views for gpui, iced, bevy and dioxus (features) |
-| [`dodai-icons`](crates/dodai-icons) | none | One typed `IconId` and the icon packs (Cyberpunk, Material Symbols, Neo-Brutalism, symbol sets) |
-| [`dodai-fx`](crates/dodai-fx) | none | Surface textures and effects, no dependencies (optional `frost` feature re-exports `dodai-frost`) |
-| [`dodai-frost`](crates/dodai-frost) | none | Frosted glass on RGBA pixels, GPU first with a CPU fallback |
+| [`dodai-ui-core`](crates/dodai-ui-core) | none | `Theme`, `Palette`, tokens, `ThemeSwitcher`, WCAG contrast, ANSI-256 fallback, the four design systems (features) and `motion` (easing, springs, curves, stagger, entry effects, tweens) |
+| [`dodai-ui-gpui`](crates/dodai-ui-gpui) | GPUI 0.2 | The design system in gpui: `Global` theme store, `cx.dodai()`, `DodaiStyled`, 160+ components |
+| [`dodai-ui-iced`](crates/dodai-ui-iced) | Iced 0.14 | `IcedTheme` and a full component set: buttons, panels, tabs, inputs, lists, pickers, canvas chamfers, glow, frosted glass |
+| [`dodai-ui-bevy`](crates/dodai-ui-bevy) | Bevy 0.20 | `bevy_ui` components, a chamfer material with hard shadow, glass and scanlines |
+| [`dodai-ui-dioxus`](crates/dodai-ui-dioxus) | Dioxus 0.7 | Components and a theme provider, styled by `dodai-ui-topcoat` |
+| [`dodai-ui-topcoat`](crates/dodai-ui-topcoat) | Topcoat / any web | CSS custom properties and `.dodai-*` component classes, `clip-path` chamfers, one stylesheet per design |
+| [`dodai-ui-shaders`](crates/dodai-ui-shaders) | wgpu | 196 pixel shaders written in Rust (rust-gpu to WGSL): painted and cel-shaded scenes, cyberpunk cityscapes, Material 3, Matrix, CRT/VHS monitors, sacred geometry, pixel-art scenes; they follow the theme palette. Views for gpui, iced, bevy and dioxus (features) |
+| [`dodai-ui-icons`](crates/dodai-ui-icons) | none | One typed `IconId` and the icon packs (Cyberpunk, Material Symbols, Neo-Brutalism, symbol sets) |
+| [`dodai-ui-fx`](crates/dodai-ui-fx) | none | Surface textures and effects, no dependencies (optional `frost` feature re-exports `dodai-ui-frost`) |
+| [`dodai-ui-frost`](crates/dodai-ui-frost) | none | Frosted glass on RGBA pixels, GPU first with a CPU fallback |
 
-Also in the repository but **not part of the first release**: `dodai-charts` (70 gpui charts and their
-renderer-agnostic maths), `dodai-dash` (a dashboard engine: a TOML and JSON dashboard format, validation against your own metrics, view models; no storage and no rendering; see its [README](crates/dodai-dash/README.md)), `dodai-ratatui` (a terminal adapter, still small) and the egui,
+Also in the repository but **not part of the first release**: `dodai-ui-charts` (70 gpui charts and their
+renderer-agnostic maths), `dodai-ui-dash` (a dashboard engine: a TOML and JSON dashboard format, validation against your own metrics, view models; no storage and no rendering; see its [README](crates/dodai-ui-dash/README.md)), `dodai-ui-ratatui` (a terminal adapter, still small) and the egui,
 slint, yew, leptos and freya adapters.
 
-**Started:** [`dodai-xilem`](crates/dodai-xilem) for [xilem](https://github.com/linebender/xilem) (masonry widgets, vello renderer). Colour conversion, button, tag, panel and tabs; run the `xilem_showcase` example.
+**Started:** [`dodai-ui-xilem`](crates/dodai-ui-xilem) for [xilem](https://github.com/linebender/xilem) (masonry widgets, vello renderer). Colour conversion, button, tag, panel and tabs; run the `xilem_showcase` example.
 
 ## Status (0.1)
 
 The gpui, iced, bevy, dioxus and topcoat (server-rendered HTML) showcases show the same pages, built from one shared model
-(`dodai-showcase-model`). They are checked by screenshots; mouse and keyboard interaction has
+(`dodai-ui-showcase-model`). They are checked by screenshots; mouse and keyboard interaction has
 not been tested on every control in every toolkit yet, so expect rough edges in popovers, sliders
 and drag handling. Minimum Rust versions differ per crate (see each
 crate's `rust-version`).
@@ -65,12 +65,12 @@ Every theme is contrast-tested (text ≥ 7:1, primary label ≥ 4.5:1).
 
 ```toml
 [dependencies]
-dodai-core    = { version = "0.1", features = ["cyberpunk", "material"] }
-dodai-iced    = "0.1"   # or dodai-gpui / dodai-bevy / dodai-dioxus / dodai-topcoat
+dodai-ui-core    = { version = "0.1", features = ["cyberpunk", "material"] }
+dodai-ui-iced    = "0.1"   # or dodai-ui-gpui / dodai-ui-bevy / dodai-ui-dioxus / dodai-ui-topcoat
 ```
 
 ```rust
-let mut sw = dodai_core::switcher();      // all built-in themes
+let mut sw = dodai_ui_core::switcher();      // all built-in themes
 let theme = sw.current().clone();         // hand it to your toolkit's adapter
 let next = sw.cycle_next().clone();       // switch at runtime: shape, type and glow change too
 ```
@@ -79,13 +79,13 @@ Persist `theme.id()` (e.g. `"cyberpunk-cyan"`) in your config and restore with `
 
 ## Surface effects
 
-One type, `dodai_core::Surface`, sets every surface effect (frosted glass, textures, gloss, glitch,
+One type, `dodai_ui_core::Surface`, sets every surface effect (frosted glass, textures, gloss, glitch,
 neon, ripple, ...), app-wide with `set_surface` or per component with `.surface(..)`. Unset follows
 the design: No design is frosted out of the box; Dodai suggests it (`Surface::frosted()`). A design draws only the effects
 it owns, so `glitch(0.6)` shows on Cyberpunk and nothing on Material 3.
 
 ```rust
-use dodai_core::Surface;
+use dodai_ui_core::Surface;
 set_surface(cx, Surface::frosted());                                  // every container and field
 Button::new("Save").surface(Surface::new().glitch(0.6));               // one component
 ```
@@ -95,44 +95,44 @@ has the same picker. Frost per toolkit:
 
 | Toolkit | Frost |
 |---|---|
-| gpui, iced, bevy | blurred backdrop (`dodai-frost`; GPU first, CPU fallback) |
+| gpui, iced, bevy | blurred backdrop (`dodai-ui-frost`; GPU first, CPU fallback) |
 | topcoat, dioxus, yew, leptos | CSS `backdrop-filter` |
 | egui, freya | painted by the adapter (freya uses `backdrop_blur`) |
 | slint, ratatui | none |
 
 ## Pick only what you need
 
-`dodai-core` carries the engine and the four design systems behind Cargo features
+`dodai-ui-core` carries the engine and the four design systems behind Cargo features
 (`cyberpunk`, `material`, `neobrutalism`, `dodai`; all off by default). Icons and
 shaders are their own crates.
 
 | Crate | What it is |
 |---|---|
-| [`dodai-core`](crates/dodai-core) | Tokens, `Theme`, `ThemeSwitcher`, `ThemeBuilder`, DTCG export. Designs by feature: 6 Cyberpunk themes, the Material 3 pair, Neo-Brutalism (seven accents, light and dark) and Dodai (frosted glass) |
-| [`dodai-icons`](crates/dodai-icons) | Every icon in one crate, packs chosen by feature: the typed `IconId`, the Cyberpunk pack (378 hand-drawn, curve-free icons), the full Material Symbols catalogue (3,900+ icons, outlined/rounded/sharp + fill) and Phosphor-derived sets |
-| [`dodai-fx`](crates/dodai-fx) | Surface textures and effects. No dependencies by default; `frost` and `frost-gpu` re-export `dodai-frost` |
-| [`dodai-frost`](crates/dodai-frost) | Frosted glass on RGBA pixels: GPU first (`gpu`, wgpu), CPU fallback, byte-identical |
-| [`dodai-shaders`](crates/dodai-shaders) | Pixel shaders |
+| [`dodai-ui-core`](crates/dodai-ui-core) | Tokens, `Theme`, `ThemeSwitcher`, `ThemeBuilder`, DTCG export. Designs by feature: 6 Cyberpunk themes, the Material 3 pair, Neo-Brutalism (seven accents, light and dark) and Dodai (frosted glass) |
+| [`dodai-ui-icons`](crates/dodai-ui-icons) | Every icon in one crate, packs chosen by feature: the typed `IconId`, the Cyberpunk pack (378 hand-drawn, curve-free icons), the full Material Symbols catalogue (3,900+ icons, outlined/rounded/sharp + fill) and Phosphor-derived sets |
+| [`dodai-ui-fx`](crates/dodai-ui-fx) | Surface textures and effects. No dependencies by default; `frost` and `frost-gpu` re-export `dodai-ui-frost` |
+| [`dodai-ui-frost`](crates/dodai-ui-frost) | Frosted glass on RGBA pixels: GPU first (`gpu`, wgpu), CPU fallback, byte-identical |
+| [`dodai-ui-shaders`](crates/dodai-ui-shaders) | Pixel shaders |
 
 ```toml
-dodai-core  = { version = "0.1", features = ["material"] }    # the engine + Material 3
-dodai-icons = { version = "0.1", default-features = false, features = ["material"] }
+dodai-ui-core  = { version = "0.1", features = ["material"] }    # the engine + Material 3
+dodai-ui-icons = { version = "0.1", default-features = false, features = ["material"] }
 ```
 
 All crates share one version, bumped together by `nu scripts/bump_version.nu <version>`.
 
-`dodai-core` is infrastructure: tokens, the shape-system engine, the `DesignSpec` trait and a generic baseline for component
+`dodai-ui-core` is infrastructure: tokens, the shape-system engine, the `DesignSpec` trait and a generic baseline for component
 tokens. A design module owns everything specific to it: palettes, shape language and presets, and a `DesignSpec`
 (component tokens, row heights, focus ring, tooltip colours, …) attached with `Theme::with_spec`. Every hook is optional, so a
-new design system overrides only what differs. `dodai_core::material` is the reference (`Material3`, `shape_system()`);
-Cyberpunk has its own `DesignSpec` (glow, accent bar, outline-to-solid hover, solid active tab) and its shape presets in `dodai_core::cyberpunk::shape`; core's baseline is a plain, neutral design for custom themes.
+new design system overrides only what differs. `dodai_ui_core::material` is the reference (`Material3`, `shape_system()`);
+Cyberpunk has its own `DesignSpec` (glow, accent bar, outline-to-solid hover, solid active tab) and its shape presets in `dodai_ui_core::cyberpunk::shape`; core's baseline is a plain, neutral design for custom themes.
 
 ## Material 3 conformance
 
 The Material themes follow the M3 component specs: shape per component (`ShapeRole`: pill buttons,
 16 px FAB, 12 px cards, 28 px dialogs, 4 px menus and fields, 8 px chips, ...), tonal containers
 (`surface-container-*`), 8 % hover / 10 % press state layers, elevation as soft two-layer shadows,
-and the 80 px navigation bar, rail and drawer with pill indicators. `crates/dodai-core/tests/material_spec.rs`
+and the 80 px navigation bar, rail and drawer with pill indicators. `crates/dodai-ui-core/tests/material_spec.rs`
 pins these numbers against the spec; other design systems keep their own geometry (also tested).
 Material-only components: `ButtonGroup`, `SplitButton`, `LoadingIndicator`.
 Also: 56 px list rows and 48 px menu rows, plain / rich tooltips, docked and full-screen
@@ -149,7 +149,7 @@ Try them per section in `just run-gpui`.
 
 ## Importable tokens and icons
 
-`just export` (or `cargo run -p dodai-topcoat --example export -- dist`) regenerates `dist/`, which is
+`just export` (or `cargo run -p dodai-ui-topcoat --example export -- dist`) regenerates `dist/`, which is
 committed and checked in CI:
 
 | File | For |
@@ -159,11 +159,11 @@ committed and checked in CI:
 | `dist/css/dodai-cyberpunk.css`, `dist/css/dodai-material.css`, `dist/tokens/dodai-cyberpunk.tokens.json`, `dist/tokens/dodai-material.tokens.json` | The same, for one design system only: ship just Cyberpunk or just Material 3 |
 | `dist/icons/svg/*.svg`, `dist/icons/dodai-cyberpunk-icons.svg` | The icon pack as SVG (`currentColor`), one file each and as a `<symbol>` sprite |
 
-The pack (`dodai_icons::cyberpunk`, feature `cyberpunk`) has 378 icons in 7 groups, all straight lines, 45° chamfers and octagons.
+The pack (`dodai_ui_icons::cyberpunk`, feature `cyberpunk`) has 378 icons in 7 groups, all straight lines, 45° chamfers and octagons.
 
 ## gpui features
 
-`dodai-gpui` features (all default, all additive): `components`, `frost`, `cyberpunk`
+`dodai-ui-gpui` features (all default, all additive): `components`, `frost`, `cyberpunk`
 (the stroked icon pack), `material` (the Material Symbols icons).
 Components never look at a theme id: soft, tonal Material rendering is chosen by the theme's
 `ShapeKind::Rounded`, and every colour comes from the palette or its M3-style `roles`
@@ -171,7 +171,7 @@ Components never look at a theme id: soft, tonal Material rendering is chosen by
 
 ## Motion
 
-`dodai_core::motion` is dependency-free and toolkit-independent: you pass it the clock (seconds) and apply
+`dodai_ui_core::motion` is dependency-free and toolkit-independent: you pass it the clock (seconds) and apply
 what it returns.
 
 - **Easing / curves / tweens**: `Easing` (cubic-bezier, spring, bounce, elastic, back), `Curve`, `Tween`, stagger.
@@ -183,12 +183,12 @@ what it returns.
   gestures (swipe release, page snap, overscroll, pull to refresh, magnetic, tilt). They return a `Pose`
   (opacity, offset, scale, rotation, glow); an adapter applies one layered pose per widget.
 - **Per design system**: each `Theme` carries a `Motion` (duration, easing, `Personality`), and
-  `dodai_core::cyberpunk::fx` (glitch, flicker, decrypt, hologram, scan sweep, chamfer wipe) and
-  `dodai_core::material::fx` (state layers, ripple, container transform, fade through, shared axis) add the
+  `dodai_ui_core::cyberpunk::fx` (glitch, flicker, decrypt, hologram, scan sweep, chamfer wipe) and
+  `dodai_ui_core::material::fx` (state layers, ripple, container transform, fade through, shared axis) add the
   system-specific ones. `.reduced()` degrades any pose to fades.
 - **Web / slint**: no Rust needed; the exporter writes `--dodai-motion-duration|delay|easing` and a DTCG `motion` group.
 
-In gpui, `dodai_gpui::motion::react` / `hover_lift` drive the mixins from interaction state; `Button`,
+In gpui, `dodai_ui_gpui::motion::react` / `hover_lift` drive the mixins from interaction state; `Button`,
 `IconButton` and `Fab` use it. See *Animation → Dynamics* in the showcase.
 
 Instrument-style pieces: `Gauge` with `GaugeStyle` (arc, segmented, dial, meter, reticle, bar, chevron, level)
@@ -196,29 +196,29 @@ and `Oscilloscope`, `Spectrum`, `RadarScope`, `HexMap`, `RingStack`, `DotMatrix`
 
 ## Shaders
 
-`dodai-shaders` is a dependency-free set of per-pixel shaders written as plain Rust functions
+`dodai-ui-shaders` is a dependency-free set of per-pixel shaders written as plain Rust functions
 (generators like `neon_grid`, `glow_waves`, `digital_rain`, `platformer`, post effects like `crt`, `vhs`,
-`gameboy`), drawn from the active theme's palette. In gpui: `dodai_shaders::gpui::ShaderView::new("id", "neon_grid").fx("crt")`
-(feature `gpui` of `dodai-shaders`). Demo of everything: the *Shaders* category of the showcase (`just run-gpui`); `just dump-shaders` renders image files.
+`gameboy`), drawn from the active theme's palette. In gpui: `dodai_ui_shaders::gpui::ShaderView::new("id", "neon_grid").fx("crt")`
+(feature `gpui` of `dodai-ui-shaders`). Demo of everything: the *Shaders* category of the showcase (`just run-gpui`); `just dump-shaders` renders image files.
 
 ## Adding a theme
 
-1. Copy `crates/dodai-core/src/material` to `crates/dodai-core/src/<name>` (and add a feature): themes via `dodai_core::themes::ThemeBuilder`, a `DesignSpec` for the component tokens that differ (each hook is optional; set `Look` flags for tonal surfaces, soft elevation, floating labels, symbol icons), optionally a shape system and an icon crate. Attach the spec with `Theme::with_spec`.
-2. Register it in one place: a feature plus an entry in `dodai_core::themes::systems()`. The switcher, `themes::all()`, `by_id()` and the `dist` export pick it up; adapters need no change.
-3. `just test`: the shared contrast/uniqueness tests in `crates/dodai-core/tests` run on it. Add the design's own conformance tests next to its spec.
+1. Copy `crates/dodai-ui-core/src/material` to `crates/dodai-ui-core/src/<name>` (and add a feature): themes via `dodai_ui_core::themes::ThemeBuilder`, a `DesignSpec` for the component tokens that differ (each hook is optional; set `Look` flags for tonal surfaces, soft elevation, floating labels, symbol icons), optionally a shape system and an icon crate. Attach the spec with `Theme::with_spec`.
+2. Register it in one place: a feature plus an entry in `dodai_ui_core::themes::systems()`. The switcher, `themes::all()`, `by_id()` and the `dist` export pick it up; adapters need no change.
+3. `just test`: the shared contrast/uniqueness tests in `crates/dodai-ui-core/tests` run on it. Add the design's own conformance tests next to its spec.
 
 ## Generated toolkit glue
 
-A component's tokens are described once, on the token struct in `dodai-core`, with `#[derive(TokenSpec)]` (crate `dodai-spec`, behind core's `spec` feature):
+A component's tokens are described once, on the token struct in `dodai-ui-core`, with `#[derive(TokenSpec)]` (crate `dodai-ui-spec`, behind core's `spec` feature):
 
 ```rust
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[cfg_attr(feature = "spec", derive(dodai_spec::TokenSpec))]
+#[cfg_attr(feature = "spec", derive(dodai_ui_spec::TokenSpec))]
 #[cfg_attr(feature = "spec", token_spec(resolver = "tag", args(tone: Tone, solid: bool), doc = "Tag / badge."))]
 pub struct TagTokens { pub background: Option<Color>, pub foreground: Color }
 ```
 
-The compiler checks the resolver against `Theme` and that fields are `Color` or `Option<Color>`. `cargo run -p dodai-gen` writes each toolkit's `generated.rs` (`TagStyle::of(theme, tone, solid)`, native colours); CI runs it with `--check`. To add a component: derive on its token struct, list it in `component_spec::all()`, run the generator. Only toolkits whose drawing takes native colours are targets (xilem today); drawing stays hand-written.
+The compiler checks the resolver against `Theme` and that fields are `Color` or `Option<Color>`. `cargo run -p dodai-ui-gen` writes each toolkit's `generated.rs` (`TagStyle::of(theme, tone, solid)`, native colours); CI runs it with `--check`. To add a component: derive on its token struct, list it in `component_spec::all()`, run the generator. Only toolkits whose drawing takes native colours are targets (xilem today); drawing stays hand-written.
 
 ## Development
 

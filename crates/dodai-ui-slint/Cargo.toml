@@ -1,0 +1,21 @@
+[package]
+name         = "dodai-ui-slint"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+description  = "slint adapter for the Dodai UI design system"
+readme       = "README.md"
+keywords     = ["theme", "design-system", "slint", "cyberpunk"]
+categories   = ["gui"]
+
+[dependencies]
+dodai-ui-core = { workspace = true }
+# slint 1.19 pulls parley/fontique 0.12, which does not build on linux-gnu next to yeslogic-fontconfig-sys 6.0.1
+# (unresolved FcCharSet* imports). Lift the pin once that builds.
+slint = "=1.18.1"
+
+[dev-dependencies]
+dodai-ui-core = { workspace = true, features = ["cyberpunk", "material"] }

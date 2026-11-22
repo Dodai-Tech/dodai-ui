@@ -13,7 +13,7 @@ All notable changes to this project will be documented in this file.
 **Full Changelog**: https://github.com/Dodai-Tech/dodai-ui/compare/v0.1.5...v0.1.6
 ## [0.1.5] - 2026-11-15
 ### ✨ Features
-- a frosted design sits on its own picture so the blur shows (dodai_core::design_picture; gpui draws it unless the app set a wallpaper)
+- a frosted design sits on its own picture so the blur shows (dodai_ui_core::design_picture; gpui draws it unless the app set a wallpaper)
 - live window blur (set_window_blur): the OS blurs the desktop behind a see-through canvas
 - each frosted design sits on its own faint picture so the blur shows; brighter, more saturated Dodai glass
 - canvas keeps the smooth gradient; glass blurs a hidden design picture; containers keep their wash, controls are frost only
@@ -24,7 +24,7 @@ All notable changes to this project will be documented in this file.
 - keep the design's gradient canvas; the design picture is opt-in; window blur keeps the gradient
 - a frosted surface drops its gradient wash; it shows the blurred backdrop only
 ### 🔄 CI
-- check dodai-fx without the frost features (dodai-frost needs rustc 1.87)
+- check dodai-ui-fx without the frost features (dodai-ui-frost needs rustc 1.87)
 - freya formatting, broken intra-doc links to Surface
 - nightly upgrades compatible requirements and releases a patch (like gitkraft's auto-release); majors by hand
 ### 🔧 Chores
@@ -36,7 +36,7 @@ All notable changes to this project will be documented in this file.
 - Surface is the one API for every surface effect, app-wide (set_surface) and per component; the flat resolved struct is ResolvedSurface (Theme::resolve_surface, resolved_surface) **[BREAKING]**
 ### ✨ Features
 - Dodai is frosted by default in every toolkit; other designs have the same options, off (Theme::default_surface, surface_fx_for)
-- re-export dodai-frost as dodai_fx::frost (features frost, frost-gpu); dodai_frost::Glass is now FrostParams **[BREAKING]**
+- re-export dodai-ui-frost as dodai_ui_fx::frost (features frost, frost-gpu); dodai_ui_frost::Glass is now FrostParams **[BREAKING]**
 - SurfaceMode (Off, Design, Frosted, Signature, Custom) in every showcase; showcases start on the design's own surface; README surface section; publish order frost before fx
 ### 🐛 Bug Fixes
 - an explicit Frosted reads as Frosted on designs frosted by default
@@ -84,7 +84,7 @@ All notable changes to this project will be documented in this file.
 - split charts_extra into family modules (trend, flow, distribution, part_whole)
 - responsive structured layout (min_w_0, max-width centered body, narrow sidebar, header chips row)
 - merge design system and theme into one panel
-- single dodai-shaders crate for CPU and GPU (gpu feature + rust-gpu build of the same crate); drop dodai-shaders-gpu and -kernels
+- single dodai-ui-shaders crate for CPU and GPU (gpu feature + rust-gpu build of the same crate); drop dodai-ui-shaders-gpu and -kernels
 ### ⚡ Performance
 - optimise deps in dev profile (6->55 fps), alloc-free entry ids, keep looping demos off All page; DODAI_AUTOSCROLL fps probe
 - cached bind groups, lock-free pipeline cache with background prewarm; gpui opens the GPU off the UI thread (CPU until ready)
@@ -135,7 +135,7 @@ All notable changes to this project will be documented in this file.
 - EntryScope — per-section entry style overrides every component inside
 - composable EntrySet; per-section effect chips (add/remove to compose)
 - per-section Animations chips in a right-hand column
-- dodai-icons crate (framework-agnostic icon geometry) + gpui Icon, sidebar icons
+- dodai-ui-icons crate (framework-agnostic icon geometry) + gpui Icon, sidebar icons
 - per-effect duration via hover popover on animation pills; section content no longer shrinks
 - Panel::subheader; animation pills below each section title with per-effect duration hover popover
 - glow slider + scanlines toggle in Design system panel
@@ -165,10 +165,10 @@ All notable changes to this project will be documented in this file.
 - .corners() on all shaped components (Tag, Select, Toast, Tabs, Menu, ...)
 - ShapeSystem — corner primitives, scale, roles, presets, lerp, outline
 - composable ShapeSystem (per-role kind, with_role/scale/style, Px size), Theme::with_shape_system/shape_for
-- dodai-charts-core (pure chart logic) + gpui components/charts features; CI, publish order, dioxus+bevy jobs
+- dodai-ui-charts-core (pure chart logic) + gpui components/charts features; CI, publish order, dioxus+bevy jobs
 - RenkoChart, DepthChart, Gantt, ChartStack, LineChart secondary y axis
 - candlestick extras (Heikin-Ashi, OHLC, volume, overlays, RSI/MACD panes, markers) + heatmap gradients
-- dodai-shaders crate (56 CPU shaders: cyberpunk, Material 3, Matrix, retro, pixel art, nature), gpui ShaderView + Shaders showcase category, standalone gallery
+- dodai-ui-shaders crate (56 CPU shaders: cyberpunk, Material 3, Matrix, retro, pixel art, nature), gpui ShaderView + Shaders showcase category, standalone gallery
 - 34 new shaders (90 total), Player (fps cap, adaptive resolution), faster scheduling/bloom/fireworks/pico16, half-block export, bench
 - Ghostty family (17 Rust ports), 19 more retro terminal/monitor shaders, presets, gallery + showcase integration (126 shaders)
 - dropdown selection, source/effect tags, chain chips in playground; gallery legend
@@ -182,7 +182,7 @@ All notable changes to this project will be documented in this file.
 - glow_waves generator, a palette variation of the Shadertoy wave shader
 - top bar fills the width; Shaders sub-groups by kind (Playground, Sources, Effects, Presets)
 - every shader shows on every design; Shaders sections named for what they look like
-- shaders grouped by look (8 source groups, 6 effect groups) with the family as a chip; groups table in dodai-shaders
+- shaders grouped by look (8 source groups, 6 effect groups) with the family as a chip; groups table in dodai-ui-shaders
 - featured shaders first in each group, the rest by name
 - NavigationItem::expanded (tree branch chevron); showcase sidebar folds categories and shader groups
 - playground above All with no count; shader entries count shaders and presets
@@ -255,7 +255,7 @@ All notable changes to this project will be documented in this file.
 - unused var
 - multi-remote push/pull/release recipes (from tokenburn)
 - force/per-remote variants, fast-fail ssh, gh check (from pi-tokenburn)
-- sync Cargo.lock (dodai-charts-core dependency)
+- sync Cargo.lock (dodai-ui-charts-core dependency)
 ### 🧪 Testing
 - fix per-effect duration expectation
 - headless render smoke test (22 components x every built-in theme)

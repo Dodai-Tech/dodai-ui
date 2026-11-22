@@ -7,7 +7,7 @@ use ../lib/versioning.nu *
 
 def sample [v: string]: nothing -> string {
     $'[workspace]
-members = ["crates/dodai-core"]
+members = ["crates/dodai-ui-core"]
 
 [workspace.package]
 version      = "($v)"
@@ -15,8 +15,8 @@ edition      = "2021"
 
 [workspace.dependencies]
 serde = { version = "1", features = ["derive"] }
-dodai-core    = { path = "crates/dodai-core",    version = "($v)" }
-dodai-ratatui = { path = "crates/dodai-ratatui", version = "($v)" }
+dodai-ui-core    = { path = "crates/dodai-ui-core",    version = "($v)" }
+dodai-ui-ratatui = { path = "crates/dodai-ui-ratatui", version = "($v)" }
 '
 }
 
@@ -40,8 +40,8 @@ def "test read-version: reads workspace.package" [] {
 def "test bump: updates workspace + internal deps" [] {
     let out = (bump-workspace-text (sample "0.1.0") "0.2.0")
     assert equal (read-version $out) "0.2.0"
-    assert ($out | str contains 'dodai-core    = { path = "crates/dodai-core",    version = "0.2.0" }')
-    assert ($out | str contains 'dodai-ratatui = { path = "crates/dodai-ratatui", version = "0.2.0" }')
+    assert ($out | str contains 'dodai-ui-core    = { path = "crates/dodai-ui-core",    version = "0.2.0" }')
+    assert ($out | str contains 'dodai-ui-ratatui = { path = "crates/dodai-ui-ratatui", version = "0.2.0" }')
 }
 
 def "test bump: leaves third-party deps alone" [] {
@@ -56,12 +56,12 @@ def "test bump: is idempotent" [] {
 
 def "test publish-order: leaves first, no duplicates, leaves after their deps" [] {
     let o = (publish-order)
-    assert equal ($o | first) "dodai-frost"
-    assert (($o | enumerate | where item == "dodai-fx" | get index.0) < ($o | enumerate | where item == "dodai-core" | get index.0))
+    assert equal ($o | first) "dodai-ui-frost"
+    assert (($o | enumerate | where item == "dodai-ui-fx" | get index.0) < ($o | enumerate | where item == "dodai-ui-core" | get index.0))
     assert equal ($o | uniq | length) ($o | length)
     # the adapters come after the crates they depend on
-    assert (($o | enumerate | where item == "dodai-core" | get index.0) < ($o | enumerate | where item == "dodai-gpui" | get index.0))
-    assert (($o | enumerate | where item == "dodai-icons" | get index.0) < ($o | enumerate | where item == "dodai-gpui" | get index.0))
+    assert (($o | enumerate | where item == "dodai-ui-core" | get index.0) < ($o | enumerate | where item == "dodai-ui-gpui" | get index.0))
+    assert (($o | enumerate | where item == "dodai-ui-icons" | get index.0) < ($o | enumerate | where item == "dodai-ui-gpui" | get index.0))
 }
 
 def "test publish-order: every crate comes after the workspace crates it depends on" [] {

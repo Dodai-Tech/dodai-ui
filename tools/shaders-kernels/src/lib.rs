@@ -1,6 +1,6 @@
-//! GPU kernels for `dodai-shaders`.
+//! GPU kernels for `dodai-ui-shaders`.
 //!
-//! The shader source files of `dodai-shaders` are included verbatim and
+//! The shader source files of `dodai-ui-shaders` are included verbatim and
 //! compiled by rust-gpu to WGSL, so there is one implementation of every
 //! shader. Each shader becomes a compute entry point (`gen_kernel!` /
 //! `post_kernel!`, listed in `entries.rs`), plus `pack` for the final BGRA
@@ -17,10 +17,10 @@ extern crate core as std;
 use glam::{UVec3, Vec2 as GVec2, Vec4};
 use spirv_std::spirv;
 
-#[path = "../../../crates/dodai-shaders/src/ctx.rs"]
+#[path = "../../../crates/dodai-ui-shaders/src/ctx.rs"]
 pub mod ctx;
 pub mod frame;
-#[path = "../../../crates/dodai-shaders/src/math.rs"]
+#[path = "../../../crates/dodai-ui-shaders/src/math.rs"]
 pub mod math;
 pub use ctx::ShaderPalette;
 pub mod prelude {
@@ -52,35 +52,35 @@ impl ShaderInfo {
     }
 }
 
-#[path = "../../../crates/dodai-shaders/src/shaders/blade.rs"]
+#[path = "../../../crates/dodai-ui-shaders/src/shaders/blade.rs"]
 pub mod blade;
-#[path = "../../../crates/dodai-shaders/src/shaders/cyberpunk.rs"]
+#[path = "../../../crates/dodai-ui-shaders/src/shaders/cyberpunk.rs"]
 pub mod cyberpunk;
-#[path = "../../../crates/dodai-shaders/src/shaders/dmt.rs"]
+#[path = "../../../crates/dodai-ui-shaders/src/shaders/dmt.rs"]
 pub mod dmt;
-#[path = "../../../crates/dodai-shaders/src/shaders/extra.rs"]
+#[path = "../../../crates/dodai-ui-shaders/src/shaders/extra.rs"]
 pub mod extra;
-#[path = "../../../crates/dodai-shaders/src/shaders/fx.rs"]
+#[path = "../../../crates/dodai-ui-shaders/src/shaders/fx.rs"]
 pub mod fx;
-#[path = "../../../crates/dodai-shaders/src/shaders/ghibli.rs"]
+#[path = "../../../crates/dodai-ui-shaders/src/shaders/ghibli.rs"]
 pub mod ghibli;
-#[path = "../../../crates/dodai-shaders/src/shaders/ghibli2.rs"]
+#[path = "../../../crates/dodai-ui-shaders/src/shaders/ghibli2.rs"]
 pub mod ghibli2;
-#[path = "../../../crates/dodai-shaders/src/shaders/ghostty.rs"]
+#[path = "../../../crates/dodai-ui-shaders/src/shaders/ghostty.rs"]
 pub mod ghostty;
-#[path = "../../../crates/dodai-shaders/src/shaders/material.rs"]
+#[path = "../../../crates/dodai-ui-shaders/src/shaders/material.rs"]
 pub mod material;
-#[path = "../../../crates/dodai-shaders/src/shaders/matrix.rs"]
+#[path = "../../../crates/dodai-ui-shaders/src/shaders/matrix.rs"]
 pub mod matrix;
-#[path = "../../../crates/dodai-shaders/src/shaders/nature.rs"]
+#[path = "../../../crates/dodai-ui-shaders/src/shaders/nature.rs"]
 pub mod nature;
-#[path = "../../../crates/dodai-shaders/src/shaders/pixel.rs"]
+#[path = "../../../crates/dodai-ui-shaders/src/shaders/pixel.rs"]
 pub mod pixel;
-#[path = "../../../crates/dodai-shaders/src/shaders/pixel2.rs"]
+#[path = "../../../crates/dodai-ui-shaders/src/shaders/pixel2.rs"]
 pub mod pixel2;
-#[path = "../../../crates/dodai-shaders/src/shaders/retro.rs"]
+#[path = "../../../crates/dodai-ui-shaders/src/shaders/retro.rs"]
 pub mod retro;
-#[path = "../../../crates/dodai-shaders/src/shaders/retro2.rs"]
+#[path = "../../../crates/dodai-ui-shaders/src/shaders/retro2.rs"]
 pub mod retro2;
 
 /// Per-dispatch constants. Mirrored byte for byte by the host.

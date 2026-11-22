@@ -1,0 +1,22 @@
+[package]
+name                   = "dodai-ui-fx"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+description            = "Self-contained visual effects, no dependencies by default: surface textures and animated effects drawn through a tiny Painter trait."
+readme                 = "README.md"
+keywords               = ["effects", "texture", "surface", "ui"]
+categories             = ["graphics", "gui"]
+
+[features]
+default = []
+# `dodai_ui_fx::frost`: the pixel blur of frosted glass (the `dodai-ui-frost` crate, CPU).
+frost = ["dep:dodai-ui-frost"]
+# The same blur on the GPU (wgpu); falls back to the CPU without an adapter.
+frost-gpu = ["frost", "dodai-ui-frost/gpu"]
+
+[dependencies]
+dodai-ui-frost = { workspace = true, optional = true }

@@ -35,7 +35,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "dodai-shaders-kernels"
+name = "dodai-ui-shaders-kernels"
 version = "0.1.0"
 dependencies = [
  "bytemuck",

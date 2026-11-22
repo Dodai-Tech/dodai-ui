@@ -1,9 +1,9 @@
 [package]
-name         = "dodai-shaders-kernels"
+name         = "dodai-ui-shaders-kernels"
 version      = "0.1.5"
 edition      = "2024"
 license      = "MIT"
-description  = "GPU kernels for dodai-shaders: the same Rust shader sources, compiled to WGSL with rust-gpu"
+description  = "GPU kernels for dodai-ui-shaders: the same Rust shader sources, compiled to WGSL with rust-gpu"
 publish      = false
 
 # Built by cargo-gpu (rust-gpu, its own nightly), never with the main workspace.
@@ -17,6 +17,6 @@ spirv-std = "0.11.0"
 glam      = { version = "0.34", default-features = false, features = ["bytemuck"] }
 bytemuck  = { version = "1.24.0", features = ["derive"] }
 
-# bytemuck is used by the files included with #[path] from dodai-shaders.
+# bytemuck is used by the files included with #[path] from dodai-ui-shaders.
 [package.metadata.cargo-machete]
 ignored = ["bytemuck"]

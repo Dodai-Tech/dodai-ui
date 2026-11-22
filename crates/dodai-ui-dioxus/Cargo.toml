@@ -1,0 +1,44 @@
+[package]
+name         = "dodai-ui-dioxus"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version = "1.87"
+description  = "Dioxus 0.7 components for the Dodai UI design system, styled by dodai-ui-topcoat: buttons, panels, inputs, tabs, tables and a theme provider"
+readme       = "README.md"
+keywords     = ["theme", "design-system", "dioxus", "cyberpunk"]
+categories   = ["gui"]
+
+[features]
+default   = ["cyberpunk", "material", "neobrutalism", "dodai"]
+# Design systems to bundle (each is its own crate; see `dodai`).
+cyberpunk = ["dodai-ui-core/cyberpunk"]
+material  = ["dodai-ui-core/material"]
+neobrutalism = ["dodai-ui-core/neobrutalism"]
+dodai     = ["dodai-ui-core/dodai"]
+
+[dependencies]
+dodai-ui-core = { workspace = true }
+dodai-ui-icons = { workspace = true, features = ["theme", "cyberpunk", "material", "material-rounded", "material-sharp", "neobrutalism"] }
+dodai-ui-topcoat = { workspace = true }
+dioxus = { version = "0.7", default-features = false, features = ["macro", "html", "signals", "hooks"] }
+
+[dev-dependencies]
+dodai-ui-core = { workspace = true, features = ["cyberpunk", "material", "neobrutalism", "dodai"] }
+dodai-ui-showcase-model = { workspace = true }
+dodai-ui-shaders = { workspace = true, features = ["dioxus"] }
+dioxus-ssr = "0.7"
+# The showcase scrolls to sections and follows the scroll through `document::eval`.
+dioxus = { version = "0.7", default-features = false, features = ["document", "macro", "html", "signals", "hooks"] }
+# The showcase example serves the live app over a websocket to any browser (the desktop
+# renderer needs `cocoa` 0.26.1, which gpui pins below in the same workspace).
+dioxus-liveview = { version = "0.7", features = ["axum"] }
+axum = { version = "0.8", features = ["ws"] }
+# `time`: the page redraws while a clock, timer, stopwatch or beat runs.
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "time"] }
+
+[[example]]
+name = "dioxus_showcase"
+path = "examples/dioxus_showcase/main.rs"
