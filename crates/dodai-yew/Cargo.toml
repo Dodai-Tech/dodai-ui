@@ -20,6 +20,7 @@ material  = ["dodai-core/material"]
 [dependencies]
 dodai-core = { workspace = true }
 dodai-topcoat.workspace = true
+dodai-icons = { workspace = true, features = ["theme", "cyberpunk", "material", "material-rounded", "material-sharp", "neobrutalism"] }
 web-sys = { version = "0.3.107", features = ["HtmlInputElement"] }
 yew = { version = "0.23", features = ["ssr"] }
 
