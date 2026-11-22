@@ -244,6 +244,75 @@ Themes (modes): `cyberpunk-acid-light`, `cyberpunk-acid`, `cyberpunk-cyan-light`
 
 `card`, `snackbar`, `avatar`, `code`, `tooltip`, `step`, `dot`, `skeleton`, `popup`, `select`, `table`, `fab`, `elevated`, `segmented`, `toolbar`, `chip`, `row`, `page`, `segment`, `alert`, `count`
 
+## Charts (62 in the gpui chart set)
+
+Series colours are the `color/series/*` roles; plot sizes come from the `size/chart-*` tokens. The design file draws every chart of the showcase on the `<system> / Charts` page from the showcase model's plots (`just design`).
+
+| chart | summary | gpui reference |
+| --- | --- | --- |
+| BarChart | Bar chart: vertical or horizontal, grouped or stacked. | `crates/dodai-ui-charts/src/gpui/bar.rs` |
+| BubbleTimeline | Bubble timeline: every event a bubble at its time, its area the event's size, piled up | `crates/dodai-ui-charts/src/gpui/bubble_timeline.rs` |
+| SplitFlow | Split flow: a quantity pouring down through levels. Every block is as wide as its amount | `crates/dodai-ui-charts/src/gpui/cascade.rs` |
+| Legend | Colour swatch + name row, shared by all multi-series charts. | `crates/dodai-ui-charts/src/gpui/common.rs` |
+| Bullet | Bullet graph: a value bar over qualitative range bands with a target tick. | `crates/dodai-ui-charts/src/gpui/compare.rs` |
+| PairedBars | Before/after bars per row. Each row is scaled to its own larger value, so | `crates/dodai-ui-charts/src/gpui/compare.rs` |
+| Lollipop | Stems with dots; with [`Lollipop::compare`] a dumbbell (two dots joined by | `crates/dodai-ui-charts/src/gpui/compare.rs` |
+| SlopeChart | Two-state slope chart: one line per item from its left to its right value, | `crates/dodai-ui-charts/src/gpui/compare.rs` |
+| Histogram | Histogram of raw values with equal-width bins. | `crates/dodai-ui-charts/src/gpui/distribution.rs` |
+| BoxPlot | Box-and-whisker plot from raw samples per category. | `crates/dodai-ui-charts/src/gpui/distribution.rs` |
+| Sankey | Flow diagram: nodes in columns joined by ribbons whose thickness is the | `crates/dodai-ui-charts/src/gpui/extra.rs` |
+| CalendarHeatmap | GitHub-style grid: one cell per day, weeks as columns, intensity in | `crates/dodai-ui-charts/src/gpui/extra.rs` |
+| ViolinChart | Mirrored density per group with an inner quartile box and median dot. | `crates/dodai-ui-charts/src/gpui/extra.rs` |
+| RoseChart | Polar-area ("Nightingale rose") chart: equal-angle wedges whose reach shows | `crates/dodai-ui-charts/src/gpui/extra.rs` |
+| SpanFan | Span fan: one spoke per item, fanned round an arc from a hub. A spoke's length is the | `crates/dodai-ui-charts/src/gpui/fan.rs` |
+| Funnel | Funnel of decreasing stages, drawn as joined trapezoids. | `crates/dodai-ui-charts/src/gpui/flow.rs` |
+| Waterfall | Waterfall of deltas; increases green, decreases red, optional total bar. | `crates/dodai-ui-charts/src/gpui/flow.rs` |
+| ScatterPlot | Scatter plot of `(x, y)` points per series, with hover tooltips. | `crates/dodai-ui-charts/src/gpui/grid.rs` |
+| Heatmap | Grid of cells coloured by value, with hover tooltips. | `crates/dodai-ui-charts/src/gpui/grid.rs` |
+| Sunburst | Sunburst: a hierarchy as nested rings. Each ring is one level; every node takes its share | `crates/dodai-ui-charts/src/gpui/hierarchy.rs` |
+| Icicle | Icicle: a hierarchy as stacked rows, the top row the first level, each node as wide as | `crates/dodai-ui-charts/src/gpui/hierarchy.rs` |
+| Waffle | Waffle: a grid of cells (10 × 10 by default, so one cell = 1 %), each coloured by the | `crates/dodai-ui-charts/src/gpui/hierarchy.rs` |
+| Marimekko | Marimekko (mosaic): a 100 % stacked bar chart whose bars are also as wide as their share | `crates/dodai-ui-charts/src/gpui/hierarchy.rs` |
+| KpiTile | A key figure: the label, the value (counting to it as it changes), the change since the | `crates/dodai-ui-charts/src/gpui/kpi.rs` |
+| BumpChart | Bump chart: every series' rank (1 = highest value) at each step, so overtakes read at a | `crates/dodai-ui-charts/src/gpui/layered.rs` |
+| RidgelineChart | Ridgeline: one smoothed distribution per group on a shared value axis, each row overlapping | `crates/dodai-ui-charts/src/gpui/layered.rs` |
+| HorizonChart | Horizon chart: each series in a short strip, its range folded into stacked bands (deeper | `crates/dodai-ui-charts/src/gpui/layered.rs` |
+| LineChart | Line / area chart with gridlines, axes, optional smoothing, point markers | `crates/dodai-ui-charts/src/gpui/line.rs` |
+| RenkoChart | Renko chart: fixed-size price bricks, time ignored. | `crates/dodai-ui-charts/src/gpui/market.rs` |
+| DepthChart | Order-book depth: cumulative bid (green) and ask (red) step areas. | `crates/dodai-ui-charts/src/gpui/market.rs` |
+| Gantt | Gantt timeline: one row per task, progress fill and dependency links. | `crates/dodai-ui-charts/src/gpui/market.rs` |
+| ChartStack | Vertical stack of chart panes sharing one total height, split by weight | `crates/dodai-ui-charts/src/gpui/market.rs` |
+| TimeScatter | Time scatter: labelled milestones at `(time, value)`. Options draw the record frontier (a | `crates/dodai-ui-charts/src/gpui/milestones.rs` |
+| ParallelCoordinates | Parallel coordinates: one vertical axis per measure, each item a line across them, so | `crates/dodai-ui-charts/src/gpui/network.rs` |
+| Hexbin | Hexbin: a scatter plot too dense for dots, binned into hexagons shaded by how many | `crates/dodai-ui-charts/src/gpui/network.rs` |
+| NetworkGraph | Network graph: nodes and links laid out by a force simulation (linked nodes pull | `crates/dodai-ui-charts/src/gpui/network.rs` |
+| ChordDiagram | Chord diagram: groups around a circle, ribbons for the flow between each pair (both | `crates/dodai-ui-charts/src/gpui/network.rs` |
+| ArcDiagram | Arc diagram: nodes in a row, each link an arc above them (thicker = heavier). Keeps the | `crates/dodai-ui-charts/src/gpui/network.rs` |
+| ProportionalSquares | One square per item, its area proportional to the value, packed largest first: sizes that | `crates/dodai-ui-charts/src/gpui/packed.rs` |
+| CirclePack | A hierarchy as circles inside circles: each leaf a circle sized (by area) by its value, | `crates/dodai-ui-charts/src/gpui/packed.rs` |
+| Treemap | Treemap: rectangle area ∝ value. | `crates/dodai-ui-charts/src/gpui/part_whole.rs` |
+| RadialBar | Concentric progress rings, one per `(name, value, max)`. | `crates/dodai-ui-charts/src/gpui/part_whole.rs` |
+| PeakRange | Peak range: each series a solid mountain on one scale, the tallest at the back so smaller | `crates/dodai-ui-charts/src/gpui/peaks.rs` |
+| PieChart | Pie or donut chart; `center` is shown in the donut hole. | `crates/dodai-ui-charts/src/gpui/pie.rs` |
+| ControlChart | Control chart (individuals): the values against their centre line and ±3σ control limits | `crates/dodai-ui-charts/src/gpui/process.rs` |
+| EventTimeline | Event timeline: one lane per system or person, coloured by the state it was in over time | `crates/dodai-ui-charts/src/gpui/process.rs` |
+| Pulse | A professional pulse / vital-sign trace. Build with [`Pulse::ecg`], | `crates/dodai-ui-charts/src/gpui/pulse.rs` |
+| RadarChart | Radar (spider) chart: one polygon per series over shared axes. | `crates/dodai-ui-charts/src/gpui/radar.rs` |
+| ShardMap | Shard map (a Voronoi treemap): an outline (a circle by default, or a hexagon or square) | `crates/dodai-ui-charts/src/gpui/shards.rs` |
+| Sparkline | Tiny inline line, no axes. | `crates/dodai-ui-charts/src/gpui/spark.rs` |
+| Beeswarm | Beeswarm: every sample as a dot on a shared value axis, one lane per group, nudged | `crates/dodai-ui-charts/src/gpui/spread.rs` |
+| Ecdf | Empirical cumulative distribution: for each value, the share of samples at or below it. | `crates/dodai-ui-charts/src/gpui/spread.rs` |
+| ErrorBars | Error bars (a forest plot): one row per estimate, a mark at the value and a whisker over | `crates/dodai-ui-charts/src/gpui/spread.rs` |
+| SlotGrid | A band of numbered slots and, per row, the blocks laid over them: which channels a radio | `crates/dodai-ui-charts/src/gpui/status.rs` |
+| StatusStrip | Health over time as one thin strip: each span coloured by its [`Tone`], gaps left empty. | `crates/dodai-ui-charts/src/gpui/status.rs` |
+| BucketBar | Counts in graded buckets, worst on the left: every bucket tinted from bad to good, the ones | `crates/dodai-ui-charts/src/gpui/status.rs` |
+| StageBars | Success per stage of a flow (connect, sign in, get an address, resolve names): each stage a | `crates/dodai-ui-charts/src/gpui/status.rs` |
+| GradientScale | A reading on a scale that runs from bad to good (signal strength, density, latency): a | `crates/dodai-ui-charts/src/gpui/status.rs` |
+| ParetoChart | Pareto chart: causes as bars, largest first, with the running share of the total as a | `crates/dodai-ui-charts/src/gpui/survey.rs` |
+| DivergingBars | Diverging stacked bars: each row's parts stacked out from a centre line, the first ones | `crates/dodai-ui-charts/src/gpui/survey.rs` |
+| StackedAreaChart | Stacked area chart: layers add up to the total. | `crates/dodai-ui-charts/src/gpui/trend.rs` |
+| Candlestick | Candlestick chart: candles, Heikin-Ashi or OHLC bars, optional volume, | `crates/dodai-ui-charts/src/gpui/trend.rs` |
+
 ## Components (128)
 
 | component | toolkits | gpui reference |

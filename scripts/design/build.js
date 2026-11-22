@@ -343,7 +343,69 @@ function buildSystem(sys, label) {
   scalars.primaryAxisSizingMode = 'AUTO';
   scalars.counterAxisSizingMode = 'AUTO';
   foundations.appendChild(scalars);
-  return { roles: roles.length, buttonVariants: comps.length, kitFamilies: kits.size, controls: parts2.length };
+
+  // --- Charts: every chart of the Charts page, drawn from the showcase model's own plots
+  // (dist/plots/<system>.json), so the design shows what each toolkit paints. Tile backgrounds
+  // and captions are bound to the variables; the shapes carry the default theme's resolved colours.
+  const charts = figma.createPage();
+  charts.name = `${label} / Charts`;
+  figma.currentPage = charts;
+  const solid = (hex) => {
+    const n = (i) => parseInt(hex.slice(i, i + 2), 16) / 255;
+    return { type: 'SOLID', color: { r: n(1), g: n(3), b: n(5) }, opacity: hex.length > 7 ? n(7) : 1 };
+  };
+  const path = (pts, close) => 'M' + pts.map((q) => `${q[0]} ${q[1]}`).join(' L ') + (close ? ' Z' : '');
+  const board = figma.createFrame();
+  board.name = 'Charts';
+  board.layoutMode = 'HORIZONTAL';
+  board.layoutWrap = 'WRAP';
+  board.itemSpacing = 24;
+  board.counterAxisSpacing = 24;
+  board.paddingLeft = board.paddingRight = board.paddingTop = board.paddingBottom = 24;
+  bindFill(board, 'color/background');
+  board.resize(1800, 100);
+  board.layoutSizingVertical = 'HUG';
+  let drawn = 0;
+  for (const plot of PLOTS[sys] ?? []) {
+    const tile = figma.createFrame();
+    tile.name = `${plot.section} / ${plot.title || 'chart'}`;
+    tile.layoutMode = 'VERTICAL';
+    tile.itemSpacing = 8;
+    tile.counterAxisSizingMode = 'AUTO';
+    tile.primaryAxisSizingMode = 'AUTO';
+    tile.fills = [];
+    const box = figma.createFrame();
+    box.name = 'plot';
+    box.resize(plot.w, plot.h);
+    bindFill(box, 'color/surface');
+    box.clipsContent = true;
+    box.layoutMode = 'NONE';
+    for (const f of plot.fills) {
+      if (f.points.length < 3) continue;
+      const vec = figma.createVector();
+      vec.vectorPaths = [{ windingRule: 'NONZERO', data: path(f.points, true) }];
+      vec.fills = [solid(f.color)];
+      vec.strokes = [];
+      box.appendChild(vec);
+    }
+    for (const l of plot.lines) {
+      if (l.points.length < 2) continue;
+      const vec = figma.createVector();
+      vec.vectorPaths = [{ windingRule: 'NONE', data: path(l.points, false) }];
+      vec.fills = [];
+      vec.strokes = [solid(l.color)];
+      vec.strokeWeight = l.width;
+      vec.strokeCap = 'ROUND';
+      vec.strokeJoin = 'ROUND';
+      box.appendChild(vec);
+    }
+    tile.appendChild(box);
+    tile.appendChild(text(plot.title || plot.section, 12, 'color/text-muted'));
+    board.appendChild(tile);
+    drawn += 1;
+  }
+  charts.appendChild(board);
+  return { roles: roles.length, buttonVariants: comps.length, kitFamilies: kits.size, controls: parts2.length, charts: drawn };
 
 
 }

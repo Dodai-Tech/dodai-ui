@@ -45,7 +45,7 @@ def "main build" [--out: string = "dist/design/dodai.fig"] {
     ^bunx @open-pencil/cli import $base -o $fig | ignore
 
     # One import call per system: each folder is a collection, each file a mode.
-    for entry in (ls dist/design | where type == dir | sort-by name) {
+    for entry in (ls dist/design | where type == dir | where { ($in.name | path basename) != "spec" } | sort-by name) {
         let dir = ($entry.name | path expand)
         let system = ($dir | path basename)
         let files = (glob $"($dir)/*.tokens.json" | sort | each { |f|
@@ -56,7 +56,8 @@ def "main build" [--out: string = "dist/design/dodai.fig"] {
         print $"($system): ($res.added) variables, ($res.skipped | length) skipped"
     }
 
-    let js = $"const CATALOG = (open --raw dist/design/components.json);\n(open --raw scripts/design/build.js)"
+    let plots = (glob dist/plots/*.json | sort | each { |f| $"\"($f | path parse | get stem)\": (open --raw $f)" } | str join ",")
+    let js = $"const CATALOG = (open --raw dist/design/components.json);\nconst PLOTS = {($plots)};\n(open --raw scripts/design/build.js)"
     print ($js | ^bunx @open-pencil/cli eval $fig --stdin --write)
     cp $fig $out
     print $"wrote ($out)"
@@ -88,9 +89,19 @@ def gpui-sources []: nothing -> record {
         | compact | reduce --fold {} { |r, acc| if ($acc | get -o $r.name | is-empty) { $acc | insert $r.name $r.file } else { $acc } }
 }
 
+# Every chart of the gpui chart set (a `#[derive(IntoElement)]` struct), with its summary and source.
+def gpui-charts []: nothing -> list<record> {
+    glob crates/dodai-ui-charts/src/gpui/*.rs | sort | each { |f|
+        let rel = ($f | path relative-to (pwd))
+        open --raw $f | parse --regex '(?<doc>(?:/// [^\n]*\n)+)#\[derive\([^)]*IntoElement[^)]*\)\]\npub struct (?<name>\w+)'
+            | each { |m| { name: $m.name, file: $rel, doc: ($m.doc | lines | first | str replace '/// ' '') } }
+    } | flatten
+}
+
 def spec-md [system: string, base: record, themes: list<string>]: nothing -> string {
     let comps = (open dist/design/components.json)
     let src = (gpui-sources)
+    let charts = (gpui-charts)
     let groups = [
         [color "Colour roles (default theme)"] [font Typography] [space Spacing] [shape Shape] [effect Effects]
         [motion Motion] [surface "Surface treatments"] [size "Control sizes"] [look "Look switches"] [nav Navigation]
@@ -110,6 +121,13 @@ def spec-md [system: string, base: record, themes: list<string>]: nothing -> str
         ...$sections
         $"## Button \(($btn | length) variant/state looks\)\n\n($btn | each { |b| $'`($b)`' } | str join ', ')\n"
         $"## Surface families \(Kit, ($kits | length)\)\n\n($kits | each { |b| $'`($b)`' } | str join ', ')\n"
+        $"## Charts \(($charts | length) in the gpui chart set\)\n"
+        "Series colours are the `color/series/*` roles; plot sizes come from the `size/chart-*` tokens. The design file draws every chart of the showcase on the `<system> / Charts` page from the showcase model's plots (`just design`)."
+        ""
+        "| chart | summary | gpui reference |"
+        "| --- | --- | --- |"
+        ...($charts | each { |c| $"| ($c.name) | ($c.doc) | `($c.file)` |" })
+        ""
         $"## Components \(($comps.components | length)\)\n"
         "| component | toolkits | gpui reference |"
         "| --- | --- | --- |"

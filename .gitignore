@@ -15,3 +15,4 @@ fuzz/artifacts/
 /tools/shaders-kernels/target
 /crates/dodai-ui-xilem/target
 dist/design/*.fig
+dist/plots/

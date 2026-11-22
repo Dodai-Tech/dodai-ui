@@ -634,6 +634,7 @@ _release-initial remotes:
 design:
     cargo run -q -p dodai-ui-topcoat --example export -- dist
     rm -rf crates/dist
+    cargo run -q -p dodai-ui-showcase-model --example plots -- dist/plots
     nu scripts/design.nu catalog
     nu scripts/design.nu build
     nu scripts/design.nu spec
