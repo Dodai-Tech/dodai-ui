@@ -15,6 +15,7 @@ mod gizmo;
 mod kit;
 mod knob;
 mod provider;
+mod surfaces;
 
 pub use components::*;
 /// A surface as a CSS `background-image` (see [`dodai_ui_topcoat::surface_background`]).
@@ -23,3 +24,4 @@ pub use gizmo::*;
 pub use kit::*;
 pub use knob::*;
 pub use provider::*;
+pub use surfaces::*;
