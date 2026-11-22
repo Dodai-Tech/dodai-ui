@@ -308,7 +308,8 @@
     {
       "name": "EntryScope",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -342,7 +343,8 @@
     {
       "name": "Follow",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -451,7 +453,8 @@
     {
       "name": "Interact",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -488,7 +491,8 @@
     {
       "name": "Lazy",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -518,7 +522,8 @@
     {
       "name": "Live",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -633,13 +638,15 @@
     {
       "name": "Overscroll",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
       "name": "OverscrollFeel",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -743,7 +750,8 @@
     {
       "name": "ScrollSpy",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {
@@ -854,7 +862,8 @@
     {
       "name": "SnapStack",
       "toolkits": [
-        "gpui"
+        "gpui",
+        "dioxus"
       ]
     },
     {

@@ -10,6 +10,7 @@
 //! [`TextInput`], [`ListItem`], [`Divider`], [`Tooltip`] and the text components.
 //! Switch themes with [`use_theme`] (`next`/`prev`/`select`), which updates `data-theme`.
 
+mod behaviour;
 mod components;
 mod content;
 mod gizmo;
@@ -21,6 +22,7 @@ mod surfaces;
 mod time;
 mod widgets;
 
+pub use behaviour::*;
 pub use components::*;
 pub use content::*;
 /// A surface as a CSS `background-image` (see [`dodai_ui_topcoat::surface_background`]).
