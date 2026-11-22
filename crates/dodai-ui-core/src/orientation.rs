@@ -319,6 +319,24 @@ fn distance(a: [f32; 2], b: [f32; 2]) -> f32 {
     (a[0] - b[0]).hypot(a[1] - b[1])
 }
 
+/// The camera the gizmo's home button returns to: `(yaw, pitch)` in radians.
+pub const GIZMO_HOME: (f32, f32) = (0.6, 0.45);
+
+/// What a press at `at` (gizmo-local px) does to an orbit camera: the new `(yaw, pitch)` for a
+/// press on an axis ball (look along it) or on home, none elsewhere.
+pub fn gizmo_click(size: f32, yaw: f32, pitch: f32, at: [f32; 2]) -> Option<(f32, f32)> {
+    let layout = GizmoLayout::new(size);
+    let placed = place(&Basis::from_orbit(yaw, pitch), &layout, &AxisId::DEFAULT);
+    match hit(&layout, &placed, at) {
+        Hit::Axis(a) => {
+            let (y, p) = a.view_angles();
+            Some((y.unwrap_or(yaw), p))
+        }
+        Hit::Home => Some(GIZMO_HOME),
+        _ => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

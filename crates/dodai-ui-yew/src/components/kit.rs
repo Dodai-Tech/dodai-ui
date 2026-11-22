@@ -58,6 +58,8 @@ pub struct KitBoxProps {
     #[prop_or_default]
     pub surface: dodai_ui_core::Surface,
     #[prop_or_default]
+    pub onclick: Callback<MouseEvent>,
+    #[prop_or_default]
     pub children: Html,
 }
 
@@ -81,9 +83,9 @@ pub fn KitBox(props: &KitBoxProps) -> Html {
     );
     let class = format!("{}{glass}", kit_class(props.kit));
     if props.pressable {
-        html! { <button class={format!("{class} dodai-kit--press")} {style}>{ props.children.clone() }</button> }
+        html! { <button class={format!("{class} dodai-kit--press")} {style} onclick={props.onclick.clone()}>{ props.children.clone() }</button> }
     } else {
-        html! { <div {class} {style}>{ props.children.clone() }</div> }
+        html! { <div {class} {style} onclick={props.onclick.clone()}>{ props.children.clone() }</div> }
     }
 }
 
@@ -164,13 +166,15 @@ pub struct ChipProps {
     pub selected: bool,
     #[prop_or_default]
     pub icon: Option<IconId>,
+    #[prop_or_default]
+    pub onclick: Callback<MouseEvent>,
 }
 
 /// Filter chip.
 #[function_component]
 pub fn Chip(props: &ChipProps) -> Html {
     html! {
-        <KitBox kit={Kit::Chip { selected: props.selected }} pressable=true>
+        <KitBox kit={Kit::Chip { selected: props.selected }} pressable=true onclick={props.onclick.clone()}>
             if let Some(i) = props.icon { <Icon icon={i} size={16} /> }
             <span>{ props.label.clone() }</span>
         </KitBox>

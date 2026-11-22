@@ -3,28 +3,14 @@
 //! orbit. Geometry and hit testing come from `dodai_ui_core::orientation`.
 
 use dioxus::prelude::*;
-use dodai_ui_core::orientation::{hit, orbit, place, AxisId, Basis, DragTracker, GizmoLayout, Hit};
+use dodai_ui_core::orientation::{orbit, DragTracker};
 use dodai_ui_core::Theme;
 
 pub use dodai_ui_topcoat::html::gizmo_svg;
 
 use crate::ThemeHandle;
 
-/// The camera a gizmo starts at and goes home to: yaw and pitch in radians.
-pub const GIZMO_HOME: (f32, f32) = (0.6, 0.45);
-
-pub fn gizmo_click(size: f32, yaw: f32, pitch: f32, at: [f32; 2]) -> Option<(f32, f32)> {
-    let layout = GizmoLayout::new(size);
-    let placed = place(&Basis::from_orbit(yaw, pitch), &layout, &AxisId::DEFAULT);
-    match hit(&layout, &placed, at) {
-        Hit::Axis(a) => {
-            let (y, p) = a.view_angles();
-            Some((y.unwrap_or(yaw), p))
-        }
-        Hit::Home => Some(GIZMO_HOME),
-        _ => None,
-    }
-}
+pub use dodai_ui_core::orientation::{gizmo_click, GIZMO_HOME};
 
 /// Gizmo properties.
 #[derive(Props, Clone, PartialEq)]
@@ -92,6 +78,7 @@ pub fn AxisGizmo(props: AxisGizmoProps) -> Element {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use dodai_ui_core::orientation::{AxisId, GizmoLayout};
     use dodai_ui_core::themes;
 
     #[test]
