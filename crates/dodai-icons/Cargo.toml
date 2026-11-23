@@ -50,6 +50,10 @@ name = "symbol_sheet"
 required-features = ["symbols"]
 
 [[example]]
+name = "design_icons"
+required-features = ["cyberpunk", "material", "neobrutalism", "symbols"]
+
+[[example]]
 name = "material_facets"
 required-features = ["material"]
 

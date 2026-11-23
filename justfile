@@ -635,6 +635,7 @@ design:
     cargo run -q -p dodai-topcoat --example export -- dist
     rm -rf crates/dist
     cargo run -q -p dodai-showcase-model --example plots -- dist/plots
+    cargo run -q -p dodai-icons --example design_icons -- dist/icons-design
     nu scripts/design.nu catalog
     nu scripts/design.nu build
     nu scripts/design.nu spec

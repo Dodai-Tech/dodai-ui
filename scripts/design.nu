@@ -57,7 +57,11 @@ def "main build" [--out: string = "dist/design/dodai.fig"] {
     }
 
     let plots = (glob dist/plots/*.json | sort | each { |f| $"\"($f | path parse | get stem)\": (open --raw $f)" } | str join ",")
-    let js = $"const CATALOG = (open --raw dist/design/components.json);\nconst PLOTS = {($plots)};\n(open --raw scripts/design/build.js)"
+    let icons = (["stroked" "material" "bold" "symbols"] | each { |n|
+        let body = (open --raw $"dist/icons-design/($n).json")
+        $"\"($n)\": ($body)"
+    } | str join ",")
+    let js = $"const ICONS = {($icons)};\nconst CATALOG = (open --raw dist/design/components.json);\nconst PLOTS = {($plots)};\n(open --raw scripts/design/build.js)"
     print ($js | ^bunx @open-pencil/cli eval $fig --stdin --write)
     cp $fig $out
     print $"wrote ($out)"

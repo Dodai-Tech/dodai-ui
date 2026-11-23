@@ -575,6 +575,67 @@ function buildSystem(sys, label) {
   put('SnapStack', box({ dir: 'V', gap: 6 }, bar(200, 56, 'color/primary-container', 12), bar(200, 56, 'color/secondary-container', 12)));
   parts2.push(`Components×${kcount}`);
 
+  // --- Icons: every IconId of this design's pack (the one gpui resolves for it), as vectors painted
+  // with the text colour variable. Dodai and Material share the Material Symbols pack.
+  const packName = { cyberpunk: 'stroked', material: 'material', dodai: 'material', neobrutalism: 'bold' }[sys];
+  const iconPage = figma.createPage();
+  iconPage.name = `${label} / Icons`;
+  figma.currentPage = iconPage;
+  const paintIcon = (n, lined) => {
+    if (n.type === 'FRAME' || n.type === 'GROUP') n.fills = [];
+    else {
+      if (lined) n.fills = [];
+      else bindFill(n, 'color/text');
+      if (n.strokes && n.strokes.length) bindStroke(n, 'color/text');
+    }
+    if (n.children) for (const c of n.children) paintIcon(c, lined);
+  };
+  const drawIcons = (page, list, cols, cellW, cellH, y0) => {
+    list.forEach((ic, i) => {
+      const node = figma.createNodeFromSvg(ic.svg);
+      node.name = ic.id;
+      paintIcon(node, ic.svg.includes('fill="none"'));
+      page.appendChild(node);
+      node.x = (i % cols) * cellW + (cellW - 24) / 2;
+      node.y = y0 + Math.floor(i / cols) * cellH;
+      const cap = text(ic.id.length > 14 ? ic.id.slice(0, 13) + '…' : ic.id, 9, 'color/text-muted');
+      page.appendChild(cap);
+      cap.x = (i % cols) * cellW + Math.max(0, (cellW - cap.width) / 2);
+      cap.y = node.y + 30;
+    });
+  };
+  const iconGround = figma.createRectangle();
+  iconGround.name = 'Ground';
+  iconGround.resize(20 * 96 + 40, Math.ceil(ICONS[packName].length / 20) * 56 + 40);
+  iconGround.x = -20;
+  iconGround.y = -20;
+  bindFill(iconGround, 'color/background');
+  iconPage.appendChild(iconGround);
+  drawIcons(iconPage, ICONS[packName], 20, 96, 56, 0);
+  const iconCount = ICONS[packName].length;
+
+  // --- Symbols: the dashboard symbol groups (vehicle, medical, military, industrial, aviation).
+  const symPage = figma.createPage();
+  symPage.name = `${label} / Symbols`;
+  figma.currentPage = symPage;
+  const groupsOf = [...new Set(ICONS.symbols.map((x) => x.group))];
+  const symRows = groupsOf.map((g) => Math.ceil(ICONS.symbols.filter((x) => x.group === g).length / 16));
+  const symGround = figma.createRectangle();
+  symGround.name = 'Ground';
+  symGround.resize(16 * 96 + 40, symRows.reduce((a, r) => a + r * 56 + 56, 0) + 20);
+  symGround.x = -20;
+  symGround.y = -20;
+  bindFill(symGround, 'color/background');
+  symPage.appendChild(symGround);
+  let symY = 0;
+  groupsOf.forEach((g, gi) => {
+    const h = text(g[0].toUpperCase() + g.slice(1), 18, 'color/text');
+    symPage.appendChild(h);
+    h.y = symY;
+    drawIcons(symPage, ICONS.symbols.filter((x) => x.group === g), 16, 96, 56, symY + 32);
+    symY += symRows[gi] * 56 + 56;
+  });
+
   // --- Foundations: type scale, spacing, radius and the design's own shape.
   figma.currentPage = foundations;
   const scale = figma.createFrame();
@@ -688,7 +749,7 @@ function buildSystem(sys, label) {
     drawn += 1;
   }
   charts.appendChild(board);
-  return { roles: roles.length, buttonVariants: comps.length, kitFamilies: kits.size, controls: parts2.length, charts: drawn };
+  return { roles: roles.length, buttonVariants: comps.length, kitFamilies: kits.size, controls: parts2.length, charts: drawn, icons: iconCount, symbols: ICONS.symbols.length };
 
 
 }
