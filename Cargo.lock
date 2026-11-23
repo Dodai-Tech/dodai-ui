@@ -4466,6 +4466,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "dodai-ui"
+version = "0.1.6"
+dependencies = [
+ "dodai-bevy",
+ "dodai-charts",
+ "dodai-core",
+ "dodai-dash",
+ "dodai-dioxus",
+ "dodai-egui",
+ "dodai-frost",
+ "dodai-fx",
+ "dodai-gpui",
+ "dodai-iced",
+ "dodai-icons",
+ "dodai-leptos",
+ "dodai-ratatui",
+ "dodai-shaders",
+ "dodai-slint",
+ "dodai-topcoat",
+ "dodai-yew",
+]
+
+[[package]]
 name = "dodai-yew"
 version = "0.1.6"
 dependencies = [

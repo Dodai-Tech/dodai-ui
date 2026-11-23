@@ -29,6 +29,21 @@ slint, yew, leptos and freya adapters.
 
 **Started:** [`dodai-xilem`](crates/dodai-xilem) for [xilem](https://github.com/linebender/xilem) (masonry widgets, vello renderer). Colour conversion, button, tag, panel and tabs; run the `xilem_showcase` example.
 
+## One dependency
+
+`dodai-ui` is a facade: the engine is always there, designs, building blocks and toolkits are features.
+
+```toml
+dodai-ui = { version = "0.1", features = ["iced", "cyberpunk", "material"] }
+```
+
+```rust
+use dodai_ui::core::ThemeSwitcher;
+use dodai_ui::iced::IcedTheme;
+```
+
+Features: designs `dodai` (default), `cyberpunk`, `material`, `neobrutalism`, `all-designs`; blocks `icons`, `charts`, `dash`, `fx`, `frost`, `shaders`; toolkits `iced`, `gpui`, `egui`, `bevy`, `slint`, `dioxus`, `leptos`, `yew`, `ratatui`, `topcoat`. Freya and xilem are separate workspaces: use `dodai-freya` / `dodai-xilem` directly.
+
 ## Status (0.1)
 
 The gpui, iced, bevy, dioxus and topcoat (server-rendered HTML) showcases show the same pages, built from one shared model

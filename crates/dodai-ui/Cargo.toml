@@ -1,0 +1,82 @@
+[package]
+name         = "dodai-ui"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version = "1.89"
+description  = "Dodai UI: one dependency for the Dodai design systems (Cyberpunk, Material 3, Neo-Brutalism, Dodai) and their toolkits (iced, gpui, egui, bevy, slint, dioxus, leptos, yew, ratatui, topcoat), each behind a feature"
+readme       = "README.md"
+keywords     = ["design-system", "theme", "gui", "ui", "tokens"]
+categories   = ["gui"]
+
+[features]
+default = ["dodai"]
+
+# ── Designs (features of `dodai-core`; every toolkit sees the ones you pick) ──
+## The Dodai design: frosted glass, large radii.
+dodai        = ["dodai-core/dodai"]
+## Cyberpunk: chamfered corners, neon glow, scanlines.
+cyberpunk    = ["dodai-core/cyberpunk"]
+## Material 3.
+material     = ["dodai-core/material"]
+## Neo-Brutalism: hard shadows, thick borders.
+neobrutalism = ["dodai-core/neobrutalism"]
+## Every design.
+all-designs  = ["dodai", "cyberpunk", "material", "neobrutalism"]
+
+# ── Building blocks (re-exported as modules) ──
+## `dodai::icons`: the icon vocabulary and packs.
+icons   = ["dep:dodai-icons", "dodai-icons/theme", "dodai-icons/cyberpunk", "dodai-icons/material", "dodai-icons/neobrutalism", "dodai-icons/symbols"]
+## `dodai::charts`: the chart set (gpui drawing needs the `gpui` feature too).
+charts  = ["dep:dodai-charts"]
+## `dodai::dash`: the dashboard format.
+dash    = ["dep:dodai-dash"]
+## `dodai::fx`: surface effects.
+fx      = ["dep:dodai-fx"]
+## `dodai::frost`: the frosted-glass blur (CPU).
+frost   = ["dep:dodai-frost"]
+## `dodai::shaders`: the shader catalogue.
+shaders = ["dep:dodai-shaders"]
+
+# ── Toolkits (one module each) ──
+## `dodai::iced`.
+iced     = ["dep:dodai-iced", "dodai-iced/icons", "dodai-iced/frost"]
+## `dodai::gpui`.
+gpui     = ["dep:dodai-gpui", "dodai-gpui/components"]
+## `dodai::egui`.
+egui     = ["dep:dodai-egui", "dodai-egui/icons"]
+## `dodai::bevy`.
+bevy     = ["dep:dodai-bevy", "dodai-bevy/icons", "dodai-bevy/symbols", "dodai-bevy/system-fonts"]
+## `dodai::slint`.
+slint    = ["dep:dodai-slint"]
+## `dodai::dioxus`.
+dioxus   = ["dep:dodai-dioxus"]
+## `dodai::leptos`.
+leptos   = ["dep:dodai-leptos"]
+## `dodai::yew`.
+yew      = ["dep:dodai-yew"]
+## `dodai::ratatui`.
+ratatui  = ["dep:dodai-ratatui"]
+## `dodai::topcoat`: server-rendered HTML.
+topcoat  = ["dep:dodai-topcoat"]
+
+[dependencies]
+dodai-core    = { workspace = true }
+dodai-icons   = { workspace = true, optional = true }
+dodai-charts  = { workspace = true, optional = true }
+dodai-dash    = { workspace = true, optional = true }
+dodai-fx      = { workspace = true, optional = true }
+dodai-frost   = { workspace = true, optional = true }
+dodai-shaders = { workspace = true, optional = true }
+dodai-iced     = { workspace = true, optional = true }
+dodai-gpui     = { workspace = true, optional = true }
+dodai-egui     = { workspace = true, optional = true }
+dodai-bevy     = { workspace = true, optional = true }
+dodai-slint    = { workspace = true, optional = true }
+dodai-dioxus   = { workspace = true, optional = true }
+dodai-leptos   = { workspace = true, optional = true }
+dodai-yew      = { workspace = true, optional = true }
+dodai-ratatui  = { workspace = true, optional = true }
+dodai-topcoat  = { workspace = true, optional = true }

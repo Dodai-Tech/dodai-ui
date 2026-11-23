@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "crates/dodai-ui",
     "crates/dodai-core",
     "crates/dodai-charts",
     "crates/dodai-dash",
@@ -62,6 +63,15 @@ dodai-icons = { path = "crates/dodai-icons", version = "0.1.6", default-features
 dodai-showcase-model = { path = "crates/dodai-showcase-model" }
 dodai-gpui    = { path = "crates/dodai-gpui",    version = "0.1.6", default-features = false }
 dodai-topcoat = { path = "crates/dodai-topcoat", version = "0.1.6" }
+dodai-dash = { path = "crates/dodai-dash", version = "0.1.6", default-features = false }
+dodai-iced = { path = "crates/dodai-iced", version = "0.1.6", default-features = false }
+dodai-egui = { path = "crates/dodai-egui", version = "0.1.6", default-features = false }
+dodai-bevy = { path = "crates/dodai-bevy", version = "0.1.6", default-features = false }
+dodai-slint = { path = "crates/dodai-slint", version = "0.1.6", default-features = false }
+dodai-dioxus = { path = "crates/dodai-dioxus", version = "0.1.6", default-features = false }
+dodai-leptos = { path = "crates/dodai-leptos", version = "0.1.6", default-features = false }
+dodai-yew = { path = "crates/dodai-yew", version = "0.1.6", default-features = false }
+dodai-ratatui = { path = "crates/dodai-ratatui", version = "0.1.6", default-features = false }
 
 [profile.dev]
 opt-level = 1
