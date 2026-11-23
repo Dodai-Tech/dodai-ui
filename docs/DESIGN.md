@@ -18,25 +18,34 @@ The four systems are Cyberpunk, Material, Neo-Brutalism and Dodai.
 
 ## The design file
 
-One variable collection per system, one mode per theme: switching a mode in the editor recolours
-that system's components. Pages per system:
+One variable collection per system, one mode per theme (the design's own theme is the default
+mode). Switching a mode in the editor recolours everything bound to variables. Pages per system:
 
-- **Foundations**: colour roles as swatches, type scale, spacing, radius, scalar tokens.
-- **Button**: every variant and state.
-- **Surfaces**: the surface families.
-- **Controls**: Switch, Checkbox, Radio, Slider, Progress, Input, Tab (off/on variants).
-- **Feedback**: Badge, Alert, Chip, Card, Avatar, Snackbar, Dialog, using the same recipes as gpui
-  (`badge`, `alert`, `chip`, `card`, `snackbar`, `dialog` in `dodai-core/src/component.rs`).
-- **Components**: about 60 more showcase components (inputs, actions, navigation, data display,
-  overlays), each built only from role, size and shape variables.
-- **Charts**: every chart of the showcase, drawn from the showcase model's plots.
+| page | what it draws |
+| --- | --- |
+| Foundations | colour roles as swatches, type scale, spacing, radius, scalar tokens |
+| Button | every variant and state |
+| Surfaces | one component set per Kit family (the `kit/*` tokens gpui draws from) |
+| Controls | Switch, Checkbox, Radio, Slider, Progress, Input, Tab (off/on) |
+| Feedback | Badge, Alert, Chip, Card, Avatar, Snackbar, Dialog, with the recipes of `dodai-core/src/component.rs` |
+| Components | about 110 more showcase components (inputs, pickers, actions, navigation, data display, overlays, shells, effect layers, typography) and the hover, focus, error and disabled states of the interactive ones |
+| Charts | every chart of the showcase, drawn from the showcase model's plots |
+| Icons | all 1769 icons of the design's pack (Stroked for Cyberpunk, Bold for Neo-Brutalism, Material Symbols for Material and Dodai), vectors bound to the text colour |
+| Symbols | the 264 dashboard symbols by group (vehicle, medical, military, industrial, aviation) |
+| Surfaces & glass | the design's frosted glass (tint, blur, saturation, edge) over the showcase backdrop at three blur radii, and every texture and effect the design owns, as the same vectors the web toolkits draw |
+| Shaders | a thumbnail of all 199 shaders by family, rendered on the GPU by the code every toolkit runs |
 
 Plus one **Catalog** page listing each component and the toolkits that have it. Fills, strokes,
-radii and sizes are bound to variables; chart shapes carry the default theme's resolved colours.
+radii and sizes are bound to variables. Shapes baked from code (chart plots, textures, effects,
+shader thumbnails, the glass backdrop) carry the colours of the design's own theme, which is why
+that theme is the default mode.
 
 ## Regenerate
 
-Needs `nu`, `bun` (runs `@open-pencil/cli`) and a Rust toolchain.
+Needs `nu`, `bun` (runs `@open-pencil/cli`), a Rust toolchain and a GPU (the shader thumbnails
+render on it). The generated inputs are not tracked: `dist/plots/` (charts), `dist/icons-design/`
+(`dodai-icons --example design_icons`), `dist/surfaces/` (`dodai-showcase-model --example surfaces`)
+and `dist/shaders/` (`dodai-showcase-model --example shaders`); `just design` writes them first.
 
 ```sh
 just design                  # tokens export, catalog, .fig, spec, verify
@@ -61,8 +70,10 @@ coverage. CI fails on a stale catalog or spec.
 
 ## Not covered yet
 
-The file draws roughly 80 of the 128 catalogued components, with one static state each (no hover,
-focus or disabled variants outside Button and Controls). The rest, the date/time pickers, DataTable,
-Command palette, shells and the effect layers, are listed in the spec and the Catalog page but not
-drawn. Spacing and motion are
-documented as tokens only.
+- Components without a visual of their own (`EntryScope`, `Follow`, `Interact`, `Lazy`, `Live`,
+  `Overscroll`, `OverscrollFeel`, `PageGrid`, `DodaiTheme`) are in the Catalog and the spec only.
+- Motion (easing, springs, entry effects) and the animated parts of surface effects are tokens and
+  one frozen frame, not prototypes.
+- The backdrop blur of the glass panes is a native effect: the editor shows it, but PNG exports
+  of the file may not.
+- Shaders are shown in their family's palette, not once per design palette.

@@ -112,6 +112,15 @@ def gpui-charts []: nothing -> list<record> {
     } | flatten
 }
 
+# The icon pack a design draws (what `dodai-icons` resolves for its `Look::icons`).
+def icon-pack [system: string]: nothing -> string {
+    match $system {
+        "cyberpunk" => "Stroked (hand-drawn, curve-free)"
+        "neobrutalism" => "Bold (Phosphor bold)"
+        _ => "Material Symbols"
+    }
+}
+
 def spec-md [system: string, base: record, themes: list<string>]: nothing -> string {
     let comps = (open dist/design/components.json)
     let src = (gpui-sources)
@@ -141,6 +150,22 @@ def spec-md [system: string, base: record, themes: list<string>]: nothing -> str
         "| chart | summary | gpui reference |"
         "| --- | --- | --- |"
         ...($charts | each { |c| $"| ($c.name) | ($c.doc) | `($c.file)` |" })
+        ""
+        "## Design file pages\n"
+        $"The `dist/design/dodai.fig` collection `($system)` has one mode per theme. Pages are named `<System> / <Page>`:\n"
+        "| page | what it draws |"
+        "| --- | --- |"
+        "| Foundations | colour roles, type scale, spacing, radius and the design's shape |"
+        "| Button | every variant and state |"
+        "| Surfaces | one component set per Kit family |"
+        "| Controls | Switch, Checkbox, Radio, Slider, Progress, Input, Tab |"
+        "| Feedback | Badge, Alert, Chip, Card, Avatar, Snackbar, Dialog |"
+        "| Components | the other showcase components and the hover, focus, error and disabled states |"
+        "| Charts | every chart of the showcase model |"
+        $"| Icons | every icon of the ((icon-pack $system)) pack |"
+        "| Symbols | the dashboard symbol groups |"
+        "| Surfaces & glass | the design's frosted glass, and the textures and effects it owns |"
+        "| Shaders | a thumbnail of every shader of the catalogue |"
         ""
         $"## Components \(($comps.components | length)\)\n"
         "| component | toolkits | gpui reference |"

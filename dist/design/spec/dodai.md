@@ -313,6 +313,24 @@ Series colours are the `color/series/*` roles; plot sizes come from the `size/ch
 | StackedAreaChart | Stacked area chart: layers add up to the total. | `crates/dodai-charts/src/gpui/trend.rs` |
 | Candlestick | Candlestick chart: candles, Heikin-Ashi or OHLC bars, optional volume, | `crates/dodai-charts/src/gpui/trend.rs` |
 
+## Design file pages
+
+The `dist/design/dodai.fig` collection `dodai` has one mode per theme. Pages are named `<System> / <Page>`:
+
+| page | what it draws |
+| --- | --- |
+| Foundations | colour roles, type scale, spacing, radius and the design's shape |
+| Button | every variant and state |
+| Surfaces | one component set per Kit family |
+| Controls | Switch, Checkbox, Radio, Slider, Progress, Input, Tab |
+| Feedback | Badge, Alert, Chip, Card, Avatar, Snackbar, Dialog |
+| Components | the other showcase components and the hover, focus, error and disabled states |
+| Charts | every chart of the showcase model |
+| Icons | every icon of the Material Symbols pack |
+| Symbols | the dashboard symbol groups |
+| Surfaces & glass | the design's frosted glass, and the textures and effects it owns |
+| Shaders | a thumbnail of every shader of the catalogue |
+
 ## Components (128)
 
 | component | toolkits | gpui reference |

@@ -129,7 +129,7 @@ Cyberpunk has its own `DesignSpec` (glow, accent bar, outline-to-solid hover, so
 
 ## Design spec (OpenPencil)
 
-Tokens, a component catalog and a written spec per design system are generated into `dist/design/`, plus an OpenPencil `.fig` file bound to the token variables. See [docs/DESIGN.md](docs/DESIGN.md); regenerate with `just design`.
+Tokens, a component catalog and a written spec per design system are generated into `dist/design/`, plus an OpenPencil `.fig` file bound to the token variables that draws the components, charts, icons, frosted glass, surface textures and effects, and shaders of each design. See [docs/DESIGN.md](docs/DESIGN.md); regenerate with `just design`.
 
 ## Material 3 conformance
 
