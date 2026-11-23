@@ -67,6 +67,32 @@ read-back and bind the storage buffer instead):
 | slint | `SharedPixelBuffer::<Rgba8Pixel>` |
 | web | wgpu on WebGPU (the WGSL runs as is) |
 
+## Radiance cascades (light with shadows)
+
+`dodai_shaders::radiance` solves 2D light transport: lights shine, walls block, glowing gas
+dims what is behind it. For every pixel it returns the light arriving from all directions,
+so soft shadows, light around corners and lit edges facing a light come out on their own. It
+follows C. M. J. Osborne and A. Sannikov, *Radiance Cascades: A Novel High-Resolution Formal
+Solution for Multidimensional Non-LTE Radiative Transfer* (RASTI 2024,
+[arXiv:2408.14425](https://arxiv.org/abs/2408.14425)). The full algorithm, its cost and how
+to port it to GPU passes are in the module docs (`cargo doc -p dodai-shaders --open`, then
+`radiance`).
+
+```rust
+use dodai_shaders::radiance::{solve, Cascades, Cell, Scene};
+use dodai_shaders::vec3;
+
+let mut scene = Scene::new(270, 600);
+scene.fill_disc(160.0, 80.0, 3.0, Cell::light(vec3(4.0, 2.8, 1.2)));
+scene.fill_rect(30.0, 150.0, 240.0, 205.0, Cell::wall());
+let light = solve(&scene, &Cascades::default()); // one colour per pixel, row by row
+```
+
+It runs on the CPU on all cores (270×600 in about 30 ms in a release build) and is not part
+of the GPU kernels: every step is one full-screen pass, so a GPU port is straightforward.
+`cargo run --release -p dodai-shaders --example radiance -- out.ppm` renders fireworks over
+a car.
+
 ## Credits
 
 The Ghostty family re-implements the looks in

@@ -57,6 +57,8 @@ pub mod math;
 pub mod player;
 mod prelude;
 pub mod presets;
+/// 2D light transport with shadows (radiance cascades, arXiv:2408.14425); CPU, host only.
+pub mod radiance;
 mod renderer;
 mod shaders;
 // The shader sources refer to each other as `crate::matrix` etc. (also in the GPU build).
