@@ -127,6 +127,10 @@ tokens. A design module owns everything specific to it: palettes, shape language
 new design system overrides only what differs. `dodai_core::material` is the reference (`Material3`, `shape_system()`);
 Cyberpunk has its own `DesignSpec` (glow, accent bar, outline-to-solid hover, solid active tab) and its shape presets in `dodai_core::cyberpunk::shape`; core's baseline is a plain, neutral design for custom themes.
 
+## Design spec (OpenPencil)
+
+Tokens, a component catalog and a written spec per design system are generated into `dist/design/`, plus an OpenPencil `.fig` file bound to the token variables. See [docs/DESIGN.md](docs/DESIGN.md); regenerate with `just design`.
+
 ## Material 3 conformance
 
 The Material themes follow the M3 component specs: shape per component (`ShapeRole`: pill buttons,
