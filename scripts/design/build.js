@@ -733,6 +733,55 @@ function buildSystem(sys, label) {
   tiles(`Textures (${SF.textures.length})`, SF.textures);
   tiles(`Effects (${SF.effects.length})`, SF.effects);
 
+  // --- Shaders: a thumbnail of every shader of the catalogue (rendered on the GPU by the same
+  // code every toolkit runs), grouped by family. Generators and post effects (over the family's
+  // default source) in the family's palette.
+  const shPage = figma.createPage();
+  shPage.name = `${label} / Shaders`;
+  figma.currentPage = shPage;
+  const shFamilies = [...new Set(SHADERS.map((x) => x.family))];
+  const shCols = 6, shW = 192, shH = 108, shGapX = 40, shGapY = 64;
+  const shHeight = shFamilies.reduce((a, f) => a + 56 + Math.ceil(SHADERS.filter((x) => x.family === f).length / shCols) * (shH + shGapY), 0) + 60;
+  const shGround = figma.createRectangle();
+  shGround.name = 'Ground';
+  shGround.resize(shCols * (shW + shGapX) + 40, shHeight);
+  shGround.x = -20;
+  shGround.y = -20;
+  bindFill(shGround, 'color/background');
+  shPage.appendChild(shGround);
+  let shY = 0;
+  for (const fam of shFamilies) {
+    const list = SHADERS.filter((x) => x.family === fam);
+    const hd = text(`${fam} (${list.length})`, 20, 'color/text');
+    shPage.appendChild(hd);
+    hd.x = 0;
+    hd.y = shY;
+    shY += 44;
+    list.forEach((sh, i) => {
+      const x = (i % shCols) * (shW + shGapX);
+      const y = shY + Math.floor(i / shCols) * (shH + shGapY);
+      const img = figma.createImage(b64(sh.png));
+      const tile = figma.createRectangle();
+      tile.name = sh.id;
+      tile.resize(shW, shH);
+      bind(tile, 'cornerRadius', 'shape/radius');
+      tile.fills = [{ type: 'IMAGE', imageHash: img.hash, scaleMode: 'FILL' }];
+      bindStroke(tile, 'color/border');
+      shPage.appendChild(tile);
+      tile.x = x;
+      tile.y = y;
+      const cap = text(sh.name.length > 26 ? sh.name.slice(0, 25) + '…' : sh.name, 12, 'color/text');
+      shPage.appendChild(cap);
+      cap.x = x;
+      cap.y = y + shH + 8;
+      const kind = text(sh.kind, 10, 'color/text-muted');
+      shPage.appendChild(kind);
+      kind.x = x;
+      kind.y = y + shH + 26;
+    });
+    shY += Math.ceil(list.length / shCols) * (shH + shGapY) + 12;
+  }
+
   // --- Foundations: type scale, spacing, radius and the design's own shape.
   figma.currentPage = foundations;
   const scale = figma.createFrame();
@@ -846,7 +895,7 @@ function buildSystem(sys, label) {
     drawn += 1;
   }
   charts.appendChild(board);
-  return { roles: roles.length, buttonVariants: comps.length, kitFamilies: kits.size, controls: parts2.length, charts: drawn, icons: iconCount, symbols: ICONS.symbols.length, textures: SF.textures.length, effects: SF.effects.length };
+  return { roles: roles.length, buttonVariants: comps.length, kitFamilies: kits.size, controls: parts2.length, charts: drawn, icons: iconCount, symbols: ICONS.symbols.length, textures: SF.textures.length, effects: SF.effects.length, shaders: SHADERS.length };
 
 
 }

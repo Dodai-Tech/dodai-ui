@@ -18,3 +18,4 @@ dist/design/*.fig
 dist/plots/
 dist/icons-design/
 dist/surfaces/
+dist/shaders/

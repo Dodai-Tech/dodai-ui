@@ -70,7 +70,8 @@ def "main build" [--out: string = "dist/design/dodai.fig"] {
         let body = (open --raw $f)
         $"\"($f | path parse | get stem)\": ($body)"
     } | str join ",")
-    let js = $"const SURFACES = {($surfaces)};\nconst ICONS = {($icons)};\nconst CATALOG = (open --raw dist/design/components.json);\nconst PLOTS = {($plots)};\n(open --raw scripts/design/build.js)"
+    let shaders = (open --raw dist/shaders/shaders.json)
+    let js = $"const SHADERS = ($shaders);\nconst SURFACES = {($surfaces)};\nconst ICONS = {($icons)};\nconst CATALOG = (open --raw dist/design/components.json);\nconst PLOTS = {($plots)};\n(open --raw scripts/design/build.js)"
     print ($js | ^bunx @open-pencil/cli eval $fig --stdin --write)
     cp $fig $out
     print $"wrote ($out)"
