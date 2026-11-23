@@ -50,6 +50,7 @@ mod anchored;
 mod button;
 mod charts;
 mod controls;
+mod feedback;
 mod frame;
 mod geometry;
 mod gizmo;
