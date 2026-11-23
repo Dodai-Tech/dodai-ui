@@ -300,7 +300,7 @@ function buildSystem(sys, label) {
   figma.currentPage = feedback;
   const ground = figma.createRectangle();
   ground.name = 'Ground';
-  ground.resize(440, 540);
+  ground.resize(640, 1020);
   ground.x = -60;
   ground.y = -40;
   bindFill(ground, 'color/background');
@@ -376,6 +376,78 @@ function buildSystem(sys, label) {
   chipSet.name = 'Chip';
   chipSet.y = 420;
   parts2.push('Badge', 'Alert', 'Chip');
+
+  // Card, Avatar, Snackbar, Dialog: gpui `card`, `snackbar`, `dialog` recipes and the Avatar tile.
+  const cards = ['Elevated', 'Filled', 'Outlined'].map((variant, i) => {
+    const c = fmk(`Variant=${variant}`, 160, 96, i * 180, 0);
+    c.layoutMode = 'VERTICAL';
+    c.itemSpacing = 4;
+    c.paddingLeft = c.paddingRight = c.paddingTop = c.paddingBottom = 16;
+    bind(c, 'cornerRadius', 'shape/radius');
+    if (variant === 'Filled') bindFill(c, 'color/surface-raised');
+    else if (variant === 'Elevated') bindFill(c, 'color/background');
+    if (variant !== 'Filled') bindStroke(c, 'color/border');
+    c.appendChild(text(`${variant} card`, 15, 'color/text'));
+    c.appendChild(text('Supporting text', 13, 'color/text-muted'));
+    return c;
+  });
+  const cardSet = figma.combineAsVariants(cards, feedback);
+  cardSet.name = 'Card';
+  cardSet.y = 500;
+  const avatars = [false, true].map((status, i) => {
+    const d = 36;
+    const c = fmk(`Status=${status ? 'on' : 'off'}`, d, d, i * 60, 0);
+    const tile = figma.createEllipse();
+    tile.resize(d, d);
+    bindFill(tile, 'color/surface-raised');
+    bindStroke(tile, 'color/border');
+    c.appendChild(tile);
+    const ini = text('AB', 13, 'color/text');
+    c.appendChild(ini);
+    ini.x = (d - ini.width) / 2;
+    ini.y = (d - ini.height) / 2;
+    if (status) {
+      const s = sz('status-dot');
+      const dot = figma.createEllipse();
+      dot.resize(s, s);
+      bindFill(dot, 'color/success');
+      bindStroke(dot, 'color/background');
+      c.appendChild(dot);
+      dot.x = d - s;
+      dot.y = d - s;
+    }
+    return c;
+  });
+  const avatarSet = figma.combineAsVariants(avatars, feedback);
+  avatarSet.name = 'Avatar';
+  avatarSet.y = 630;
+  const snack = fmk('Snackbar', 320, 48, 0, 700);
+  snack.layoutMode = 'HORIZONTAL';
+  snack.counterAxisAlignItems = 'CENTER';
+  snack.itemSpacing = 16;
+  snack.paddingLeft = snack.paddingRight = 16;
+  bind(snack, 'cornerRadius', 'shape/radius');
+  bindFill(snack, 'color/surface-raised');
+  const snackText = text('Message sent', 14, 'color/text');
+  snack.appendChild(snackText);
+  snack.appendChild(text('UNDO', 13, 'color/primary'));
+  const dlg = fmk('Dialog', sz('dialog-width'), 140, 0, 780);
+  dlg.layoutMode = 'VERTICAL';
+  dlg.itemSpacing = 12;
+  dlg.paddingLeft = dlg.paddingRight = dlg.paddingTop = dlg.paddingBottom = 24;
+  bind(dlg, 'cornerRadius', 'shape/radius');
+  bindFill(dlg, 'color/surface');
+  bindStroke(dlg, 'color/border-strong');
+  dlg.appendChild(text('Dialog title', 20, 'color/text'));
+  dlg.appendChild(text('Dialog body text explaining the choice.', 14, 'color/text-muted'));
+  const acts = figma.createFrame();
+  acts.layoutMode = 'HORIZONTAL';
+  acts.itemSpacing = 12;
+  acts.fills = [];
+  acts.appendChild(text('Cancel', 14, 'color/text-muted'));
+  acts.appendChild(text('Confirm', 14, 'color/primary'));
+  dlg.appendChild(acts);
+  parts2.push('Card', 'Avatar', 'Snackbar', 'Dialog');
 
   // --- Foundations: type scale, spacing, radius and the design's own shape.
   figma.currentPage = foundations;
