@@ -16,3 +16,5 @@ fuzz/artifacts/
 /crates/dodai-xilem/target
 dist/design/*.fig
 dist/plots/
+dist/icons-design/
+dist/surfaces/

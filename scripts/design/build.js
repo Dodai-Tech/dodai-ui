@@ -636,6 +636,103 @@ function buildSystem(sys, label) {
     symY += symRows[gi] * 56 + 56;
   });
 
+  // --- Surfaces & glass: the design's frosted glass (tint, blur, saturation over the showcase
+  // backdrop), and every texture and effect it owns, as the vectors the web toolkits draw.
+  const SF = SURFACES[sys];
+  const sfPage = figma.createPage();
+  sfPage.name = `${label} / Surfaces & glass`;
+  figma.currentPage = sfPage;
+  const b64 = (s) => {
+    const T = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    const out = [];
+    let acc = 0, bits = 0;
+    for (const ch of s) {
+      if (ch === '=') break;
+      acc = (acc << 6) | T.indexOf(ch);
+      bits += 6;
+      if (bits >= 8) { bits -= 8; out.push((acc >> bits) & 255); }
+    }
+    return new Uint8Array(out);
+  };
+  const hexRgba = (h) => ({ r: parseInt(h.slice(1, 3), 16) / 255, g: parseInt(h.slice(3, 5), 16) / 255, b: parseInt(h.slice(5, 7), 16) / 255, a: h.length > 7 ? parseInt(h.slice(7, 9), 16) / 255 : 1 });
+  const perRow = 6, tw = 160, th2 = 64, gapX = 40, gapY = 56;
+  const rowsFor = (n) => Math.ceil(n / perRow);
+  const sfH = 140 + 330 + 100 + (rowsFor(SF.textures.length) + rowsFor(SF.effects.length)) * (th2 + gapY) + 160;
+  const sfGround = figma.createRectangle();
+  sfGround.name = 'Ground';
+  sfGround.resize(Math.max(perRow * (tw + gapX), 3 * 520) + 40, sfH);
+  sfGround.x = -20;
+  sfGround.y = -20;
+  bindFill(sfGround, 'color/background');
+  sfPage.appendChild(sfGround);
+  const heading = (s, y) => { const t = text(s, 20, 'color/text'); sfPage.appendChild(t); t.x = 0; t.y = y; };
+  heading('Frosted glass', 0);
+  const note = text(`tint ${SF.frost.tint}  ·  blur ${SF.frost.blur}px  ·  saturation ${SF.frost.saturation}` + (SF.frost.edge ? `  ·  edge ${SF.frost.edge[0]} ${SF.frost.edge[1]}px` : ''), 12, 'color/text-muted');
+  sfPage.appendChild(note);
+  note.x = 0;
+  note.y = 32;
+  const scene = figma.createImage(b64(SF.scene));
+  const pics = [0, SF.frost.blur / 2, SF.frost.blur].map((blur, i) => {
+    const px = i * 520;
+    const pic = figma.createRectangle();
+    pic.name = 'Backdrop';
+    pic.resize(480, 270);
+    pic.fills = [{ type: 'IMAGE', imageHash: scene.hash, scaleMode: 'FILL' }];
+    sfPage.appendChild(pic);
+    pic.x = px;
+    pic.y = 64;
+    const pane = figma.createFrame();
+    pane.name = `Glass blur ${blur}px`;
+    pane.resize(280, 140);
+    pane.cornerRadius = 0;
+    bind(pane, 'cornerRadius', 'shape/radius');
+    bindFill(pane, 'color/surface');
+    pane.fills = pane.fills.map((p) => ({ ...p, opacity: hexRgba(SF.frost.tint).a }));
+    pane.effects = [{ type: 'BACKGROUND_BLUR', radius: blur, visible: true }];
+    if (SF.frost.edge) { pane.strokes = [{ type: 'SOLID', color: hexRgba(SF.frost.edge[0]) }]; pane.strokeWeight = SF.frost.edge[1]; }
+    else { bindStroke(pane, 'color/border'); }
+    pane.layoutMode = 'VERTICAL';
+    pane.paddingLeft = pane.paddingRight = pane.paddingTop = pane.paddingBottom = 16;
+    pane.itemSpacing = 6;
+    pane.appendChild(text('Glass', 18, 'color/text'));
+    pane.appendChild(text(`blur ${blur}px`, 13, 'color/text-muted'));
+    sfPage.appendChild(pane);
+    pane.x = px + 100;
+    pane.y = 130;
+    return pic;
+  });
+  let sfY = 64 + 270 + 56;
+  const tiles = (title, list) => {
+    heading(title, sfY);
+    sfY += 40;
+    list.forEach((it, i) => {
+      const x = (i % perRow) * (tw + gapX);
+      const y = sfY + Math.floor(i / perRow) * (th2 + gapY);
+      const f = figma.createFrame();
+      f.name = it.name;
+      f.resize(tw, th2);
+      f.clipsContent = true;
+      bind(f, 'cornerRadius', 'shape/radius');
+      bindFill(f, 'color/surface');
+      bindStroke(f, 'color/border');
+      const svg = figma.createNodeFromSvg(it.svg);
+      svg.fills = [];
+      f.appendChild(svg);
+      svg.x = 0;
+      svg.y = 0;
+      sfPage.appendChild(f);
+      f.x = x;
+      f.y = y;
+      const cap = text(it.name, 11, 'color/text-muted');
+      sfPage.appendChild(cap);
+      cap.x = x;
+      cap.y = y + th2 + 8;
+    });
+    sfY += rowsFor(list.length) * (th2 + gapY) + 24;
+  };
+  tiles(`Textures (${SF.textures.length})`, SF.textures);
+  tiles(`Effects (${SF.effects.length})`, SF.effects);
+
   // --- Foundations: type scale, spacing, radius and the design's own shape.
   figma.currentPage = foundations;
   const scale = figma.createFrame();
@@ -749,7 +846,7 @@ function buildSystem(sys, label) {
     drawn += 1;
   }
   charts.appendChild(board);
-  return { roles: roles.length, buttonVariants: comps.length, kitFamilies: kits.size, controls: parts2.length, charts: drawn, icons: iconCount, symbols: ICONS.symbols.length };
+  return { roles: roles.length, buttonVariants: comps.length, kitFamilies: kits.size, controls: parts2.length, charts: drawn, icons: iconCount, symbols: ICONS.symbols.length, textures: SF.textures.length, effects: SF.effects.length };
 
 
 }

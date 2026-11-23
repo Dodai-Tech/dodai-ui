@@ -48,7 +48,12 @@ def "main build" [--out: string = "dist/design/dodai.fig"] {
     for entry in (ls dist/design | where type == dir | where { ($in.name | path basename) != "spec" } | sort-by name) {
         let dir = ($entry.name | path expand)
         let system = ($dir | path basename)
-        let files = (glob $"($dir)/*.tokens.json" | sort | each { |f|
+        # The design's own theme first: it becomes the collection's default mode, the one the
+        # baked shapes (charts, icons, textures) are drawn in.
+        let all = (glob $"($dir)/*.tokens.json" | sort)
+        let own = ($all | where { ($in | path basename) == $"($system).tokens.json" })
+        let rest = ($all | where { ($in | path basename) != $"($system).tokens.json" })
+        let files = (($own | append $rest) | each { |f|
             { path: $"($system)/($f | path basename)", text: (open --raw $f) }
         })
         { files: $files } | to json | save --force $"($tmp)/args.json"
@@ -61,7 +66,11 @@ def "main build" [--out: string = "dist/design/dodai.fig"] {
         let body = (open --raw $"dist/icons-design/($n).json")
         $"\"($n)\": ($body)"
     } | str join ",")
-    let js = $"const ICONS = {($icons)};\nconst CATALOG = (open --raw dist/design/components.json);\nconst PLOTS = {($plots)};\n(open --raw scripts/design/build.js)"
+    let surfaces = (glob dist/surfaces/*.json | sort | each { |f|
+        let body = (open --raw $f)
+        $"\"($f | path parse | get stem)\": ($body)"
+    } | str join ",")
+    let js = $"const SURFACES = {($surfaces)};\nconst ICONS = {($icons)};\nconst CATALOG = (open --raw dist/design/components.json);\nconst PLOTS = {($plots)};\n(open --raw scripts/design/build.js)"
     print ($js | ^bunx @open-pencil/cli eval $fig --stdin --write)
     cp $fig $out
     print $"wrote ($out)"
