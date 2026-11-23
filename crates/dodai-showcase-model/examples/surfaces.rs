@@ -76,11 +76,17 @@ fn tile(theme: &Theme, fx: ResolvedSurface) -> Option<String> {
 
 fn default_theme(family: &str, all: Vec<Theme>) -> Theme {
     let pick = all.iter().position(|t| t.meta.id == family).unwrap_or(0);
-    all.into_iter().nth(pick).expect("a design system has a theme")
+    all.into_iter()
+        .nth(pick)
+        .expect("a design system has a theme")
 }
 
 fn main() {
-    let out = PathBuf::from(std::env::args().nth(1).unwrap_or_else(|| "dist/surfaces".into()));
+    let out = PathBuf::from(
+        std::env::args()
+            .nth(1)
+            .unwrap_or_else(|| "dist/surfaces".into()),
+    );
     std::fs::create_dir_all(&out).expect("create output dir");
     for sys in themes::systems() {
         let theme = default_theme(sys.family, (sys.themes)());
@@ -119,9 +125,9 @@ fn main() {
             .map(|(c, wd)| format!("[\"{}\",{wd}]", hex(c)))
             .unwrap_or_else(|| "null".into());
         let mut text = String::new();
-        let _ = write!(
+        let _ = writeln!(
             text,
-            "{{\"frost\":{{\"tint\":\"{}\",\"blur\":{},\"saturation\":{},\"edge\":{}}},\"scene\":\"{}\",\"textures\":[{}],\"effects\":[{}]}}\n",
+            "{{\"frost\":{{\"tint\":\"{}\",\"blur\":{},\"saturation\":{},\"edge\":{}}},\"scene\":\"{}\",\"textures\":[{}],\"effects\":[{}]}}",
             hex(frost.tint),
             frost.blur,
             frost.saturation,

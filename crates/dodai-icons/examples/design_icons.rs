@@ -12,7 +12,9 @@ fn esc(s: &str) -> String {
 }
 
 fn main() {
-    let out = std::env::args().nth(1).unwrap_or_else(|| "dist/icons-design".into());
+    let out = std::env::args()
+        .nth(1)
+        .unwrap_or_else(|| "dist/icons-design".into());
     std::fs::create_dir_all(&out).expect("create output dir");
     for (pack, name) in [
         (Pack::Stroked, "stroked"),
@@ -21,12 +23,20 @@ fn main() {
     ] {
         let mut json = String::from("[");
         for (n, id) in IconId::ALL.iter().enumerate() {
-            let Some(g) = glyph(*id, pack, false) else { continue };
+            let Some(g) = glyph(*id, pack, false) else {
+                continue;
+            };
             if n > 0 {
                 json.push(',');
             }
             let svg = g.svg(24, "#000000");
-            write!(json, "{{\"id\":\"{}\",\"svg\":\"{}\"}}", id.name(), esc(&svg)).unwrap();
+            write!(
+                json,
+                "{{\"id\":\"{}\",\"svg\":\"{}\"}}",
+                id.name(),
+                esc(&svg)
+            )
+            .unwrap();
         }
         json.push(']');
         std::fs::write(format!("{out}/{name}.json"), json).expect("write pack");

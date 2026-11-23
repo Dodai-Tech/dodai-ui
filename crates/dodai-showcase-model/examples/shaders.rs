@@ -28,7 +28,11 @@ fn png_b64(rgba: &[u8], w: u32, h: u32) -> String {
 }
 
 fn main() {
-    let out = PathBuf::from(std::env::args().nth(1).unwrap_or_else(|| "dist/shaders".into()));
+    let out = PathBuf::from(
+        std::env::args()
+            .nth(1)
+            .unwrap_or_else(|| "dist/shaders".into()),
+    );
     std::fs::create_dir_all(&out).expect("create output dir");
     let mut gpu = Gpu::new().expect("no GPU");
     let (w, h) = (192u32, 108u32);
