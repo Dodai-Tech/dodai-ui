@@ -292,6 +292,91 @@ function buildSystem(sys, label) {
     c.appendChild(ind);
   });
 
+  // --- Feedback and data: Badge, Alert, Chip, the same recipes as gpui (`badge`, `alert`, `chip`
+  // in dodai-core `component.rs`): solid tone fill with a contrast text, tint at 12% with a tone
+  // outline, selection fill with a primary outline.
+  const feedback = figma.createPage();
+  feedback.name = `${label} / Feedback`;
+  figma.currentPage = feedback;
+  const ground = figma.createRectangle();
+  ground.name = 'Ground';
+  ground.resize(440, 540);
+  ground.x = -60;
+  ground.y = -40;
+  bindFill(ground, 'color/background');
+  feedback.appendChild(ground);
+  const lum = (c) => 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+  const toneRoles = [['info', 'Info'], ['success', 'Success'], ['warning', 'Warning'], ['danger', 'Danger']];
+  const onTone = (role) => {
+    const val = v(`color/${role}`).valuesByMode[collection.defaultModeId];
+    return lum(val) > 0.5 ? 'color/background' : 'color/text';
+  };
+  const tint = (node, role) => {
+    bindFill(node, `color/${role}`);
+    node.fills = node.fills.map((p) => ({ ...p, opacity: 0.12 }));
+  };
+  const fmk = (name, w, h, x, y) => {
+    const c = figma.createComponent();
+    c.name = name;
+    c.resize(w, h);
+    c.x = x;
+    c.y = y;
+    c.fills = [];
+    feedback.appendChild(c);
+    return c;
+  };
+  const badges = toneRoles.map(([role, title], i) => {
+    const c = fmk(`Tone=${title}`, 40, sz('badge-min'), i * 80, 0);
+    c.layoutMode = 'HORIZONTAL';
+    c.counterAxisAlignItems = 'CENTER';
+    c.primaryAxisAlignItems = 'CENTER';
+    c.paddingLeft = c.paddingRight = sz('chip-pad');
+    c.cornerRadius = sz('badge-min') / 2;
+    bindFill(c, `color/${role}`);
+    c.appendChild(text('12', 12, onTone(role)));
+    return c;
+  });
+  const badgeSet = figma.combineAsVariants(badges, feedback);
+  badgeSet.name = 'Badge';
+  const alerts = toneRoles.map(([role, title], i) => {
+    const c = fmk(`Tone=${title}`, 320, 56, 0, 80 + i * 80);
+    c.layoutMode = 'HORIZONTAL';
+    c.itemSpacing = 12;
+    c.paddingLeft = c.paddingRight = 16;
+    c.paddingTop = c.paddingBottom = 10;
+    c.counterAxisAlignItems = 'CENTER';
+    bind(c, 'cornerRadius', 'shape/radius');
+    tint(c, role);
+    bindStroke(c, `color/${role}`);
+    c.appendChild(text(['i', '✓', '!', 'x'][i], 16, `color/${role}`));
+    const col = figma.createFrame();
+    col.layoutMode = 'VERTICAL';
+    col.fills = [];
+    col.appendChild(text(`${title} title`, 15, 'color/text'));
+    col.appendChild(text('Message body', 13, 'color/text-muted'));
+    c.appendChild(col);
+    return c;
+  });
+  const alertSet = figma.combineAsVariants(alerts, feedback);
+  alertSet.name = 'Alert';
+  alertSet.y = 80;
+  const chips = [false, true].map((on, i) => {
+    const c = fmk(`Selected=${on ? 'true' : 'false'}`, 96, sz('chip-height'), i * 120, 0);
+    c.layoutMode = 'HORIZONTAL';
+    c.counterAxisAlignItems = 'CENTER';
+    c.primaryAxisAlignItems = 'CENTER';
+    c.paddingLeft = c.paddingRight = sz('chip-pad');
+    bind(c, 'cornerRadius', 'shape/radius');
+    if (on) bindFill(c, 'color/selection');
+    bindStroke(c, on ? 'color/primary' : 'color/border');
+    c.appendChild(text('Filter', 14, on ? 'color/text' : 'color/text-muted'));
+    return c;
+  });
+  const chipSet = figma.combineAsVariants(chips, feedback);
+  chipSet.name = 'Chip';
+  chipSet.y = 420;
+  parts2.push('Badge', 'Alert', 'Chip');
+
   // --- Foundations: type scale, spacing, radius and the design's own shape.
   figma.currentPage = foundations;
   const scale = figma.createFrame();
