@@ -35,8 +35,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "dodai-ui-shaders-kernels"
-version = "0.1.0"
+name = "dodai-shaders-kernels"
+version = "0.1.5"
 dependencies = [
  "bytemuck",
  "glam",

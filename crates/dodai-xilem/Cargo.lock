@@ -777,21 +777,21 @@ dependencies = [
 ]
 
 [[package]]
-name = "dodai-ui-core"
+name = "dodai-core"
 version = "0.1.6"
 dependencies = [
- "dodai-ui-fx",
+ "dodai-fx",
 ]
 
 [[package]]
-name = "dodai-ui-fx"
+name = "dodai-fx"
 version = "0.1.6"
 
 [[package]]
-name = "dodai-ui-xilem"
+name = "dodai-xilem"
 version = "0.1.6"
 dependencies = [
- "dodai-ui-core",
+ "dodai-core",
  "xilem",
 ]
 
