@@ -449,6 +449,132 @@ function buildSystem(sys, label) {
   dlg.appendChild(acts);
   parts2.push('Card', 'Avatar', 'Snackbar', 'Dialog');
 
+  // --- Components: the rest of the showcase's inputs, navigation, data display and overlays, each
+  // built from the same role/size/shape variables as the gpui widgets (frames, not variants).
+  const kit = figma.createPage();
+  kit.name = `${label} / Components`;
+  figma.currentPage = kit;
+  const bg0 = figma.createRectangle();
+  bg0.name = 'Ground';
+  bg0.resize(1320, 2400);
+  bg0.x = -60;
+  bg0.y = -60;
+  bindFill(bg0, 'color/background');
+  kit.appendChild(bg0);
+  let kx = 0, ky = 0, krow = 0, kcount = 0;
+  const put = (name, node) => {
+    node.name = name;
+    kit.appendChild(node);
+    if (kx > 0 && kx + node.width > 1200) { kx = 0; ky += krow + 56; krow = 0; }
+    node.x = kx;
+    node.y = ky + 18;
+    const cap = text(name, 11, 'color/text-muted');
+    kit.appendChild(cap);
+    cap.x = kx;
+    cap.y = ky;
+    kx += Math.max(node.width, cap.width) + 40;
+    krow = Math.max(krow, node.height + 18);
+    kcount += 1;
+    return node;
+  };
+  // A frame: dir H/V, hugging its children, with optional fill/stroke/radius/padding/gap.
+  const box = (o = {}, ...kids) => {
+    const f = figma.createFrame();
+    f.layoutMode = o.dir === 'V' ? 'VERTICAL' : 'HORIZONTAL';
+    f.primaryAxisSizingMode = 'AUTO';
+    f.counterAxisSizingMode = 'AUTO';
+    f.counterAxisAlignItems = o.align || 'CENTER';
+    if (o.main) f.primaryAxisAlignItems = o.main;
+    f.itemSpacing = o.gap ?? 8;
+    const [px = 0, py = px] = o.pad || [];
+    f.paddingLeft = f.paddingRight = px;
+    f.paddingTop = f.paddingBottom = py;
+    f.fills = [];
+    if (o.fill) bindFill(f, o.fill);
+    if (o.stroke) { bindStroke(f, o.stroke); f.strokeWeight = o.sw || 1; }
+    if (o.round === true) bind(f, 'cornerRadius', 'shape/radius');
+    else if (typeof o.round === 'number') f.cornerRadius = o.round;
+    if (o.w) { f.resize(o.w, f.height); f.counterAxisSizingMode = o.dir === 'V' ? 'FIXED' : 'AUTO'; if (o.dir !== 'V') f.primaryAxisSizingMode = 'FIXED'; }
+    if (o.h) { f.resize(f.width, o.h); if (o.dir === 'V') f.primaryAxisSizingMode = 'FIXED'; else f.counterAxisSizingMode = 'FIXED'; }
+    for (const k of kids) f.appendChild(k);
+    return f;
+  };
+  const T = (s, size = 14, fill = 'color/text') => text(s, size, fill);
+  const dot = (d, fill, stroke) => { const e = figma.createEllipse(); e.resize(d, d); bindFill(e, fill); if (stroke) bindStroke(e, stroke); return e; };
+  const bar = (w, h, fill, r = h / 2) => { const e = figma.createRectangle(); e.resize(w, h); e.cornerRadius = r; bindFill(e, fill); return e; };
+  const field = (s, w = 200, muted = true, o = {}) => box({ w, h: num('shape/control-height'), pad: [12, 0], fill: 'color/surface', stroke: 'color/outline', round: true, gap: 8, ...o }, T(s, 14, muted ? 'color/text-muted' : 'color/text'));
+  const ch = (s = 'v') => T(s, 12, 'color/text-muted');
+  const ctrl = num('shape/control-height');
+  // Inter has no ▾ ⌕ ⋮ ☰ ⌂ ≡, so the icons the spec needs are drawn or spelled with glyphs it has.
+  const ring = (d = 14, fill = 'color/text-muted') => { const e = figma.createEllipse(); e.resize(d, d); e.fills = []; bindStroke(e, fill); e.strokeWeight = 2; return e; };
+  const burger = (fill = 'color/text') => box({ dir: 'V', gap: 3 }, bar(16, 2, fill, 1), bar(16, 2, fill, 1), bar(16, 2, fill, 1));
+
+  // Inputs
+  put('TextInput', field('Placeholder'));
+  put('Select', box({ w: 200, h: ctrl, pad: [12, 0], fill: 'color/surface', stroke: 'color/outline', round: true, main: 'SPACE_BETWEEN' }, T('Choose…', 14, 'color/text-muted'), ch()));
+  put('Combobox', box({ w: 200, h: ctrl, pad: [12, 0], fill: 'color/surface', stroke: 'color/primary', sw: 2, round: true, main: 'SPACE_BETWEEN' }, T('Typ', 14), ring(14)));
+  put('NumberStepper', box({ gap: 0, fill: 'color/surface', stroke: 'color/outline', round: true }, box({ w: ctrl, h: ctrl, main: 'CENTER' }, T('−')), box({ w: 56, h: ctrl, main: 'CENTER' }, T('3')), box({ w: ctrl, h: ctrl, main: 'CENTER' }, T('+'))));
+  put('OtpInput', box({ gap: 8 }, ...[0, 1, 2, 3].map((i) => box({ w: 40, h: 48, main: 'CENTER', fill: 'color/surface', stroke: i === 2 ? 'color/primary' : 'color/outline', sw: i === 2 ? 2 : 1, round: true }, T(i < 2 ? String(i + 4) : '', 18)))));
+  put('Rating', box({ gap: 4 }, ...[1, 1, 1, 0, 0].map((on) => T('★', 22, on ? 'color/warning' : 'color/outline-variant'))));
+  put('SearchBar', box({ w: 280, h: ctrl + 8, pad: [16, 0], fill: 'color/surface-container-high', round: 999, gap: 12 }, ring(16), T('Search', 14, 'color/text-muted')));
+  put('DateInput', field('dd / mm / yyyy', 180));
+  put('TimeInput', field('hh : mm', 120));
+  put('TagField', box({ w: 260, pad: [8, 8], fill: 'color/surface', stroke: 'color/outline', round: true, gap: 6 }, ...['alpha', 'beta'].map((s) => box({ pad: [8, 2], fill: 'color/selection', stroke: 'color/primary', round: true, gap: 4 }, T(s, 12), T('x', 10, 'color/text-muted'))), T('add…', 13, 'color/text-muted')));
+  put('RangeSlider', (() => { const th = sz('slider-track'), kn = sz('slider-thumb'); const g = box({ w: 200, h: kn, gap: 0 }); g.layoutMode = 'NONE'; const t = bar(200, th, 'color/surface-container-highest'); const f = bar(100, th, 'color/primary'); g.appendChild(t); g.appendChild(f); f.x = 40; const a = dot(kn, 'color/primary'); const b = dot(kn, 'color/primary'); g.appendChild(a); g.appendChild(b); a.x = 40 - kn / 2; b.x = 140 - kn / 2; t.y = f.y = (kn - th) / 2; return g; })());
+  put('FileDropZone', box({ dir: 'V', w: 280, h: 110, main: 'CENTER', fill: 'color/surface', stroke: 'color/outline-variant', round: true, gap: 6 }, T('⇪', 22, 'color/text-muted'), T('Drop files here', 14, 'color/text-muted')));
+  put('FormField', box({ dir: 'V', align: 'MIN', gap: 4 }, T('Label', 12, 'color/text-muted'), field('Value', 220, false), T('Helper text', 12, 'color/text-muted')));
+  put('ColorPicker', box({ gap: 8 }, ...['primary', 'secondary', 'tertiary', 'info', 'success', 'warning', 'danger'].map((r, i) => dot(28, `color/${r}`, i === 0 ? 'color/text' : null))));
+
+  // Actions
+  put('IconButton', box({ w: sz('touch-target'), h: sz('touch-target'), main: 'CENTER', round: 999, stroke: 'color/outline' }, T('♥', 16)));
+  put('Fab', box({ w: 56, h: 56, main: 'CENTER', fill: 'color/primary-container', round: 16 }, T('+', 24, 'color/on-primary-container')));
+  put('ExtendedFab', box({ h: 56, pad: [20, 0], fill: 'color/primary-container', round: 16, gap: 8 }, T('+', 20, 'color/on-primary-container'), T('Create', 15, 'color/on-primary-container')));
+  put('SplitButton', box({ gap: 1 }, box({ h: ctrl, pad: [16, 0], fill: 'color/primary', round: 8 }, T('Save', 15, 'color/on-primary')), box({ h: ctrl, pad: [10, 0], fill: 'color/primary', round: 8 }, T('v', 12, 'color/on-primary'))));
+  put('Segmented', box({ gap: 0, stroke: 'color/outline', round: 999 }, ...['Day', 'Week', 'Month'].map((s, i) => box({ h: sz('segmented-height'), pad: [16, 0], fill: i === 1 ? 'color/secondary-container' : null }, T(s, 14, i === 1 ? 'color/on-secondary-container' : 'color/text')))));
+  put('Toolbar', box({ pad: [8, 6], fill: 'color/surface-container', round: true, gap: 4 }, ...['B', 'I', 'U', '•'].map((s) => box({ w: 32, h: 32, main: 'CENTER', round: 6 }, T(s, 14)))));
+
+  // Navigation
+  put('TopAppBar', box({ w: 360, h: 64, pad: [16, 0], fill: 'color/surface', main: 'SPACE_BETWEEN' }, box({ gap: 16 }, burger(), T('Title', 20)), T('•••', 14)));
+  put('BottomAppBar', box({ w: 360, h: 72, pad: [16, 0], fill: 'color/surface-container', main: 'SPACE_BETWEEN' }, box({ gap: 24 }, T('▲', 16), ring(16, 'color/text'), T('♥', 16)), box({ w: 48, h: 48, main: 'CENTER', fill: 'color/primary-container', round: 14 }, T('+', 20, 'color/on-primary-container'))));
+  put('NavigationBar', box({ w: 360, h: 80, fill: 'color/surface-container', main: 'SPACE_BETWEEN', pad: [8, 12] }, ...['Home', 'Search', 'Saved'].map((s, i) => box({ dir: 'V', gap: 4 }, box({ w: 56, h: 28, main: 'CENTER', round: 999, fill: i === 0 ? 'color/secondary-container' : null }, (i === 1 ? ring(14, 'color/text') : T(['▲', '', '♥'][i], 14))), T(s, 12, i === 0 ? 'color/text' : 'color/text-muted')))));
+  put('NavigationRail', box({ dir: 'V', w: 80, pad: [8, 16], gap: 16, fill: 'color/surface' }, ...['▲', '', '♥'].map((g, i) => box({ dir: 'V', gap: 4 }, box({ w: 56, h: 28, main: 'CENTER', round: 999, fill: i === 0 ? 'color/secondary-container' : null }, (i === 1 ? ring(14, 'color/text') : T(g, 14))), T(['Home', 'Find', 'Saved'][i], 12, i === 0 ? 'color/text' : 'color/text-muted')))));
+  put('NavigationDrawer', box({ dir: 'V', align: 'MIN', w: 240, pad: [12, 16], gap: 4, fill: 'color/surface', stroke: 'color/border', round: true }, ...['Inbox', 'Sent', 'Drafts'].map((s, i) => box({ w: 216, h: 48, pad: [16, 0], round: 999, fill: i === 0 ? 'color/secondary-container' : null }, T(s, 14, i === 0 ? 'color/on-secondary-container' : 'color/text')))));
+  put('Breadcrumb', box({ gap: 8 }, T('Home', 14, 'color/link'), T('/', 14, 'color/text-muted'), T('Library', 14, 'color/link'), T('/', 14, 'color/text-muted'), T('Data', 14)));
+  put('Pagination', box({ gap: 4 }, ...['‹', '1', '2', '3', '›'].map((s, i) => box({ w: 36, h: 36, main: 'CENTER', round: 8, fill: i === 2 ? 'color/primary' : null, stroke: i === 2 ? null : 'color/border' }, T(s, 14, i === 2 ? 'color/on-primary' : 'color/text')))));
+  put('Stepper', box({ gap: 8 }, ...[1, 2, 3].flatMap((n, i) => [box({ w: 28, h: 28, main: 'CENTER', round: 999, fill: n <= 2 ? 'color/primary' : null, stroke: n <= 2 ? null : 'color/outline' }, T(String(n), 13, n <= 2 ? 'color/on-primary' : 'color/text-muted')), ...(i < 2 ? [bar(32, 2, n < 2 ? 'color/primary' : 'color/outline-variant')] : [])])));
+  put('TreeView', box({ dir: 'V', align: 'MIN', gap: 2, w: 200 }, T('v src', 14), box({ pad: [16, 0] }, T('lib.rs', 14, 'color/text-muted')), box({ pad: [16, 0], fill: 'color/selection', round: 6 }, T('main.rs', 14)), T('> docs', 14)));
+  put('Menu', box({ dir: 'V', align: 'MIN', w: 200, pad: [0, 8], fill: 'color/surface-container', stroke: 'color/border', round: true, gap: 0 }, ...['Cut', 'Copy', 'Paste'].map((s, i) => box({ w: 200, h: 40, pad: [16, 0], fill: i === 1 ? 'color/selection' : null }, T(s, 14)))));
+  put('DropdownMenu', box({ dir: 'V', align: 'MIN', gap: 4 }, field('Actions v', 140, false), box({ dir: 'V', align: 'MIN', w: 180, pad: [0, 6], fill: 'color/surface-container', stroke: 'color/border', round: true, gap: 0 }, ...['Edit', 'Share'].map((s) => box({ w: 180, h: 36, pad: [12, 0] }, T(s, 14))))));
+  put('Tabs', box({ gap: 0 }, ...['One', 'Two', 'Three'].map((s, i) => box({ dir: 'V', pad: [20, 12], gap: 8 }, T(s, 15, i === 0 ? 'color/primary' : 'color/text-muted'), bar(48, 3, i === 0 ? 'color/primary' : 'color/border')))));
+  put('Accordion', box({ dir: 'V', align: 'MIN', w: 280, stroke: 'color/border', round: true, gap: 0 }, box({ w: 280, h: 44, pad: [16, 0], main: 'SPACE_BETWEEN' }, T('Section', 15), ch('^')), box({ w: 280, pad: [16, 8] }, T('Expanded content', 13, 'color/text-muted'))));
+
+  // Data display and feedback
+  put('Tooltip', box({ pad: [10, 6], fill: 'color/overlay', round: 6 }, T('Tooltip', 12)));
+  put('RichTooltip', box({ dir: 'V', align: 'MIN', pad: [14, 10], fill: 'color/overlay', round: 10, gap: 4 }, T('Title', 14), T('Supporting text for the control.', 12, 'color/text-muted'), T('Learn more', 12, 'color/link')));
+  put('Popover', box({ dir: 'V', align: 'MIN', pad: [16, 12], fill: 'color/surface-container', stroke: 'color/border', round: true, gap: 4 }, T('Popover', 15), T('Anchored content', 13, 'color/text-muted')));
+  put('Toast', box({ pad: [16, 12], fill: 'color/surface-container-high', stroke: 'color/success', round: true, gap: 12 }, T('✓', 16, 'color/success'), T('Saved', 14)));
+  put('Banner', box({ w: 360, h: 48, pad: [16, 0], fill: 'color/info', gap: 12 }, T('i', 15, 'color/background'), T('Update available', 14, 'color/background')));
+  put('Spinner', (() => { const e = figma.createEllipse(); e.resize(32, 32); e.fills = []; bindStroke(e, 'color/primary'); e.strokeWeight = 3; e.arcData = { startingAngle: 0, endingAngle: 4.7, innerRadius: 0.8 }; return e; })());
+  put('CircularProgress', (() => { const g = box({ w: 40, h: 40, main: 'CENTER' }, T('70', 12)); const e = figma.createEllipse(); e.resize(40, 40); e.fills = []; bindStroke(e, 'color/surface-container-highest'); e.strokeWeight = 4; g.layoutMode = 'NONE'; g.appendChild(e); return g; })());
+  put('IndeterminateBar', box({ w: 200, h: sz('bar-thickness'), round: 999, fill: 'color/surface-container-highest' }, bar(70, sz('bar-thickness'), 'color/primary')));
+  put('Skeleton', box({ dir: 'V', align: 'MIN', gap: 8 }, bar(200, 14, 'color/surface-container-highest', 4), bar(140, 14, 'color/surface-container-highest', 4), bar(200, 64, 'color/surface-container-highest', 8)));
+  put('Divider', bar(200, sz('hairline'), 'color/border', 0));
+  put('Kbd', box({ pad: [8, 3], fill: 'color/surface-container-high', stroke: 'color/border-strong', round: 4 }, T('⌘ K', 12)));
+  put('List', box({ dir: 'V', align: 'MIN', w: 280, gap: 0 }, ...['One', 'Two'].map((s) => box({ w: 280, h: 56, pad: [16, 0], gap: 16, stroke: 'color/border' }, dot(32, 'color/primary-container'), box({ dir: 'V', align: 'MIN', gap: 0 }, T(s, 15), T('Supporting text', 12, 'color/text-muted'))))));
+  put('Table', box({ dir: 'V', align: 'MIN', w: 320, stroke: 'color/border', round: true, gap: 0 }, box({ w: 320, h: 36, pad: [12, 0], fill: 'color/surface-container', main: 'SPACE_BETWEEN' }, T('Name', 12, 'color/text-muted'), T('Qty', 12, 'color/text-muted')), ...['Alpha|3', 'Beta|9'].map((r) => { const [a, b] = r.split('|'); return box({ w: 320, h: 40, pad: [12, 0], main: 'SPACE_BETWEEN' }, T(a, 14), T(b, 14)); })));
+  put('Timeline', box({ dir: 'V', align: 'MIN', gap: 0 }, ...['Created', 'Shipped', 'Delivered'].map((s, i) => box({ gap: 12, align: 'MIN' }, box({ dir: 'V', gap: 0, align: 'CENTER' }, dot(12, i < 2 ? 'color/primary' : 'color/outline'), ...(i < 2 ? [bar(2, 24, 'color/outline-variant', 0)] : [])), T(s, 14, i < 2 ? 'color/text' : 'color/text-muted')))));
+  put('Clock', (() => { const g = box({ w: 96, h: 96 }); g.layoutMode = 'NONE'; const f = dot(96, 'color/surface'); bindStroke(f, 'color/outline'); g.appendChild(f); const h1 = bar(3, 28, 'color/text', 2); const h2 = bar(2, 38, 'color/primary', 1); g.appendChild(h1); g.appendChild(h2); h1.x = 47; h1.y = 20; h2.x = 47; h2.y = 10; return g; })());
+  put('Stopwatch', box({ gap: 12, pad: [16, 10], fill: 'color/surface-container', round: true }, T('00:42.7', 22), T('▶', 14, 'color/primary')));
+  put('CodeBlock', box({ dir: 'V', align: 'MIN', pad: [16, 12], fill: 'color/surface-container-lowest', stroke: 'color/border', round: true, gap: 2 }, T('fn main() {', 13, 'color/text'), T('    run();', 13, 'color/text-muted'), T('}', 13, 'color/text')));
+  put('Stat (CountUp)', box({ dir: 'V', align: 'MIN', gap: 0 }, T('12,480', 32), T('Active users', 12, 'color/text-muted')));
+  put('SideSheet', box({ dir: 'V', align: 'MIN', w: 240, h: 200, pad: [20, 16], fill: 'color/surface', stroke: 'color/border-strong', round: true, gap: 8 }, T('Side sheet', 18), T('Detail content', 13, 'color/text-muted')));
+  put('BottomSheet', box({ dir: 'V', w: 320, h: 140, pad: [16, 12], fill: 'color/surface', stroke: 'color/border-strong', round: true, gap: 12 }, bar(sz('sheet-handle-w'), sz('sheet-handle-h'), 'color/outline-variant'), T('Bottom sheet', 16)));
+  put('Carousel', box({ gap: 8 }, bar(120, 140, 'color/primary-container', 16), bar(80, 140, 'color/secondary-container', 16), bar(40, 140, 'color/tertiary-container', 16)));
+  put('Image', box({ w: 160, h: 100, main: 'CENTER', fill: 'color/surface-container-high', round: true }, T('▲', 24, 'color/text-muted')));
+  put('Markdown', box({ dir: 'V', align: 'MIN', gap: 4 }, T('Heading', 20), T('Body text with a link.', 14, 'color/text-muted'), T('• list item', 14)));
+  put('SnapStack', box({ dir: 'V', gap: 6 }, bar(200, 56, 'color/primary-container', 12), bar(200, 56, 'color/secondary-container', 12)));
+  parts2.push(`Components×${kcount}`);
+
   // --- Foundations: type scale, spacing, radius and the design's own shape.
   figma.currentPage = foundations;
   const scale = figma.createFrame();

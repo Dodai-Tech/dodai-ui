@@ -25,8 +25,10 @@ that system's components. Pages per system:
 - **Button**: every variant and state.
 - **Surfaces**: the surface families.
 - **Controls**: Switch, Checkbox, Radio, Slider, Progress, Input, Tab (off/on variants).
-- **Feedback**: Badge, Alert, Chip, using the same recipes as gpui (`badge`, `alert`, `chip` in
-  `dodai-core/src/component.rs`).
+- **Feedback**: Badge, Alert, Chip, Card, Avatar, Snackbar, Dialog, using the same recipes as gpui
+  (`badge`, `alert`, `chip`, `card`, `snackbar`, `dialog` in `dodai-core/src/component.rs`).
+- **Components**: about 60 more showcase components (inputs, actions, navigation, data display,
+  overlays), each built only from role, size and shape variables.
 - **Charts**: every chart of the showcase, drawn from the showcase model's plots.
 
 Plus one **Catalog** page listing each component and the toolkits that have it. Fills, strokes,
@@ -59,6 +61,8 @@ coverage. CI fails on a stale catalog or spec.
 
 ## Not covered yet
 
-The file draws a subset of the gpui components (Button, the controls above, Badge, Alert, Chip,
-charts). The rest are listed in the spec and the Catalog page but not drawn. Spacing and motion are
+The file draws roughly 80 of the 128 catalogued components, with one static state each (no hover,
+focus or disabled variants outside Button and Controls). The rest, the date/time pickers, DataTable,
+Command palette, shells and the effect layers, are listed in the spec and the Catalog page but not
+drawn. Spacing and motion are
 documented as tokens only.
