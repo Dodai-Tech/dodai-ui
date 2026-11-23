@@ -3,18 +3,18 @@
 # Toolkits, reference first. `model` = the example renderer that walks the showcase model.
 export def toolkits []: nothing -> table {
     [
-        { id: gpui,    crate: dodai-ui-gpui,    kind: rust,  model: "" }
-        { id: iced,    crate: dodai-ui-iced,    kind: rust,  model: "crates/dodai-ui-iced/examples/iced_showcase/render.rs" }
-        { id: dioxus,  crate: dodai-ui-dioxus,  kind: rust,  model: "crates/dodai-ui-dioxus/examples/dioxus_showcase/render.rs" }
-        { id: bevy,    crate: dodai-ui-bevy,    kind: rust,  model: "crates/dodai-ui-bevy/examples/bevy_showcase/render.rs" }
-        { id: topcoat, crate: dodai-ui-topcoat, kind: css,   model: "crates/dodai-ui-topcoat/examples/topcoat_showcase/render.rs" }
-        { id: egui,    crate: dodai-ui-egui,    kind: rust,  model: "crates/dodai-ui-egui/examples/egui_showcase/render.rs" }
-        { id: freya,   crate: dodai-ui-freya,   kind: rust,  model: "" }
-        { id: slint,   crate: dodai-ui-slint,   kind: slint, model: "" }
-        { id: leptos,  crate: dodai-ui-leptos,  kind: rust,  model: "" }
-        { id: yew,     crate: dodai-ui-yew,     kind: rust,  model: "" }
-        { id: ratatui, crate: dodai-ui-ratatui, kind: rust,  model: "" }
-        { id: xilem,   crate: dodai-ui-xilem,   kind: rust,  model: "" }
+        { id: gpui,    crate: dodai-gpui,    kind: rust,  model: "" }
+        { id: iced,    crate: dodai-iced,    kind: rust,  model: "crates/dodai-iced/examples/iced_showcase/render.rs" }
+        { id: dioxus,  crate: dodai-dioxus,  kind: rust,  model: "crates/dodai-dioxus/examples/dioxus_showcase/render.rs" }
+        { id: bevy,    crate: dodai-bevy,    kind: rust,  model: "crates/dodai-bevy/examples/bevy_showcase/render.rs" }
+        { id: topcoat, crate: dodai-topcoat, kind: css,   model: "crates/dodai-topcoat/examples/topcoat_showcase/render.rs" }
+        { id: egui,    crate: dodai-egui,    kind: rust,  model: "crates/dodai-egui/examples/egui_showcase/render.rs" }
+        { id: freya,   crate: dodai-freya,   kind: rust,  model: "" }
+        { id: slint,   crate: dodai-slint,   kind: slint, model: "" }
+        { id: leptos,  crate: dodai-leptos,  kind: rust,  model: "" }
+        { id: yew,     crate: dodai-yew,     kind: rust,  model: "" }
+        { id: ratatui, crate: dodai-ratatui, kind: rust,  model: "" }
+        { id: xilem,   crate: dodai-xilem,   kind: rust,  model: "" }
     ]
 }
 
@@ -77,7 +77,7 @@ def pct [n: int, total: int]: nothing -> string {
 
 # Node variants a model renderer fails to name; one line per problem.
 export def model-gaps []: nothing -> list<string> {
-    let variants = (node-variants (open --raw crates/dodai-ui-showcase-model/src/node.rs))
+    let variants = (node-variants (open --raw crates/dodai-showcase-model/src/node.rs))
     toolkits | where model != "" | each { |t|
         let got = (matched-variants (open --raw $t.model) $variants)
         $variants | where { $in not-in $got } | each { $"($t.id): ($in)" }
@@ -86,8 +86,8 @@ export def model-gaps []: nothing -> list<string> {
 
 # The whole docs/PARITY.md text.
 export def render-parity []: nothing -> string {
-    let variants = (node-variants (open --raw crates/dodai-ui-showcase-model/src/node.rs))
-    let gpui_src = (crate-src dodai-ui-gpui rust)
+    let variants = (node-variants (open --raw crates/dodai-showcase-model/src/node.rs))
+    let gpui_src = (crate-src dodai-gpui rust)
     let comps = (component-names $gpui_src)
     let rows = (toolkits | each { |t|
         let src = (crate-src $t.crate $t.kind)
@@ -120,9 +120,9 @@ export def render-parity []: nothing -> string {
         "* **showcase**: `model` toolkits draw the whole showcase model (a new `Node` variant will not compile"
         "  until they handle it); `own page` ones hand-write a smaller page."
         "* **sizes / look / nav**: how often the toolkit reads the `Sizes`, `Look` and navigation tokens."
-        "* **motion**: uses of the shared motion system (`dodai_ui_core::motion`), CSS transitions/keyframes or animation APIs."
+        "* **motion**: uses of the shared motion system (`dodai_core::motion`), CSS transitions/keyframes or animation APIs."
         "* **canvas**: uses of the design's gradient canvas (the mesh of Dodai): the app root helper or backdrop call. Zero means a Dodai window shows a flat colour."
-        "* **keys**: uses of the shared roving-focus rule (`dodai_ui_core::roving`) or keyboard event handling."
+        "* **keys**: uses of the shared roving-focus rule (`dodai_core::roving`) or keyboard event handling."
         "  Both are rough counts, not coverage: they show a toolkit is at zero, not that a non-zero one is complete."
         ""
         $table
@@ -135,7 +135,7 @@ export def render-parity []: nothing -> string {
 
 # Every reference component with the toolkits that expose it: `{ name, toolkits: [id] }`.
 export def component-matrix []: nothing -> table {
-    let comps = (component-names (crate-src dodai-ui-gpui rust))
+    let comps = (component-names (crate-src dodai-gpui rust))
     let have = (toolkits | each { |t|
         let src = (crate-src $t.crate $t.kind)
         {

@@ -1,11 +1,11 @@
 #!/usr/bin/env nu
 # Regenerates tools/shaders-kernels/src/entries.rs (one GPU entry point per shader) from
-# the ShaderInfo tables in crates/dodai-ui-shaders/src/shaders (the host catalogue reads the same
+# the ShaderInfo tables in crates/dodai-shaders/src/shaders (the host catalogue reads the same
 # tables at run time, so there is nothing else to generate).
 
 def main [] {
     let root = ($env.FILE_PWD | path dirname)
-    let src = ($root | path join crates dodai-ui-shaders src shaders)
+    let src = ($root | path join crates dodai-shaders src shaders)
     # catalogue order (families grouped); kernel entry order is separate and stable
     let cat_mods = [cyberpunk blade ghibli ghibli2 dmt pixel2 material matrix retro pixel nature fx extra retro2 ghostty]
     let mods = [cyberpunk blade ghibli ghibli2 dmt material matrix retro retro2 pixel pixel2 nature fx extra ghostty]

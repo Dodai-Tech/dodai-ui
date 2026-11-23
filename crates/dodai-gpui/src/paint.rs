@@ -1,0 +1,1311 @@
+//! Shaped painting: turns [`Shape`] tokens into gpui boxes.
+//!
+//! * `Square` / `Rounded` themes use plain `div` styling (border, radius, box shadow).
+//! * `Chamfered` themes paint the [`Shape::outline`] polygon on an absolutely
+//!   positioned [`canvas`] (fill, hard shadow, glow layers, stroke) behind the
+//!   children. The surrounding `div` keeps normal layout and hit-testing.
+//!
+//! No function here looks at a theme id; everything derives from tokens.
+
+use crate::hsla;
+use dodai_core::{Color, Shape, ShapeKind, Theme};
+use gpui::{
+    canvas, point, px, Bounds, BoxShadow, Div, Hsla, InteractiveElement, ParentElement,
+    PathBuilder, Pixels, Styled, Window,
+};
+
+/// The least opaque a floating surface gets under glass (see
+/// [`ShapeStyle::with_floating_surface`]).
+pub const FLOATING_ALPHA: f32 = dodai_core::Glass::FLOATING_ALPHA;
+
+/// Everything needed to paint one shaped box.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ShapeStyle {
+    /// Fill colour (`None` = transparent).
+    pub fill: Option<Hsla>,
+    /// Border colour (`None` = no border).
+    pub stroke: Option<Hsla>,
+    /// Border width in px (ignored when `stroke` is `None`).
+    pub stroke_width: f32,
+    /// Glow colour + blur radius in px.
+    pub glow: Option<(Hsla, f32)>,
+    /// Hard offset shadow colour + offset in px.
+    pub shadow: Option<(Hsla, f32)>,
+    /// Direction of the hard shadow, a unit `(dx, dy)` (default bottom right).
+    pub shadow_dir: (f32, f32),
+    /// Fine horizontal scanline texture over the fill (from `effects.scanlines`).
+    pub scanlines: bool,
+    /// Colour of those scanlines (`effects.scanline`).
+    pub scanline: Hsla,
+    /// Distance between those scanlines (`effects.scanline_pitch`).
+    pub scanline_pitch: f32,
+    /// Texture and effects over the fill (see [`mod@crate::surface_fx`]).
+    pub surface: Option<crate::surface_fx::SurfacePaint>,
+    /// Animated highlight sweep, clipped to the shape (see [`Shimmer`]).
+    pub shimmer: Option<Shimmer>,
+    /// Material 3 elevation level (0..=5) and shadow colour: the soft two-layer shadow.
+    pub elevation: Option<(u8, Hsla)>,
+    /// The design's own shadow layers for the elevation (`(y, blur, spread, alpha)`).
+    pub lift_layers: Option<[dodai_core::ShadowLayer; 3]>,
+    /// Interrupt the border on the right (`true`) or left (`false`) side, centred vertically,
+    /// over a span of `2 * half` px (the empty space between a cropped button's tick bars); the
+    /// fill is notched `depth` px inward there.
+    pub edge_gap: Option<(ShapeEdge, f32, f32)>,
+    /// Frosted glass under the fill (set by the surface, see `ResolvedSurface::frost`).
+    pub frost: Option<FrostLayer>,
+}
+
+/// Frosted glass under a fill: a blurred copy of the app's backdrop (feature `frost`; without
+/// it only the see-through fill is drawn).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct FrostLayer {
+    /// Opacity of the blurred backdrop, `0.0..=1.0`.
+    pub amount: f32,
+    /// Blur in px (the design's glass).
+    pub blur: f32,
+    /// Saturation of the blurred backdrop (1 = unchanged).
+    pub saturation: f32,
+    /// The design's canvas mesh `(canvas, wash, strength)`, blurred when the app set no
+    /// wallpaper; `None` for a flat canvas.
+    pub mesh: Option<(Color, [Color; 3], f32)>,
+}
+
+/// The two M3 shadow layers for an elevation level: `(offset_y, blur, spread, alpha)`.
+pub fn elevation_layers(level: u8) -> [(f32, f32, f32, f32); 2] {
+    match level {
+        0 => [(0.0, 0.0, 0.0, 0.0); 2],
+        1 => [(1.0, 2.0, 0.0, 0.30), (1.0, 3.0, 1.0, 0.15)],
+        2 => [(1.0, 2.0, 0.0, 0.30), (2.0, 6.0, 2.0, 0.15)],
+        3 => [(1.0, 3.0, 0.0, 0.30), (4.0, 8.0, 3.0, 0.15)],
+        4 => [(2.0, 3.0, 0.0, 0.30), (6.0, 10.0, 4.0, 0.15)],
+        _ => [(4.0, 4.0, 0.0, 0.30), (8.0, 12.0, 6.0, 0.15)],
+    }
+}
+
+/// Shimmer sweep painted by [`shaped`] over any shape.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Shimmer {
+    /// Peak highlight colour (include the alpha).
+    pub color: Hsla,
+    /// Duration of one sweep in ms.
+    pub ms: u32,
+    /// Whether and how the loop plays.
+    pub playback: Playback,
+}
+
+impl ShapeStyle {
+    /// Let the active texture and effects (if they target `class`) paint over the fill.
+    pub fn with_surface(self, theme: &Theme, class: dodai_core::SurfaceClass) -> Self {
+        self.with_surface_of(theme, class, &dodai_core::Surface::INHERIT)
+    }
+
+    /// [`with_surface`](Self::with_surface) with a component's own
+    /// [`Surface`](dodai_core::Surface) on top. Its glow scale applies here too.
+    pub fn with_surface_of(
+        mut self,
+        theme: &Theme,
+        class: dodai_core::SurfaceClass,
+        over: &dodai_core::Surface,
+    ) -> Self {
+        self.surface = self.fill.and_then(|fill| {
+            let sp = crate::surface_fx::surface_paint_with(theme, class, over)?;
+            // Contrast the pattern with this fill.
+            Some(sp.contrasting(fill.l))
+        });
+        // The fill keeps its colour and turns as see-through as the design's glass (controls
+        // only halfway, so their labels keep the contrast of their fill) and the component's
+        // own opacity.
+        let glass = dodai_core::Glass::new(
+            theme,
+            class,
+            // Without the `frost` feature nothing can be blurred, so nothing turns see-through.
+            self.surface
+                .filter(|_| cfg!(feature = "frost"))
+                .map_or(0.0, |sp| sp.fx.frost),
+            over.opacity_value().unwrap_or(1.0),
+        );
+        self.frost = None;
+        if let Some(fill) = self.fill.as_mut().filter(|_| !glass.is_solid()) {
+            fill.a = glass.alpha(fill.a);
+            let style = &theme.surface_style;
+            self.frost = glass.frosted().then_some(FrostLayer {
+                amount: glass.amount,
+                blur: glass.blur,
+                saturation: glass.saturation,
+                mesh: (style.backdrop > 0.0).then_some((
+                    theme.palette.background,
+                    style.wash,
+                    style.backdrop,
+                )),
+            });
+        }
+        if let Some(g) = over.glow_scale() {
+            self.glow = self.glow.filter(|_| g > 0.0).map(|(c, r)| (c, r * g));
+        }
+        self
+    }
+
+    /// [`with_surface`](Self::with_surface) for a surface that floats over other components
+    /// (popups, menus, tooltips, toasts). `gpui` cannot blur what is drawn behind a pane, only
+    /// the app's backdrop, so a floating fill never goes below [`FLOATING_ALPHA`]: the content
+    /// behind it stays out of the way of the text on it.
+    pub fn with_floating_surface(self, theme: &Theme, class: dodai_core::SurfaceClass) -> Self {
+        let own = self.fill.map_or(1.0, |f| f.a);
+        let mut me = self.with_surface(theme, class);
+        if let Some(f) = me.fill.as_mut().filter(|_| me.frost.is_some()) {
+            f.a = f.a.max(own.min(FLOATING_ALPHA));
+        }
+        me
+    }
+
+    /// Apply a component's own [`Surface`](dodai_core::Surface) on top of what the pure style
+    /// function resolved. Does nothing when the component sets none.
+    pub fn with_own_surface(
+        self,
+        theme: &Theme,
+        class: dodai_core::SurfaceClass,
+        over: &dodai_core::Surface,
+    ) -> Self {
+        if over.is_set() {
+            self.with_surface_of(theme, class, over)
+        } else {
+            self
+        }
+    }
+
+    /// Like [`with_surface`](Self::with_surface), but an outline-only surface (no fill) also gets
+    /// the texture, drawn against the page background.
+    pub fn with_surface_outlined(self, theme: &Theme, class: dodai_core::SurfaceClass) -> Self {
+        self.with_surface_outlined_of(theme, class, &dodai_core::Surface::INHERIT)
+    }
+
+    /// [`with_surface_outlined`](Self::with_surface_outlined) with a component's own surface.
+    pub fn with_surface_outlined_of(
+        self,
+        theme: &Theme,
+        class: dodai_core::SurfaceClass,
+        over: &dodai_core::Surface,
+    ) -> Self {
+        let mut me = self;
+        if me.fill.is_none() {
+            let bare = me.stroke.is_none();
+            me.fill = Some(crate::hsla(theme.palette.background));
+            me = me.with_surface_of(theme, class, over);
+            me.fill = None;
+            if bare {
+                // No outline to dress: keep only the click ripple, not the texture.
+                me.surface = me.surface.and_then(|mut sp| {
+                    (sp.fx.ripple > 0.0).then(|| {
+                        sp.fx = dodai_core::ResolvedSurface {
+                            ripple: sp.fx.ripple,
+                            press: sp.fx.press,
+                            targets: sp.fx.targets,
+                            ..dodai_core::ResolvedSurface::NONE
+                        };
+                        sp
+                    })
+                });
+            }
+            return me;
+        }
+        me.with_surface_of(theme, class, over)
+    }
+
+    /// Add a shimmer sweep that follows whatever shape this style is drawn in.
+    pub fn with_shimmer(mut self, s: Shimmer) -> Self {
+        self.shimmer = Some(s);
+        self
+    }
+    /// Lift this surface with the Material 3 elevation `level` in `colour`.
+    pub fn with_elevation(mut self, level: u8, colour: Hsla) -> Self {
+        self.elevation = (level > 0).then_some((level, colour));
+        self
+    }
+    /// Lift this surface with elevation `level` in the theme's shadow colour, using the
+    /// design's own shadow layers when it declares them.
+    pub fn with_lift(mut self, theme: &Theme, level: u8) -> Self {
+        self.lift_layers = theme.elevation_layers(level).map(|v| {
+            let mut a = [dodai_core::ShadowLayer::default(); 3];
+            for (slot, l) in a.iter_mut().zip(v) {
+                *slot = l;
+            }
+            a
+        });
+        self.with_elevation(level, hsla(theme.palette.roles.shadow))
+    }
+    /// Build from token colours. `glow` adds the theme glow when enabled;
+    /// the hard shadow is added whenever `effects.hard_shadow > 0` and `shadow` is set.
+    pub fn from_tokens(
+        theme: &Theme,
+        fill: Option<Color>,
+        stroke: Option<Color>,
+        glow: bool,
+        shadow: bool,
+    ) -> Self {
+        let fx = &theme.effects;
+        let tune = crate::shape_tune();
+        let p = &theme.palette;
+        let tint = match tune.tint {
+            dodai_core::BorderTint::Design => None,
+            dodai_core::BorderTint::Strong => Some(p.border_strong),
+            dodai_core::BorderTint::Accent => Some(p.primary),
+            dodai_core::BorderTint::Text => Some(p.text),
+        };
+        let stroke = match (stroke, tune.outline_all) {
+            (Some(c), _) => Some(tint.unwrap_or(c)),
+            (None, true) if fill.is_some() => Some(tint.unwrap_or(p.border)),
+            (None, _) => None,
+        };
+        Self {
+            fill: fill.map(hsla),
+            stroke: stroke.map(hsla),
+            stroke_width: match stroke {
+                Some(_) if tune.outline_all && tune.border_width.is_none() => {
+                    theme.shape.border_width.max(1.0)
+                }
+                Some(_) => theme.shape.border_width,
+                None => 0.0,
+            },
+            glow: (glow && fx.glow_enabled()).then(|| (hsla(fx.glow_color()), fx.glow_radius())),
+            shadow: (shadow && fx.hard_shadow > 0.0)
+                .then(|| (hsla(theme.hard_shadow_color()), fx.hard_shadow)),
+            shadow_dir: tune.shadow_dir.dir(),
+            scanlines: fx.scanlines && fill.is_some(),
+            scanline: hsla(fx.scanline),
+            scanline_pitch: fx.scanline_pitch,
+            surface: None,
+            shimmer: None,
+            elevation: None,
+            lift_layers: None,
+            edge_gap: None,
+            frost: None,
+        }
+    }
+
+    /// Leave the right/left border open (and the fill notched `depth` px) over `2 * half` px at
+    /// mid-height.
+    pub fn with_edge_gap(mut self, edge: ShapeEdge, half: f32, depth: f32) -> Self {
+        self.edge_gap = Some((edge, half, depth));
+        self
+    }
+
+    /// Style and text colour of a core [`SurfaceTokens`](dodai_core::SurfaceTokens).
+    pub fn from_surface(theme: &Theme, k: dodai_core::SurfaceTokens) -> (Self, Hsla) {
+        let mut st = Self::from_tokens(theme, k.background, k.border, k.glow, k.shadow);
+        if k.shadow && theme.look().soft_elevation {
+            // Material: a soft elevation shadow (level 2 by default; callers adjust).
+            st = st.with_elevation(2, hsla(theme.palette.roles.shadow));
+        }
+        (st, hsla(k.foreground))
+    }
+}
+
+pub use dodai_fx::poly_span;
+
+/// Horizontal extent of `shape` at row `y` in a `w`×`h` box (follows chamfers and rounded corners).
+pub fn row_span(shape: &Shape, w: f32, h: f32, y: f32) -> Option<(f32, f32)> {
+    dodai_fx::row_span(&shape.clip(), w, h, y)
+}
+
+/// Polygon of the bottom `band` px of `shape` in a `w`×`h` box (follows cut corners).
+pub fn bottom_band(shape: &Shape, w: f32, h: f32, band: f32) -> Vec<(f32, f32)> {
+    let top = (h - band).max(0.0);
+    let (a0, a1) = row_span(shape, w, h, top).unwrap_or((0.0, w));
+    let (b0, b1) = row_span(shape, w, h, h).unwrap_or((0.0, w));
+    vec![(a0, top), (a1, top), (b1, h), (b0, h)]
+}
+
+/// Fill the bottom `band` px of `shape` with `color` (absolute canvas child).
+pub fn bottom_band_canvas(shape: &Shape, band: f32, color: Hsla) -> impl gpui::IntoElement {
+    let shape = shape.clone();
+    canvas(
+        |_, _, _| (),
+        move |b, _, window, _| {
+            let w: f32 = b.size.width.into();
+            let h: f32 = b.size.height.into();
+            let pts = poly(b.origin, &bottom_band(&shape, w, h, band), (0.0, 0.0));
+            let mut pb = PathBuilder::fill();
+            pb.add_polygon(&pts, true);
+            if let Ok(p) = pb.build() {
+                window.paint_path(p, color);
+            }
+        },
+    )
+    .absolute()
+    .top_0()
+    .left_0()
+    .size_full()
+}
+
+/// The bottom band of a tab, drawn at horizontal offset `x` with width `w` inside the element it
+/// is a child of (so one indicator can slide between tabs).
+pub fn bottom_band_slide(
+    shape: &Shape,
+    band: f32,
+    color: Hsla,
+    x: f32,
+    w: f32,
+) -> impl gpui::IntoElement {
+    let shape = shape.clone();
+    canvas(
+        |_, _, _| (),
+        move |b, _, window, _| {
+            let h: f32 = b.size.height.into();
+            let origin = gpui::point(b.origin.x + px(x), b.origin.y);
+            let pts = poly(origin, &bottom_band(&shape, w, h, band), (0.0, 0.0));
+            let mut pb = PathBuilder::fill();
+            pb.add_polygon(&pts, true);
+            if let Ok(p) = pb.build() {
+                window.paint_path(p, color);
+            }
+        },
+    )
+    .absolute()
+    .top_0()
+    .left_0()
+    .size_full()
+}
+
+/// Paint scanline rows inside `bounds`, clipped to `shape`.
+pub fn paint_scanlines(
+    window: &mut Window,
+    bounds: Bounds<Pixels>,
+    shape: &Shape,
+    color: Hsla,
+    pitch: f32,
+) {
+    let w: f32 = bounds.size.width.into();
+    let h: f32 = bounds.size.height.into();
+    let bw = shape.border_width;
+    let pitch = pitch.max(2.0);
+    let mut y = pitch - 1.0;
+    while y < h {
+        if y > bw && y < h - bw {
+            if let Some((x0, x1)) = row_span(shape, w, h, y) {
+                let (x0, x1) = (x0.max(bw), x1.min(w - bw));
+                if x1 > x0 {
+                    window.paint_quad(gpui::fill(
+                        Bounds::new(
+                            point(bounds.origin.x + px(x0), bounds.origin.y + px(y)),
+                            gpui::size(px(x1 - x0), crate::HAIRLINE),
+                        ),
+                        color,
+                    ));
+                }
+            }
+        }
+        y += pitch;
+    }
+}
+
+/// One layer of the layered-stroke glow.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct GlowLayer {
+    /// Stroke width in px (centred on the outline).
+    pub width: f32,
+    /// Multiplier applied to the glow colour alpha.
+    pub alpha: f32,
+}
+
+/// Layers for a glow of `radius` px around a `border`-px outline, outermost first.
+/// Layers overlap, so alpha accumulates towards the edge (never above 0.6 total).
+pub fn glow_layers(radius: f32, border: f32) -> Vec<GlowLayer> {
+    if radius <= 0.0 {
+        return Vec::new();
+    }
+    let n = (radius / 2.0).ceil().clamp(2.0, 8.0) as usize;
+    (1..=n)
+        .rev()
+        .map(|k| GlowLayer {
+            width: border + 2.0 * radius * k as f32 / n as f32,
+            alpha: 0.6 / n as f32,
+        })
+        .collect()
+}
+
+/// Outline of a `w`×`h` box inset by `inset` px on every side (for centred strokes).
+pub fn inset_outline(shape: &Shape, w: f32, h: f32, inset: f32) -> Vec<(f32, f32)> {
+    let iw = (w - 2.0 * inset).max(0.0);
+    let ih = (h - 2.0 * inset).max(0.0);
+    shape
+        .outline(iw, ih)
+        .into_iter()
+        .map(|(x, y)| (x + inset, y + inset))
+        .collect()
+}
+
+/// `c` with its alpha multiplied by `k`.
+pub fn scale_alpha(c: Hsla, k: f32) -> Hsla {
+    Hsla {
+        a: (c.a * k).clamp(0.0, 1.0),
+        ..c
+    }
+}
+
+pub(crate) fn poly(
+    origin: gpui::Point<Pixels>,
+    pts: &[(f32, f32)],
+    d: (f32, f32),
+) -> Vec<gpui::Point<Pixels>> {
+    pts.iter()
+        .map(|&(x, y)| point(origin.x + px(x + d.0), origin.y + px(y + d.1)))
+        .collect()
+}
+
+/// Paint a [`ShapeStyle`] into `bounds` following `shape`'s outline polygon.
+pub fn paint_polygon(window: &mut Window, bounds: Bounds<Pixels>, shape: &Shape, s: &ShapeStyle) {
+    paint_polygon_over(window, bounds, shape, s, |_| ());
+}
+
+/// [`paint_polygon`], calling `under_fill` after the shadow and glow, right before the fill.
+fn paint_polygon_over(
+    window: &mut Window,
+    bounds: Bounds<Pixels>,
+    shape: &Shape,
+    s: &ShapeStyle,
+    under_fill: impl FnOnce(&mut Window),
+) {
+    let w: f32 = bounds.size.width.into();
+    let h: f32 = bounds.size.height.into();
+    let full = shape.outline(w, h);
+    let fill_path = |window: &mut Window, pts: Vec<gpui::Point<Pixels>>, c: Hsla| {
+        let mut b = PathBuilder::fill();
+        b.add_polygon(&pts, true);
+        if let Ok(p) = b.build() {
+            window.paint_path(p, c);
+        }
+    };
+    if let Some((c, off)) = s.shadow {
+        fill_path(
+            window,
+            poly(
+                bounds.origin,
+                &full,
+                (off * s.shadow_dir.0, off * s.shadow_dir.1),
+            ),
+            c,
+        );
+    }
+    if let Some((c, r)) = s.glow {
+        for l in glow_layers(r, s.stroke_width) {
+            let mut b = PathBuilder::stroke(px(l.width));
+            b.add_polygon(&poly(bounds.origin, &full, (0.0, 0.0)), true);
+            if let Ok(p) = b.build() {
+                window.paint_path(p, scale_alpha(c, l.alpha));
+            }
+        }
+    }
+    under_fill(window);
+    if let Some(c) = s.fill {
+        let notched = s.edge_gap.and_then(|(e, half, depth)| {
+            on_edge(&full, e, w, h, |p, r, mid| {
+                notch_at_edge(p, r, mid, half, depth)
+            })
+        });
+        let pts = notched.as_deref().unwrap_or(&full);
+        fill_path(window, poly(bounds.origin, pts, (0.0, 0.0)), c);
+    }
+    if s.scanlines {
+        paint_scanlines(window, bounds, shape, s.scanline, s.scanline_pitch);
+    }
+    if let Some(sp) = &s.surface {
+        crate::surface_fx::paint_surface(window, bounds, shape, sp);
+    }
+    if let (Some(c), bw) = (s.stroke, s.stroke_width) {
+        if bw > 0.0 {
+            let pts = inset_outline(shape, w, h, bw / 2.0);
+            let mut b = PathBuilder::stroke(px(bw));
+            match s.edge_gap.and_then(|(e, half, _)| {
+                on_edge(&pts, e, w, h, |p, r, mid| open_at_edge(p, r, mid, half))
+            }) {
+                Some(open) => b.add_polygon(&poly(bounds.origin, &open, (0.0, 0.0)), false),
+                None => b.add_polygon(&poly(bounds.origin, &pts, (0.0, 0.0)), true),
+            }
+            if let Ok(p) = b.build() {
+                window.paint_path(p, c);
+            }
+        }
+    }
+}
+
+type Pt = (f32, f32);
+/// Index of the cut edge, its x, and the (first, second) cut points in walking order.
+type EdgeCut = (usize, f32, Pt, Pt);
+
+/// Locate the vertical edge on the right/left side that spans `mid ± half`: returns its index,
+/// x, and the (first, second) cut points in walking order.
+fn edge_cut(pts: &[(f32, f32)], right: bool, mid: f32, half: f32) -> Option<EdgeCut> {
+    let n = pts.len();
+    let x = pts
+        .iter()
+        .map(|p| p.0)
+        .fold(if right { f32::MIN } else { f32::MAX }, |a, b| {
+            if right {
+                a.max(b)
+            } else {
+                a.min(b)
+            }
+        });
+    let i = (0..n).find(|&i| {
+        let (a, b) = (pts[i], pts[(i + 1) % n]);
+        (a.0 - x).abs() < 0.5
+            && (b.0 - x).abs() < 0.5
+            && a.1.min(b.1) < mid - half
+            && a.1.max(b.1) > mid + half
+    })?;
+    let (p, q) = (pts[i], pts[(i + 1) % n]);
+    let (lo, hi) = (mid - half, mid + half);
+    let (first, second) = if p.1 < q.1 {
+        ((x, lo), (x, hi))
+    } else {
+        ((x, hi), (x, lo))
+    };
+    Some((i, x, first, second))
+}
+
+/// A side of a shape, for [`ShapeStyle::edge_gap`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ShapeEdge {
+    /// The left side, centred vertically.
+    Left,
+    /// The right side, centred vertically.
+    Right,
+    /// The top side, centred horizontally.
+    Top,
+    /// The bottom side, centred horizontally.
+    Bottom,
+}
+
+/// Run a vertical-side edit (`f(points, right, mid)`) on any side by swapping x and y for the
+/// horizontal ones.
+fn on_edge(
+    pts: &[(f32, f32)],
+    edge: ShapeEdge,
+    w: f32,
+    h: f32,
+    f: impl Fn(&[(f32, f32)], bool, f32) -> Option<Vec<(f32, f32)>>,
+) -> Option<Vec<(f32, f32)>> {
+    match edge {
+        ShapeEdge::Left | ShapeEdge::Right => f(pts, edge == ShapeEdge::Right, h / 2.0),
+        ShapeEdge::Top | ShapeEdge::Bottom => {
+            let t: Vec<(f32, f32)> = pts.iter().map(|&(x, y)| (y, x)).collect();
+            f(&t, edge == ShapeEdge::Bottom, w / 2.0)
+                .map(|v| v.into_iter().map(|(x, y)| (y, x)).collect())
+        }
+    }
+}
+
+/// The closed outline as an open path that skips `mid ± half` on the right or left vertical
+/// side. `None` when that side has no vertical edge there.
+fn open_at_edge(pts: &[(f32, f32)], right: bool, mid: f32, half: f32) -> Option<Vec<(f32, f32)>> {
+    let n = pts.len();
+    let (i, _, first, second) = edge_cut(pts, right, mid, half)?;
+    let mut out = vec![second];
+    out.extend((0..n).map(|k| pts[(i + 1 + k) % n]));
+    out.push(first);
+    Some(out)
+}
+
+/// The closed outline with a rectangular notch `depth` px deep cut into that side.
+fn notch_at_edge(
+    pts: &[(f32, f32)],
+    right: bool,
+    mid: f32,
+    half: f32,
+    depth: f32,
+) -> Option<Vec<(f32, f32)>> {
+    let (i, x, first, second) = edge_cut(pts, right, mid, half)?;
+    let inx = if right { x - depth } else { x + depth };
+    let mut out = pts[..=i].to_vec();
+    out.extend([first, (inx, first.1), (inx, second.1), second]);
+    out.extend_from_slice(&pts[i + 1..]);
+    Some(out)
+}
+
+/// A `relative()` [`Div`] drawn in `shape` with `style`; add children afterwards.
+///
+/// For chamfered shapes the polygon is painted by a background canvas, so do
+/// not set `.bg()`/`.border_*()` on the returned div yourself.
+pub fn shaped(shape: &Shape, style: ShapeStyle) -> Div {
+    let d = shaped_base(shape, style);
+    match style.shimmer {
+        Some(sh) => d.child(shimmer_overlay(shape, sh)),
+        None => d,
+    }
+}
+
+fn shaped_base(shape: &Shape, style: ShapeStyle) -> Div {
+    crate::interact::set_ring_shape(shape, style.edge_gap);
+    let base = gpui::div().relative();
+    match shape.kind() {
+        ShapeKind::Chamfered => {
+            let shape = shape.clone();
+            base.child(
+                canvas(
+                    move |_, window, cx| free_glass(window, cx, &style),
+                    move |b, _, window, cx| {
+                        paint_polygon_over(window, b, &shape, &style, |window| {
+                            frost_under(window, cx, b, &shape, &style);
+                        })
+                    },
+                )
+                .absolute()
+                .top_0()
+                .left_0()
+                .size_full(),
+            )
+        }
+        kind => {
+            let mut d = base;
+            if style.frost.is_some() {
+                // The glass goes under the fill, so the fill is painted here too.
+                let sh = shape.clone();
+                d = d.child(
+                    canvas(
+                        move |_, window, cx| free_glass(window, cx, &style),
+                        move |b, _, window, cx| {
+                            frost_under(window, cx, b, &sh, &style);
+                            if let Some(f) = style.fill {
+                                let r = match kind {
+                                    ShapeKind::Rounded => sh.radius,
+                                    _ => 0.0,
+                                };
+                                let (w, h): (f32, f32) =
+                                    (b.size.width.into(), b.size.height.into());
+                                window.paint_quad(
+                                    gpui::fill(b, f).corner_radii(px(r.min(w.min(h) / 2.0))),
+                                );
+                            }
+                        },
+                    )
+                    .absolute()
+                    .top_0()
+                    .left_0()
+                    .size_full(),
+                );
+            }
+            if style.scanlines || style.surface.is_some() {
+                let sh = shape.clone();
+                let (on, sc, pitch, sp) = (
+                    style.scanlines,
+                    style.scanline,
+                    style.scanline_pitch,
+                    style.surface,
+                );
+                d = d.child(
+                    canvas(
+                        |_, _, _| (),
+                        move |b, _, window, _| {
+                            if on {
+                                paint_scanlines(window, b, &sh, sc, pitch);
+                            }
+                            if let Some(sp) = &sp {
+                                crate::surface_fx::paint_surface(window, b, &sh, sp);
+                            }
+                        },
+                    )
+                    .absolute()
+                    .top_0()
+                    .left_0()
+                    .size_full(),
+                );
+            }
+            if kind == ShapeKind::Rounded {
+                d = d.rounded(px(shape.radius));
+            }
+            if let Some(f) = style.fill.filter(|_| style.frost.is_none()) {
+                d = d.bg(f);
+            }
+            if let Some(c) = style.stroke {
+                let w = px(style.stroke_width);
+                let bw = &mut d.style().border_widths;
+                bw.top = Some(w.into());
+                bw.right = Some(w.into());
+                bw.bottom = Some(w.into());
+                bw.left = Some(w.into());
+                d = d.border_color(c);
+            }
+            let mut shadows = Vec::new();
+            if let Some((c, off)) = style.shadow {
+                shadows.push(BoxShadow {
+                    color: c,
+                    offset: point(px(off * style.shadow_dir.0), px(off * style.shadow_dir.1)),
+                    blur_radius: gpui::Pixels::ZERO,
+                    spread_radius: gpui::Pixels::ZERO,
+                });
+            }
+            if let Some((c, r)) = style.glow {
+                shadows.push(BoxShadow {
+                    color: c,
+                    offset: point(gpui::Pixels::ZERO, gpui::Pixels::ZERO),
+                    blur_radius: px(r),
+                    spread_radius: gpui::Pixels::ZERO,
+                });
+            }
+            if let Some((level, c)) = style.elevation {
+                let own = style.lift_layers.is_some();
+                let layers: Vec<dodai_core::ShadowLayer> = style.lift_layers.map_or_else(
+                    || {
+                        elevation_layers(level)
+                            .iter()
+                            .map(|&(dy, blur, spread, alpha)| dodai_core::ShadowLayer {
+                                dy,
+                                blur,
+                                spread,
+                                alpha,
+                            })
+                            .collect()
+                    },
+                    |l| l.to_vec(),
+                );
+                for dodai_core::ShadowLayer {
+                    dy: y,
+                    blur,
+                    spread,
+                    alpha: a,
+                } in layers.into_iter().filter(|l| l.alpha > 0.0)
+                {
+                    shadows.push(BoxShadow {
+                        color: Hsla {
+                            a: if own { a } else { c.a * a * 0.6 },
+                            ..c
+                        },
+                        offset: point(gpui::Pixels::ZERO, px(y)),
+                        blur_radius: px(blur),
+                        spread_radius: px(spread),
+                    });
+                }
+            }
+            if shadows.is_empty() {
+                d
+            } else {
+                d.shadow(shadows)
+            }
+        }
+    }
+}
+
+/// Paint the frosted glass of `style` under its fill, when it has one.
+fn frost_under(
+    window: &mut Window,
+    cx: &mut gpui::App,
+    bounds: Bounds<Pixels>,
+    shape: &Shape,
+    style: &ShapeStyle,
+) {
+    #[cfg(feature = "frost")]
+    if let Some(layer) = &style.frost {
+        crate::glass::paint_under(window, cx, bounds, shape, layer);
+    }
+    #[cfg(not(feature = "frost"))]
+    let _ = (window, cx, bounds, shape, style);
+}
+
+/// Free the glass textures of the last frame before this one paints.
+fn free_glass(window: &mut Window, cx: &mut gpui::App, style: &ShapeStyle) {
+    #[cfg(feature = "frost")]
+    if style.frost.is_some() {
+        crate::glass::free_unused(window, cx);
+    }
+    #[cfg(not(feature = "frost"))]
+    let _ = (window, cx, style);
+}
+
+/// `el` with a flat (square-cornered) background of `fill` that takes part in the design's glass
+/// like any `class` surface: see-through and frosted when the surface says so, else the plain
+/// fill. For containers that are not drawn with [`shaped`] (drawers, rails, bars); call it
+/// before adding the children, so they paint over the glass.
+pub fn pane(el: Div, theme: &Theme, class: dodai_core::SurfaceClass, fill: Color) -> Div {
+    let style =
+        ShapeStyle::from_tokens(theme, Some(fill), None, false, false).with_surface(theme, class);
+    if style.frost.is_none() && style.surface.is_none() {
+        return match style.fill {
+            Some(f) => el.bg(f),
+            None => el,
+        };
+    }
+    let flat = Shape {
+        radius: 0.0,
+        chamfer: 0.0,
+        border_width: 0.0,
+        ..theme.shape.clone()
+    };
+    el.child(shaped(&flat, style).absolute().top_0().left_0().size_full())
+}
+
+/// Convenience: [`shaped`] with an element id so it can take click/hover listeners.
+pub fn shaped_id(
+    id: impl Into<gpui::ElementId>,
+    shape: &Shape,
+    style: ShapeStyle,
+) -> gpui::Stateful<Div> {
+    shaped(shape, style).id(id)
+}
+
+/// Shape for round controls (switch, radio, slider thumb) of `side` px height:
+/// fully round (pill/circle) when the theme is rounded, otherwise the theme's own shape.
+pub fn round_shape(shape: &Shape, side: f32) -> Shape {
+    let mut s = shape.clone();
+    if s.kind() == ShapeKind::Rounded {
+        // Fully round, less so as the app-wide roundness drops below 100%.
+        s.radius = side / 2.0 * crate::shape_tune().roundness.clamp(0.0, 1.0);
+    }
+    s
+}
+
+/// Shape adapted to a small control of `side` px: radius capped at a quarter
+/// of the side so small rounded controls do not turn into circles.
+pub fn scaled_shape(shape: &Shape, side: f32) -> Shape {
+    let mut s = shape.clone();
+    s.radius = s.radius.min(side / 4.0);
+    s
+}
+
+/// Highlight band at `x..x+w` (fractions of the width) painted row by row so
+/// it stays inside `shape` (rounded / chamfered corners, circles).
+fn shimmer_band(shape: Shape, x: f32, w: f32, color: Hsla) -> impl gpui::IntoElement {
+    canvas(
+        |_, _, _| (),
+        move |b, _, window, _| {
+            let (bw, bh): (f32, f32) = (b.size.width.into(), b.size.height.into());
+            let (x0, x1) = (x * bw, (x + w) * bw);
+            let at = |p: f32| {
+                let f = ((p - x0) / (x1 - x0).max(1e-3)).clamp(0.0, 1.0);
+                hsla_a(color, color.a * f)
+            };
+            let mut y = 0.0;
+            while y < bh {
+                let step = (bh - y).min(1.0);
+                if let Some((a, c)) = row_span(&shape, bw, bh, y + step / 2.0) {
+                    let (l, r) = (x0.max(a), x1.min(c));
+                    if r > l {
+                        let bounds = gpui::Bounds {
+                            origin: point(b.origin.x + px(l), b.origin.y + px(y)),
+                            size: gpui::size(px(r - l), px(step)),
+                        };
+                        window.paint_quad(gpui::fill(
+                            bounds,
+                            gpui::linear_gradient(
+                                90.0,
+                                gpui::linear_color_stop(at(l), 0.0),
+                                gpui::linear_color_stop(at(r), 1.0),
+                            ),
+                        ));
+                    }
+                }
+                y += step;
+            }
+        },
+    )
+    .absolute()
+    .top_0()
+    .left_0()
+    .size_full()
+}
+
+fn hsla_a(c: Hsla, a: f32) -> Hsla {
+    Hsla { a, ..c }
+}
+
+/// Sweep overlay clipped to `shape`; the animation is keyed by the parent
+/// element's id, so give the shaped element an id (e.g. [`shaped_id`]).
+fn shimmer_overlay(shape: &Shape, sh: Shimmer) -> impl gpui::IntoElement {
+    use gpui::AnimationExt;
+    let dur = std::time::Duration::from_millis(sh.ms.max(1) as u64);
+    let anim = match sh.playback {
+        Playback::Loop => gpui::Animation::new(dur).repeat(),
+        Playback::Once => gpui::Animation::new(dur),
+        Playback::Stopped => {
+            gpui::Animation::new(std::time::Duration::from_millis(1)).with_easing(|_| 0.35)
+        }
+    };
+    let shape = shape.clone();
+    gpui::div()
+        .absolute()
+        .top_0()
+        .left_0()
+        .size_full()
+        .with_animation("shimmer", anim, move |el, delta| {
+            let w = 0.4;
+            el.child(shimmer_band(
+                shape.clone(),
+                -w + delta * (1.0 + w),
+                w,
+                sh.color,
+            ))
+        })
+}
+
+/// Local `(x, y)` points offset by the origin `o`, as gpui points.
+pub fn pts(o: gpui::Point<Pixels>, p: &[(f32, f32)]) -> Vec<gpui::Point<Pixels>> {
+    p.iter()
+        .map(|&(x, y)| point(o.x + px(x), o.y + px(y)))
+        .collect()
+}
+
+/// True when every coordinate is a real number. The tessellator asserts on
+/// NaN / ±inf, so hostile chart data must never reach it.
+pub fn finite(p: &[(f32, f32)]) -> bool {
+    p.iter().all(|&(x, y)| x.is_finite() && y.is_finite())
+}
+
+/// Stroke the polyline `p` (closed when `closed`) at `width` px, offset by `o`. Skipped when a
+/// coordinate is not finite.
+pub fn stroke(
+    w: &mut Window,
+    o: gpui::Point<Pixels>,
+    p: &[(f32, f32)],
+    width: f32,
+    c: Hsla,
+    closed: bool,
+) {
+    if !finite(p) || !width.is_finite() {
+        return;
+    }
+    let mut pb = PathBuilder::stroke(px(width));
+    pb.add_polygon(&pts(o, p), closed);
+    if let Ok(path) = pb.build() {
+        w.paint_path(path, c);
+    }
+}
+
+/// The box of a disc of radius `r` round `(cx, cy)`, offset by `o`; `None` when it is
+/// empty or not finite. Pure.
+fn disc_box(o: gpui::Point<Pixels>, (cx, cy): (f32, f32), r: f32) -> Option<Bounds<Pixels>> {
+    (cx.is_finite() && cy.is_finite() && r.is_finite() && r > 0.0).then(|| {
+        Bounds::new(
+            gpui::point(o.x + px(cx - r), o.y + px(cy - r)),
+            gpui::size(px(r * 2.0), px(r * 2.0)),
+        )
+    })
+}
+
+/// Fill the disc of radius `r` round `(cx, cy)`, offset by `o`. Drawn as a rounded quad: the
+/// GPU shades it as a distance field instead of rasterising a path over its whole box, so a
+/// face full of discs stays cheap, and the edge is smooth at any size.
+pub fn fill_circle(w: &mut Window, o: gpui::Point<Pixels>, centre: (f32, f32), r: f32, c: Hsla) {
+    if let Some(b) = disc_box(o, centre, r) {
+        w.paint_quad(gpui::fill(b, c).corner_radii(px(r)));
+    }
+}
+
+/// Stroke the circle of radius `r` round `(cx, cy)`, offset by `o`, `width` wide and centred
+/// on the circle. A bordered quad, as cheap as [`fill_circle`].
+pub fn stroke_circle(
+    w: &mut Window,
+    o: gpui::Point<Pixels>,
+    centre: (f32, f32),
+    r: f32,
+    width: f32,
+    c: Hsla,
+) {
+    if !width.is_finite() || width <= 0.0 {
+        return;
+    }
+    let outer = r + width / 2.0;
+    if let Some(b) = disc_box(o, centre, outer) {
+        w.paint_quad(gpui::quad(
+            b,
+            px(outer),
+            scale_alpha(c, 0.0),
+            px(width.min(outer)),
+            c,
+            gpui::BorderStyle::Solid,
+        ));
+    }
+}
+
+/// The box `(x, y, w, h)` offset by `o`; `None` when it is empty or not finite. Pure.
+fn rect_box(o: gpui::Point<Pixels>, (x, y, wd, h): (f32, f32, f32, f32)) -> Option<Bounds<Pixels>> {
+    ([x, y, wd, h].iter().all(|v| v.is_finite()) && wd > 0.0 && h > 0.0).then(|| {
+        Bounds::new(
+            gpui::point(o.x + px(x), o.y + px(y)),
+            gpui::size(px(wd), px(h)),
+        )
+    })
+}
+
+/// Fill the box `(x, y, w, h)`, offset by `o`, with corners rounded to `r` (0 for square
+/// ones). A quad, like [`fill_circle`].
+pub fn fill_rect(w: &mut Window, o: gpui::Point<Pixels>, b: (f32, f32, f32, f32), r: f32, c: Hsla) {
+    if let Some(bounds) = rect_box(o, b) {
+        let r = r.clamp(0.0, b.2.min(b.3) / 2.0);
+        w.paint_quad(gpui::fill(bounds, c).corner_radii(px(r)));
+    }
+}
+
+/// Stroke the outline of the box `(x, y, w, h)`, offset by `o`, `width` wide and centred on
+/// it, with corners rounded to `r`. A bordered quad, like [`stroke_circle`].
+pub fn stroke_rect(
+    w: &mut Window,
+    o: gpui::Point<Pixels>,
+    (x, y, wd, h): (f32, f32, f32, f32),
+    r: f32,
+    width: f32,
+    c: Hsla,
+) {
+    if !width.is_finite() || width <= 0.0 {
+        return;
+    }
+    let half = width / 2.0;
+    let b = (x - half, y - half, wd + width, h + width);
+    if let Some(bounds) = rect_box(o, b) {
+        let r = r.clamp(0.0, wd.min(h) / 2.0) + half;
+        w.paint_quad(gpui::quad(
+            bounds,
+            px(r),
+            scale_alpha(c, 0.0),
+            px(width),
+            c,
+            gpui::BorderStyle::Solid,
+        ));
+    }
+}
+
+/// Fill the polygon `p`, offset by `o`. Skipped when a coordinate is not finite.
+pub fn fill(w: &mut Window, o: gpui::Point<Pixels>, p: &[(f32, f32)], c: Hsla) {
+    if !finite(p) {
+        return;
+    }
+    let mut pb = PathBuilder::fill();
+    pb.add_polygon(&pts(o, p), true);
+    if let Ok(path) = pb.build() {
+        w.paint_path(path, c);
+    }
+}
+
+/// Fill many polygons with one colour in a single path (one tessellation and
+/// one draw call instead of one per polygon).
+pub fn fill_batch(w: &mut Window, o: gpui::Point<Pixels>, polys: &[Vec<(f32, f32)>], c: Hsla) {
+    if polys.is_empty() {
+        return;
+    }
+    let mut pb = PathBuilder::fill();
+    for p in polys.iter().filter(|p| finite(p)) {
+        pb.add_polygon(&pts(o, p), true);
+    }
+    if let Ok(path) = pb.build() {
+        w.paint_path(path, c);
+    }
+}
+
+/// Stroke many polylines with one colour and width in a single path.
+pub fn stroke_batch(
+    w: &mut Window,
+    o: gpui::Point<Pixels>,
+    polys: &[Vec<(f32, f32)>],
+    width: f32,
+    c: Hsla,
+    closed: bool,
+) {
+    if polys.is_empty() {
+        return;
+    }
+    if !width.is_finite() {
+        return;
+    }
+    let mut pb = PathBuilder::stroke(px(width));
+    for p in polys.iter().filter(|p| finite(p)) {
+        pb.add_polygon(&pts(o, p), closed);
+    }
+    if let Ok(path) = pb.build() {
+        w.paint_path(path, c);
+    }
+}
+
+/// How a loading indicator plays.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Playback {
+    /// Repeat forever (default).
+    #[default]
+    Loop,
+    /// Run one cycle, then rest at its end.
+    Once,
+    /// Static, mid-cycle frame; no animation.
+    Stopped,
+}
+
+/// The design's dark fade for text laid over media: `height` px tall, strongest at the bottom
+/// edge. Built from [`Theme::fade_stops`] as stacked two-stop gradients.
+#[cfg(feature = "components")]
+pub(crate) fn fade_overlay(theme: &Theme, height: f32) -> gpui::Div {
+    use gpui::{linear_color_stop, linear_gradient, relative};
+    let base = hsla(theme.palette.roles.shadow);
+    let at = |a: f32| Hsla { a, ..base };
+    let stops = theme.fade_stops();
+    let mut d = gpui::div()
+        .absolute()
+        .left_0()
+        .right_0()
+        .bottom_0()
+        .h(px(height))
+        .flex()
+        .flex_col();
+    // Top to bottom: the far edge (position 1) first.
+    for w in stops.windows(2).rev() {
+        let (lo, hi) = (w[0], w[1]);
+        let frac = (hi.at - lo.at).max(0.0);
+        d = d.child(gpui::div().w_full().h(relative(frac)).bg(linear_gradient(
+            180.0,
+            linear_color_stop(at(hi.alpha), 0.0),
+            linear_color_stop(at(lo.alpha), 1.0),
+        )));
+    }
+    d
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[cfg(feature = "frost")]
+    fn a_floating_surface_keeps_its_fill_mostly_opaque_under_glass() {
+        let t = dodai_core::themes::cyberpunk::yellow();
+        crate::surface_fx::set_for_test(dodai_core::ResolvedSurface {
+            frost: 1.0,
+            targets: dodai_core::SurfaceTargets::ALL,
+            ..dodai_core::ResolvedSurface::NONE
+        });
+        let base = ShapeStyle::from_tokens(&t, Some(t.palette.surface), None, false, false);
+        let flat = base.with_surface(&t, dodai_core::SurfaceClass::Panel);
+        let float = base.with_floating_surface(&t, dodai_core::SurfaceClass::Panel);
+        crate::surface_fx::set_for_test(dodai_core::ResolvedSurface::NONE);
+        assert!(flat.frost.is_some() && float.frost.is_some());
+        assert!(float.fill.unwrap().a >= flat.fill.unwrap().a);
+        assert!(float.fill.unwrap().a >= FLOATING_ALPHA - 1e-4);
+    }
+
+    #[test]
+    fn circle_and_rect_boxes_are_offset_and_skip_empty_or_broken_shapes() {
+        let o = gpui::point(px(10.0), px(20.0));
+        let b = disc_box(o, (5.0, 5.0), 3.0).unwrap();
+        assert_eq!(
+            (b.origin.x, b.origin.y, b.size.width),
+            (px(12.0), px(22.0), px(6.0))
+        );
+        assert!(disc_box(o, (5.0, 5.0), 0.0).is_none());
+        assert!(disc_box(o, (f32::NAN, 5.0), 3.0).is_none());
+        let r = rect_box(o, (1.0, 2.0, 30.0, 40.0)).unwrap();
+        assert_eq!((r.origin.x, r.size.height), (px(11.0), px(40.0)));
+        assert!(rect_box(o, (1.0, 2.0, 0.0, 40.0)).is_none());
+        assert!(rect_box(o, (1.0, 2.0, f32::INFINITY, 40.0)).is_none());
+    }
+
+    #[test]
+    fn top_and_bottom_slots_cut_the_middle_of_the_edge() {
+        let rect = [(0.0, 0.0), (100.0, 0.0), (100.0, 40.0), (0.0, 40.0)];
+        let top = on_edge(&rect, ShapeEdge::Top, 100.0, 40.0, |p, r, mid| {
+            notch_at_edge(p, r, mid, 10.0, 4.0)
+        })
+        .unwrap();
+        assert!(top.contains(&(40.0, 4.0)) && top.contains(&(60.0, 4.0)));
+        assert!(top.iter().all(|p| p.1 <= 40.0));
+        let bottom = on_edge(&rect, ShapeEdge::Bottom, 100.0, 40.0, |p, r, mid| {
+            notch_at_edge(p, r, mid, 10.0, 4.0)
+        })
+        .unwrap();
+        assert!(bottom.contains(&(40.0, 36.0)) && bottom.contains(&(60.0, 36.0)));
+    }
+
+    #[test]
+    fn bottom_band_stops_at_cut_corner() {
+        let mut sh = dodai_core::themes::cyberpunk::yellow().shape;
+        sh.chamfer = 10.0;
+        sh.corners = dodai_core::Corners::BOTTOM_RIGHT;
+        let b = bottom_band(&sh, 100.0, 40.0, 2.0);
+        assert_eq!(b[0], (0.0, 38.0));
+        assert!(b[2].0 < 91.0, "bottom-right edge must be cut: {:?}", b[2]);
+        assert_eq!(b[3], (0.0, 40.0));
+    }
+
+    use crate::testing::{light_rounded, square};
+    use dodai_core::themes;
+
+    #[test]
+    fn glow_layers_are_ordered_and_bounded() {
+        let l = glow_layers(12.0, 2.0);
+        assert!(l.len() >= 2);
+        assert!(l.windows(2).all(|w| w[0].width > w[1].width));
+        let total: f32 = l.iter().map(|x| x.alpha).sum();
+        assert!((total - 0.6).abs() < 1e-5);
+        assert!(glow_layers(0.0, 2.0).is_empty());
+    }
+
+    #[test]
+    fn style_glow_follows_intensity_not_id() {
+        let t = themes::cyberpunk::yellow();
+        let on = ShapeStyle::from_tokens(&t, None, None, true, false);
+        assert!(on.glow.is_some());
+        let off =
+            ShapeStyle::from_tokens(&t.clone().with_glow_intensity(0.0), None, None, true, false);
+        assert!(off.glow.is_none());
+        let (_, r1) = on.glow.unwrap();
+        let hi = ShapeStyle::from_tokens(&t.with_glow_intensity(2.0), None, None, true, false);
+        assert!(hi.glow.unwrap().1 > r1);
+    }
+
+    #[test]
+    fn rounded_and_square_follow_effect_tokens() {
+        let l = light_rounded();
+        let s = ShapeStyle::from_tokens(&l, Some(l.palette.surface), None, true, true);
+        assert!(s.glow.is_none() && s.shadow.is_none());
+        let q = square();
+        let s = ShapeStyle::from_tokens(&q, None, Some(q.palette.border), true, true);
+        assert!(s.glow.is_none());
+        assert_eq!(s.shadow.map(|x| x.1), Some(3.0));
+        assert_eq!(s.stroke_width, 2.0);
+    }
+
+    #[test]
+    fn inset_outline_stays_inside() {
+        for t in themes::all() {
+            let pts = inset_outline(&t.shape, 100.0, 40.0, 1.0);
+            assert!(pts
+                .iter()
+                .all(|&(x, y)| (1.0..=99.0).contains(&x) && (1.0..=39.0).contains(&y)));
+        }
+    }
+
+    #[test]
+    fn polygon_vertex_count_per_kind() {
+        let n = |t: &dodai_core::Theme| t.shape.outline(80.0, 40.0).len();
+        assert_eq!(n(&light_rounded()), 4);
+        assert_eq!(n(&square()), 4);
+        assert!(n(&themes::cyberpunk::yellow()) > 4);
+    }
+
+    #[test]
+    fn scaled_shape_caps_radius() {
+        let l = light_rounded();
+        assert_eq!(scaled_shape(&l.shape, 16.0).radius, 4.0);
+        assert_eq!(scaled_shape(&l.shape, 100.0).radius, l.shape.radius);
+    }
+
+    #[test]
+    fn round_shape_only_changes_rounded() {
+        let l = light_rounded();
+        assert_eq!(round_shape(&l.shape, 20.0).radius, 10.0);
+        let q = square();
+        assert_eq!(round_shape(&q.shape, 20.0), q.shape);
+    }
+
+    #[test]
+    fn row_span_follows_shape() {
+        let mut sh = dodai_core::themes::cyberpunk::yellow().shape;
+        sh.chamfer = 10.0;
+        sh.radius = 0.0;
+        sh.corners = dodai_core::Corners::BOTTOM_RIGHT;
+        assert_eq!(sh.kind(), ShapeKind::Chamfered);
+        assert_eq!(row_span(&sh, 100.0, 40.0, 5.0), Some((0.0, 100.0)));
+        let (_, x1) = row_span(&sh, 100.0, 40.0, 39.0).unwrap();
+        assert!(x1 < 95.0, "cut corner narrows the last row, got {x1}");
+        assert_eq!(row_span(&sh, 100.0, 40.0, 41.0), None);
+        let mut r = crate::testing::light_rounded().shape;
+        r.radius = 8.0;
+        r.chamfer = 0.0;
+        let (x0, _) = row_span(&r, 100.0, 40.0, 1.0).unwrap();
+        assert!(x0 > 1.0);
+        assert_eq!(row_span(&r, 100.0, 40.0, 20.0), Some((0.0, 100.0)));
+    }
+}

@@ -1,0 +1,28 @@
+[package]
+name                   = "dodai-frost"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version = "1.87" # wgpu 30
+description            = "Frosted glass on plain RGBA8 pixels: blur, tint, saturation and edge. GPU first (wgpu, feature `gpu`), CPU fallback, byte-identical output. No toolkit, no theme."
+readme                 = "README.md"
+keywords               = ["blur", "frosted-glass", "glass", "wgpu", "ui"]
+categories             = ["graphics", "gui"]
+
+[package.metadata.docs.rs]
+features = ["gpu"]
+
+[features]
+default = []
+# The blur on the GPU (wgpu); `Blurrer` falls back to the CPU without a real adapter.
+gpu = ["dep:wgpu", "dep:pollster"]
+
+[dependencies]
+wgpu     = { version = "30.0.2", optional = true, default-features = false, features = ["std", "parking_lot", "wgsl", "metal", "vulkan", "dx12"] }
+pollster = { version = "1", optional = true }
+
+[[example]]
+name = "frost_bench"
+required-features = ["gpu"]

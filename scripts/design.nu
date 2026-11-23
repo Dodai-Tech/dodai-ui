@@ -7,7 +7,7 @@
 #   nu scripts/design.nu verify    fail when the built .fig does not carry exactly the token variables
 #   nu scripts/design.nu check     fail when dist/design/components.json is stale (CI)
 #
-# Tokens come from `cargo run -p dodai-ui-topcoat --example export -- dist` (dist/design/<system>/<theme>.tokens.json):
+# Tokens come from `cargo run -p dodai-topcoat --example export -- dist` (dist/design/<system>/<theme>.tokens.json):
 # a folder is a variable collection, a file a mode. Needs bun for `build` (runs `@open-pencil/cli`).
 
 use lib/parity.nu [component-matrix, toolkits]
@@ -84,14 +84,14 @@ def table-md [group: record]: nothing -> string {
 
 # component name -> gpui source file (the reference implementation), one scan for all.
 def gpui-sources []: nothing -> record {
-    ^rg -o --no-heading --no-line-number '^pub (struct|enum|fn|type) [A-Z][A-Za-z0-9]*' crates/dodai-ui-gpui/src | lines
+    ^rg -o --no-heading --no-line-number '^pub (struct|enum|fn|type) [A-Z][A-Za-z0-9]*' crates/dodai-gpui/src | lines
         | each { |l| let p = ($l | parse -r '^(?<file>[^:]+):pub \w+ (?<name>\w+)$'); if ($p | is-empty) { null } else { $p | first } }
         | compact | reduce --fold {} { |r, acc| if ($acc | get -o $r.name | is-empty) { $acc | insert $r.name $r.file } else { $acc } }
 }
 
 # Every chart of the gpui chart set (a `#[derive(IntoElement)]` struct), with its summary and source.
 def gpui-charts []: nothing -> list<record> {
-    glob crates/dodai-ui-charts/src/gpui/*.rs | sort | each { |f|
+    glob crates/dodai-charts/src/gpui/*.rs | sort | each { |f|
         let rel = ($f | path relative-to (pwd))
         open --raw $f | parse --regex '(?<doc>(?:/// [^\n]*\n)+)#\[derive\([^)]*IntoElement[^)]*\)\]\npub struct (?<name>\w+)'
             | each { |m| { name: $m.name, file: $rel, doc: ($m.doc | lines | first | str replace '/// ' '') } }

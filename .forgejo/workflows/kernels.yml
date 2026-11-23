@@ -7,9 +7,9 @@ on:
   push:
     branches: [main]
     paths:
-      - "crates/dodai-ui-shaders/src/shaders/**"
+      - "crates/dodai-shaders/src/shaders/**"
       - "tools/shaders-kernels/**"
-      - "crates/dodai-ui-shaders/kernels.wgsl"
+      - "crates/dodai-shaders/kernels.wgsl"
       - "scripts/gen-kernels.nu"
       - ".github/workflows/kernels.yml"
   schedule:
@@ -38,13 +38,13 @@ jobs:
           nu scripts/gen-kernels.nu
           cd tools/shaders-kernels
           cargo gpu build --shader-crate . --output-dir ../../target/kernels --auto-install-rust-toolchain --target spirv-unknown-naga-wgsl
-          cp ../../target/kernels/dodai_shaders_kernels.wgsl ../../crates/dodai-ui-shaders/kernels.wgsl
+          cp ../../target/kernels/dodai_shaders_kernels.wgsl ../../crates/dodai-shaders/kernels.wgsl
       - name: Fail if kernels.wgsl changed
         # The SSA temporaries (`phi_NNNN_`) are numbered differently between rust-gpu builds;
         # only a real change to the code counts.
         run: |
           git diff --exit-code -- tools/shaders-kernels/src/entries.rs
           norm() { sed -E 's/phi_[0-9]+_/phi_N_/g'; }
-          git show HEAD:crates/dodai-ui-shaders/kernels.wgsl | norm > /tmp/kernels.committed
-          norm < crates/dodai-ui-shaders/kernels.wgsl > /tmp/kernels.built
+          git show HEAD:crates/dodai-shaders/kernels.wgsl | norm > /tmp/kernels.committed
+          norm < crates/dodai-shaders/kernels.wgsl > /tmp/kernels.built
           diff -u /tmp/kernels.committed /tmp/kernels.built

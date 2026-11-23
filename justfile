@@ -26,78 +26,78 @@ install-tools:
 # ── Build ─────────────────────────────────────────────────────────────────────
 
 # Build the whole workspace (dev). Per-crate: `cargo build --workspace` cannot unify
-# iced's naga 27 with gpui's naga 25 (see dodai-ui-iced dev-dependencies).
+# iced's naga 27 with gpui's naga 25 (see dodai-iced dev-dependencies).
 build:
-    for c in dodai-ui-core dodai-ui-charts dodai-ui-ratatui dodai-ui-iced dodai-ui-gpui dodai-ui-topcoat; do cargo build -p $c || exit 1; done
+    for c in dodai-core dodai-charts dodai-ratatui dodai-iced dodai-gpui dodai-topcoat; do cargo build -p $c || exit 1; done
 
 build-core:
-    cargo build -p dodai-ui-core
+    cargo build -p dodai-core
 
 build-shaders:
-    cargo build -p dodai-ui-shaders
+    cargo build -p dodai-shaders
 
 # Regenerate the GPU kernels (rust-gpu → WGSL). First run installs the pinned
 # nightly and builds the codegen backend (~5 min): `cargo install cargo-gpu`.
 build-kernels:
     nu scripts/gen-kernels.nu
     cd tools/shaders-kernels && cargo gpu build --shader-crate . --output-dir ../../target/kernels --auto-install-rust-toolchain --target spirv-unknown-naga-wgsl
-    cp target/kernels/dodai_shaders_kernels.wgsl crates/dodai-ui-shaders/kernels.wgsl
+    cp target/kernels/dodai_shaders_kernels.wgsl crates/dodai-shaders/kernels.wgsl
 
 # Render every shader to PPM files (GPU): just dump-shaders /tmp/dump 2.0
 dump-shaders dir="shader-dump" t="1.5":
-    cargo run --release -p dodai-ui-shaders --example dump -- {{dir}} {{t}}
+    cargo run --release -p dodai-shaders --example dump -- {{dir}} {{t}}
 
 build-charts:
-    cargo build -p dodai-ui-charts
+    cargo build -p dodai-charts
 
 build-ratatui:
-    cargo build -p dodai-ui-ratatui
+    cargo build -p dodai-ratatui
 
 build-iced:
-    cargo build -p dodai-ui-iced
+    cargo build -p dodai-iced
 
 build-gpui:
-    cargo build -p dodai-ui-gpui
+    cargo build -p dodai-gpui
 
 build-topcoat:
-    cargo build -p dodai-ui-topcoat
+    cargo build -p dodai-topcoat
 
 build-release:
-    for c in dodai-ui-core dodai-ui-charts dodai-ui-ratatui dodai-ui-iced dodai-ui-gpui dodai-ui-topcoat; do cargo build --release -p $c || exit 1; done
+    for c in dodai-core dodai-charts dodai-ratatui dodai-iced dodai-gpui dodai-topcoat; do cargo build --release -p $c || exit 1; done
 
 # ── Run the showcases ─────────────────────────────────────────────────────────
 
 # Ratatui showcase (t = next theme)
 run-ratatui:
-    cargo run -p dodai-ui-ratatui --example ratatui_showcase
+    cargo run -p dodai-ratatui --example ratatui_showcase
 
 # Iced showcase
 run-iced:
-    cargo run -p dodai-ui-iced --example iced_showcase
+    cargo run -p dodai-iced --example iced_showcase
 
 # Bevy showcase (the same pages as the gpui one)
 run-bevy:
-    cargo run -p dodai-ui-bevy --example bevy_showcase
+    cargo run -p dodai-bevy --example bevy_showcase
 
 # Dioxus showcase, served at http://127.0.0.1:3030
 run-dioxus:
-    cargo run -p dodai-ui-dioxus --example dioxus_showcase
+    cargo run -p dodai-dioxus --example dioxus_showcase
 
 # Topcoat showcase (server-rendered HTML), served at http://127.0.0.1:3031
 run-topcoat-live:
-    cargo run -p dodai-ui-topcoat --example topcoat_showcase
+    cargo run -p dodai-topcoat --example topcoat_showcase
 
 # GPUI showcase
 run-gpui:
-    cargo run -p dodai-ui-showcase
+    cargo run -p dodai-showcase
 
-# Regenerate every app icon asset from assets/icons/dodai-ui.svg
+# Regenerate every app icon asset from assets/icons/dodai.svg
 icons:
-    nu scripts/icons.nu --id dodai-ui --gui-assets crates/dodai-ui-showcase/assets
+    nu scripts/icons.nu --id dodai --gui-assets crates/dodai-showcase/assets
 
 # Write the web showcase to showcase.html and open it (macOS `open`, Linux `xdg-open`)
 run-topcoat:
-    cargo run -q -p dodai-ui-topcoat --example html > showcase.html
+    cargo run -q -p dodai-topcoat --example html > showcase.html
     @(command -v open >/dev/null && open showcase.html) || (command -v xdg-open >/dev/null && xdg-open showcase.html) || echo "Wrote showcase.html"
 
 # ── Test ──────────────────────────────────────────────────────────────────────
@@ -107,53 +107,53 @@ test:
     cargo test --workspace --locked --doc
 
 test-core:
-    cargo test -p dodai-ui-core --all-features
+    cargo test -p dodai-core --all-features
 
 test-charts:
-    cargo test -p dodai-ui-charts
+    cargo test -p dodai-charts
 
 # The dashboard engine, with its JSON Schema feature.
 test-dash:
-    cargo test -p dodai-ui-dash --all-features
+    cargo test -p dodai-dash --all-features
 
 # gpui feature slices must each compile on their own
 check-gpui-features:
-    cargo check -p dodai-ui-charts --features gpui,material
-    cargo check -p dodai-ui-gpui --no-default-features --features components
-    cargo check -p dodai-ui-gpui --no-default-features --features frost
-    cargo check -p dodai-ui-gpui --no-default-features
-    cargo check -p dodai-ui-gpui --no-default-features --features cyberpunk
-    cargo check -p dodai-ui-gpui --no-default-features --features material
-    cargo check -p dodai-ui-gpui --no-default-features --features components,cyberpunk
-    cargo check -p dodai-ui-gpui --no-default-features --features components,material
-    cargo check -p dodai-ui-icons --no-default-features
-    cargo check -p dodai-ui-icons --no-default-features --features theme
-    cargo check -p dodai-ui-icons --no-default-features --features cyberpunk
-    cargo check -p dodai-ui-icons --no-default-features --features material
-    cargo check -p dodai-ui-icons --no-default-features --features cyberpunk,neobrutalism
-    cargo check -p dodai-ui-icons --no-default-features --features symbols-vehicle
-    cargo check -p dodai-ui-icons --no-default-features --features symbols-medical
-    cargo check -p dodai-ui-icons --no-default-features --features symbols-military
-    cargo check -p dodai-ui-icons --no-default-features --features symbols-industrial
-    cargo check -p dodai-ui-icons --no-default-features --features symbols-aviation
-    cargo check -p dodai-ui-icons --no-default-features --features symbols
-    cargo check -p dodai-ui-gpui --no-default-features --features symbols-medical
-    cargo check -p dodai-ui-core --features cyberpunk
-    cargo check -p dodai-ui-core --features material
-    cargo check -p dodai-ui-core --features neobrutalism
-    cargo check -p dodai-ui-core --features dodai
+    cargo check -p dodai-charts --features gpui,material
+    cargo check -p dodai-gpui --no-default-features --features components
+    cargo check -p dodai-gpui --no-default-features --features frost
+    cargo check -p dodai-gpui --no-default-features
+    cargo check -p dodai-gpui --no-default-features --features cyberpunk
+    cargo check -p dodai-gpui --no-default-features --features material
+    cargo check -p dodai-gpui --no-default-features --features components,cyberpunk
+    cargo check -p dodai-gpui --no-default-features --features components,material
+    cargo check -p dodai-icons --no-default-features
+    cargo check -p dodai-icons --no-default-features --features theme
+    cargo check -p dodai-icons --no-default-features --features cyberpunk
+    cargo check -p dodai-icons --no-default-features --features material
+    cargo check -p dodai-icons --no-default-features --features cyberpunk,neobrutalism
+    cargo check -p dodai-icons --no-default-features --features symbols-vehicle
+    cargo check -p dodai-icons --no-default-features --features symbols-medical
+    cargo check -p dodai-icons --no-default-features --features symbols-military
+    cargo check -p dodai-icons --no-default-features --features symbols-industrial
+    cargo check -p dodai-icons --no-default-features --features symbols-aviation
+    cargo check -p dodai-icons --no-default-features --features symbols
+    cargo check -p dodai-gpui --no-default-features --features symbols-medical
+    cargo check -p dodai-core --features cyberpunk
+    cargo check -p dodai-core --features material
+    cargo check -p dodai-core --features neobrutalism
+    cargo check -p dodai-core --features dodai
 
 test-ratatui:
-    cargo test -p dodai-ui-ratatui
+    cargo test -p dodai-ratatui
 
 test-iced:
-    cargo test -p dodai-ui-iced
+    cargo test -p dodai-iced
 
 test-gpui:
-    cargo test -p dodai-ui-gpui
+    cargo test -p dodai-gpui
 
 test-topcoat:
-    cargo test -p dodai-ui-topcoat
+    cargo test -p dodai-topcoat
 
 # Run Nu script tests
 test-nu: _check-nu
@@ -169,13 +169,13 @@ check:
 
 fmt:
     cargo fmt --all
-    cd crates/dodai-ui-freya && cargo fmt
-    cd crates/dodai-ui-xilem && cargo fmt
+    cd crates/dodai-freya && cargo fmt
+    cd crates/dodai-xilem && cargo fmt
 
 fmt-check:
     cargo fmt --all -- --check
-    cd crates/dodai-ui-freya && cargo fmt --check
-    cd crates/dodai-ui-xilem && cargo fmt --check
+    cd crates/dodai-freya && cargo fmt --check
+    cd crates/dodai-xilem && cargo fmt --check
 
 clippy:
     cargo clippy --workspace --all-targets -- -D warnings
@@ -187,15 +187,15 @@ check-all: fmt clippy test test-nu
 
 # freya is its own workspace (own Skia, own lock): not covered by the workspace recipes
 check-freya:
-    cd crates/dodai-ui-freya && cargo fmt --check
-    cd crates/dodai-ui-freya && cargo clippy --locked --all-targets -- -D warnings
-    cd crates/dodai-ui-freya && cargo test --locked
+    cd crates/dodai-freya && cargo fmt --check
+    cd crates/dodai-freya && cargo clippy --locked --all-targets -- -D warnings
+    cd crates/dodai-freya && cargo test --locked
 
 # xilem is its own workspace (naga 26 clashes with gpui and iced when unified)
 check-xilem:
-    cd crates/dodai-ui-xilem && cargo fmt --check
-    cd crates/dodai-ui-xilem && cargo clippy --locked --all-targets -- -D warnings
-    cd crates/dodai-ui-xilem && cargo test --locked
+    cd crates/dodai-xilem && cargo fmt --check
+    cd crates/dodai-xilem && cargo clippy --locked --all-targets -- -D warnings
+    cd crates/dodai-xilem && cargo test --locked
 
 # The fuzz crate is outside the workspace; it must still compile after public struct changes
 check-fuzz:
@@ -254,15 +254,15 @@ publish-dry: _check-nu
 
 # Publish charts
 publish-charts: check-all
-    cargo publish -p dodai-ui-charts
+    cargo publish -p dodai-charts
 
 # Dry-run charts
 publish-charts-dry: check-all
-    cargo publish --dry-run -p dodai-ui-charts
+    cargo publish --dry-run -p dodai-charts
 
 # Line coverage (needs cargo-llvm-cov); writes target/llvm-cov/html
 coverage:
-    cargo llvm-cov --workspace --exclude dodai-ui-bevy --html
+    cargo llvm-cov --workspace --exclude dodai-bevy --html
     @echo "→ target/llvm-cov/html/index.html"
 
 # Run the dependency update workflow on GitHub on demand (needs gh)
@@ -522,7 +522,7 @@ fuzz-smoke secs="10":
 
 # Regenerate dist/: W3C design tokens (JSON), CSS custom properties and the SVG icon pack.
 export:
-    cargo run -q -p dodai-ui-topcoat --example export -- dist
+    cargo run -q -p dodai-topcoat --example export -- dist
 
 # ── More remote recipes: tags per remote, force pulls, Gitea setup, first release ─────────
 
@@ -632,9 +632,9 @@ _release-initial remotes:
 
 # Regenerate the design-tool files: tokens, component catalog, and the OpenPencil/Figma .fig.
 design:
-    cargo run -q -p dodai-ui-topcoat --example export -- dist
+    cargo run -q -p dodai-topcoat --example export -- dist
     rm -rf crates/dist
-    cargo run -q -p dodai-ui-showcase-model --example plots -- dist/plots
+    cargo run -q -p dodai-showcase-model --example plots -- dist/plots
     nu scripts/design.nu catalog
     nu scripts/design.nu build
     nu scripts/design.nu spec

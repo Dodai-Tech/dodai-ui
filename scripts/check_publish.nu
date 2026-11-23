@@ -21,7 +21,7 @@ def main [] {
     for c in (publish-order) {
         run $"doc ($c)" { cargo doc -p $c --no-deps }
     }
-    run "publish dry-run dodai-ui-core" { cargo publish --dry-run --allow-dirty -p dodai-ui-core }
+    run "publish dry-run dodai-core" { cargo publish --dry-run --allow-dirty -p dodai-core }
     for c in (publish-order) {
         run $"check ($c)" { cargo check -p $c }
     }

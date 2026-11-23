@@ -1,0 +1,61 @@
+[package]
+name         = "dodai-icons"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+description  = "Every Dodai icon in one crate: the typed IconId vocabulary, the Material Symbols catalogue, the Cyberpunk polyline pack and Phosphor-derived sets, resolved per design into toolkit-neutral glyphs (SVG and coverage-mask export). Features select the packs."
+readme       = "README.md"
+keywords     = ["icons", "material-symbols", "svg", "ui", "design-system"]
+categories   = ["gui", "graphics"]
+
+[package.metadata.docs.rs]
+all-features = true
+
+[features]
+default = ["theme", "cyberpunk", "material", "neobrutalism", "symbols"]
+## Cyberpunk's hand-drawn, curve-free pack: `dodai_icons::cyberpunk` (names, geometry, SVG) and
+## the pack its design draws. Without it, that design draws the shared set, faceted.
+cyberpunk = []
+## The Material Symbols catalogue (outlined) in `dodai_icons::material`, and the pack Material draws.
+material = []
+## The rounded and sharp Material Symbols styles.
+material-rounded = []
+material-sharp = []
+## Neo-Brutalism's bold pack.
+neobrutalism = []
+## Original dashboard symbols (`dodai_icons::symbol`), one feature per group; `symbols` is all five.
+symbols = ["symbols-vehicle", "symbols-medical", "symbols-military", "symbols-industrial", "symbols-aviation"]
+## Dashboard telltales and cluster symbols.
+symbols-vehicle = []
+## Patient-monitor symbols.
+symbols-medical = []
+## Tactical and defense symbols.
+symbols-military = []
+## Process-plant and machine symbols.
+symbols-industrial = []
+## Flight-deck symbols.
+symbols-aviation = []
+## Pick the pack from a Dodai theme (`glyph_for`, `glyph_for_theme`, `Pack: From<IconSet>`).
+## Without it the crate has no dependencies.
+theme = ["dep:dodai-core"]
+
+[dependencies]
+dodai-core = { workspace = true, optional = true }
+
+[[example]]
+name = "symbol_sheet"
+required-features = ["symbols"]
+
+[[example]]
+name = "material_facets"
+required-features = ["material"]
+
+[[example]]
+name = "cyberpunk_sheet"
+required-features = ["cyberpunk"]
+
+[dev-dependencies]
+dodai-core = { workspace = true, features = ["cyberpunk", "material", "neobrutalism", "dodai"] }

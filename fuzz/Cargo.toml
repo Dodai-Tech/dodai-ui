@@ -1,5 +1,5 @@
 [package]
-name = "dodai-ui-fuzz"
+name = "dodai-fuzz"
 version = "0.0.0"
 publish = false
 edition = "2021"
@@ -9,9 +9,9 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4"
-dodai-ui-core = { path = "../crates/dodai-ui-core", features = ["cyberpunk", "material", "neobrutalism", "dodai"] }
-dodai-ui-charts = { path = "../crates/dodai-ui-charts" }
-dodai-ui-icons = { path = "../crates/dodai-ui-icons", features = ["cyberpunk", "material"] }
+dodai-core = { path = "../crates/dodai-core", features = ["cyberpunk", "material", "neobrutalism", "dodai"] }
+dodai-charts = { path = "../crates/dodai-charts" }
+dodai-icons = { path = "../crates/dodai-icons", features = ["cyberpunk", "material"] }
 
 # Not part of the main workspace (needs nightly).
 [workspace]

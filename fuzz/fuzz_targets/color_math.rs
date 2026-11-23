@@ -1,5 +1,5 @@
 #![no_main]
-use dodai_ui_core::{Color, TonalPalette};
+use dodai_core::{Color, TonalPalette};
 use libfuzzer_sys::fuzz_target;
 
 // Colour maths and tonal palettes accept any channel and float values.

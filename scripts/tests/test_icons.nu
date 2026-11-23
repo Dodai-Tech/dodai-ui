@@ -23,7 +23,7 @@ def "test icons: icns file wraps entries" [] {
 }
 
 def "test icons: id from a lone master" [] {
-    assert equal (detect-id ["assets/icons/dodai-ui.svg"]) "dodai-ui"
+    assert equal (detect-id ["assets/icons/dodai.svg"]) "dodai"
     assert equal (detect-id []) null
     assert equal (detect-id ["a.svg" "b.svg"]) null
 }
@@ -34,10 +34,10 @@ def "test icons: gui assets dir falls back" [] {
 }
 
 def "test icons: outputs name every asset" [] {
-    let out = outputs "dodai-ui" "crates/dodai-ui-showcase/assets"
-    assert ("crates/dodai-ui-showcase/assets/dodai-ui-macos-512.png" in $out)
-    assert ("packaging/macos/dodai-ui.icns" in $out)
-    assert ("assets/icons/dodai-ui-16.png" in $out)
+    let out = outputs "dodai" "crates/dodai-showcase/assets"
+    assert ("crates/dodai-showcase/assets/dodai-macos-512.png" in $out)
+    assert ("packaging/macos/dodai.icns" in $out)
+    assert ("assets/icons/dodai-16.png" in $out)
 }
 
 def "test icons: rasteriser argv" [] {

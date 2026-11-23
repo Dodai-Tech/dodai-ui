@@ -1,0 +1,30 @@
+[package]
+name                   = "dodai-showcase"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+description            = "The gpui showcase of the Dodai design system: every component, chart and instrument under every design."
+publish                = false
+
+[[bin]]
+name = "gpui_showcase"
+path = "src/main.rs"
+
+[dependencies]
+dodai-core = { workspace = true, features = ["cyberpunk", "material", "neobrutalism", "dodai"] }
+dodai-gpui = { workspace = true, features = ["components", "cyberpunk", "material", "neobrutalism", "dodai", "symbol-groups"] }
+dodai-charts = { workspace = true, features = ["gpui"] }
+dodai-shaders = { workspace = true, features = ["gpui"] }
+dodai-icons = { workspace = true, features = ["theme", "cyberpunk", "material", "neobrutalism", "symbols"] }
+gpui = { workspace = true }
+
+[dev-dependencies]
+gpui = { workspace = true, features = ["test-support"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2            = { workspace = true }
+objc2-app-kit    = { workspace = true }
+objc2-foundation = { workspace = true }

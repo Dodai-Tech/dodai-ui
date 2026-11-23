@@ -250,198 +250,198 @@ Series colours are the `color/series/*` roles; plot sizes come from the `size/ch
 
 | chart | summary | gpui reference |
 | --- | --- | --- |
-| BarChart | Bar chart: vertical or horizontal, grouped or stacked. | `crates/dodai-ui-charts/src/gpui/bar.rs` |
-| BubbleTimeline | Bubble timeline: every event a bubble at its time, its area the event's size, piled up | `crates/dodai-ui-charts/src/gpui/bubble_timeline.rs` |
-| SplitFlow | Split flow: a quantity pouring down through levels. Every block is as wide as its amount | `crates/dodai-ui-charts/src/gpui/cascade.rs` |
-| Legend | Colour swatch + name row, shared by all multi-series charts. | `crates/dodai-ui-charts/src/gpui/common.rs` |
-| Bullet | Bullet graph: a value bar over qualitative range bands with a target tick. | `crates/dodai-ui-charts/src/gpui/compare.rs` |
-| PairedBars | Before/after bars per row. Each row is scaled to its own larger value, so | `crates/dodai-ui-charts/src/gpui/compare.rs` |
-| Lollipop | Stems with dots; with [`Lollipop::compare`] a dumbbell (two dots joined by | `crates/dodai-ui-charts/src/gpui/compare.rs` |
-| SlopeChart | Two-state slope chart: one line per item from its left to its right value, | `crates/dodai-ui-charts/src/gpui/compare.rs` |
-| Histogram | Histogram of raw values with equal-width bins. | `crates/dodai-ui-charts/src/gpui/distribution.rs` |
-| BoxPlot | Box-and-whisker plot from raw samples per category. | `crates/dodai-ui-charts/src/gpui/distribution.rs` |
-| Sankey | Flow diagram: nodes in columns joined by ribbons whose thickness is the | `crates/dodai-ui-charts/src/gpui/extra.rs` |
-| CalendarHeatmap | GitHub-style grid: one cell per day, weeks as columns, intensity in | `crates/dodai-ui-charts/src/gpui/extra.rs` |
-| ViolinChart | Mirrored density per group with an inner quartile box and median dot. | `crates/dodai-ui-charts/src/gpui/extra.rs` |
-| RoseChart | Polar-area ("Nightingale rose") chart: equal-angle wedges whose reach shows | `crates/dodai-ui-charts/src/gpui/extra.rs` |
-| SpanFan | Span fan: one spoke per item, fanned round an arc from a hub. A spoke's length is the | `crates/dodai-ui-charts/src/gpui/fan.rs` |
-| Funnel | Funnel of decreasing stages, drawn as joined trapezoids. | `crates/dodai-ui-charts/src/gpui/flow.rs` |
-| Waterfall | Waterfall of deltas; increases green, decreases red, optional total bar. | `crates/dodai-ui-charts/src/gpui/flow.rs` |
-| ScatterPlot | Scatter plot of `(x, y)` points per series, with hover tooltips. | `crates/dodai-ui-charts/src/gpui/grid.rs` |
-| Heatmap | Grid of cells coloured by value, with hover tooltips. | `crates/dodai-ui-charts/src/gpui/grid.rs` |
-| Sunburst | Sunburst: a hierarchy as nested rings. Each ring is one level; every node takes its share | `crates/dodai-ui-charts/src/gpui/hierarchy.rs` |
-| Icicle | Icicle: a hierarchy as stacked rows, the top row the first level, each node as wide as | `crates/dodai-ui-charts/src/gpui/hierarchy.rs` |
-| Waffle | Waffle: a grid of cells (10 × 10 by default, so one cell = 1 %), each coloured by the | `crates/dodai-ui-charts/src/gpui/hierarchy.rs` |
-| Marimekko | Marimekko (mosaic): a 100 % stacked bar chart whose bars are also as wide as their share | `crates/dodai-ui-charts/src/gpui/hierarchy.rs` |
-| KpiTile | A key figure: the label, the value (counting to it as it changes), the change since the | `crates/dodai-ui-charts/src/gpui/kpi.rs` |
-| BumpChart | Bump chart: every series' rank (1 = highest value) at each step, so overtakes read at a | `crates/dodai-ui-charts/src/gpui/layered.rs` |
-| RidgelineChart | Ridgeline: one smoothed distribution per group on a shared value axis, each row overlapping | `crates/dodai-ui-charts/src/gpui/layered.rs` |
-| HorizonChart | Horizon chart: each series in a short strip, its range folded into stacked bands (deeper | `crates/dodai-ui-charts/src/gpui/layered.rs` |
-| LineChart | Line / area chart with gridlines, axes, optional smoothing, point markers | `crates/dodai-ui-charts/src/gpui/line.rs` |
-| RenkoChart | Renko chart: fixed-size price bricks, time ignored. | `crates/dodai-ui-charts/src/gpui/market.rs` |
-| DepthChart | Order-book depth: cumulative bid (green) and ask (red) step areas. | `crates/dodai-ui-charts/src/gpui/market.rs` |
-| Gantt | Gantt timeline: one row per task, progress fill and dependency links. | `crates/dodai-ui-charts/src/gpui/market.rs` |
-| ChartStack | Vertical stack of chart panes sharing one total height, split by weight | `crates/dodai-ui-charts/src/gpui/market.rs` |
-| TimeScatter | Time scatter: labelled milestones at `(time, value)`. Options draw the record frontier (a | `crates/dodai-ui-charts/src/gpui/milestones.rs` |
-| ParallelCoordinates | Parallel coordinates: one vertical axis per measure, each item a line across them, so | `crates/dodai-ui-charts/src/gpui/network.rs` |
-| Hexbin | Hexbin: a scatter plot too dense for dots, binned into hexagons shaded by how many | `crates/dodai-ui-charts/src/gpui/network.rs` |
-| NetworkGraph | Network graph: nodes and links laid out by a force simulation (linked nodes pull | `crates/dodai-ui-charts/src/gpui/network.rs` |
-| ChordDiagram | Chord diagram: groups around a circle, ribbons for the flow between each pair (both | `crates/dodai-ui-charts/src/gpui/network.rs` |
-| ArcDiagram | Arc diagram: nodes in a row, each link an arc above them (thicker = heavier). Keeps the | `crates/dodai-ui-charts/src/gpui/network.rs` |
-| ProportionalSquares | One square per item, its area proportional to the value, packed largest first: sizes that | `crates/dodai-ui-charts/src/gpui/packed.rs` |
-| CirclePack | A hierarchy as circles inside circles: each leaf a circle sized (by area) by its value, | `crates/dodai-ui-charts/src/gpui/packed.rs` |
-| Treemap | Treemap: rectangle area ∝ value. | `crates/dodai-ui-charts/src/gpui/part_whole.rs` |
-| RadialBar | Concentric progress rings, one per `(name, value, max)`. | `crates/dodai-ui-charts/src/gpui/part_whole.rs` |
-| PeakRange | Peak range: each series a solid mountain on one scale, the tallest at the back so smaller | `crates/dodai-ui-charts/src/gpui/peaks.rs` |
-| PieChart | Pie or donut chart; `center` is shown in the donut hole. | `crates/dodai-ui-charts/src/gpui/pie.rs` |
-| ControlChart | Control chart (individuals): the values against their centre line and ±3σ control limits | `crates/dodai-ui-charts/src/gpui/process.rs` |
-| EventTimeline | Event timeline: one lane per system or person, coloured by the state it was in over time | `crates/dodai-ui-charts/src/gpui/process.rs` |
-| Pulse | A professional pulse / vital-sign trace. Build with [`Pulse::ecg`], | `crates/dodai-ui-charts/src/gpui/pulse.rs` |
-| RadarChart | Radar (spider) chart: one polygon per series over shared axes. | `crates/dodai-ui-charts/src/gpui/radar.rs` |
-| ShardMap | Shard map (a Voronoi treemap): an outline (a circle by default, or a hexagon or square) | `crates/dodai-ui-charts/src/gpui/shards.rs` |
-| Sparkline | Tiny inline line, no axes. | `crates/dodai-ui-charts/src/gpui/spark.rs` |
-| Beeswarm | Beeswarm: every sample as a dot on a shared value axis, one lane per group, nudged | `crates/dodai-ui-charts/src/gpui/spread.rs` |
-| Ecdf | Empirical cumulative distribution: for each value, the share of samples at or below it. | `crates/dodai-ui-charts/src/gpui/spread.rs` |
-| ErrorBars | Error bars (a forest plot): one row per estimate, a mark at the value and a whisker over | `crates/dodai-ui-charts/src/gpui/spread.rs` |
-| SlotGrid | A band of numbered slots and, per row, the blocks laid over them: which channels a radio | `crates/dodai-ui-charts/src/gpui/status.rs` |
-| StatusStrip | Health over time as one thin strip: each span coloured by its [`Tone`], gaps left empty. | `crates/dodai-ui-charts/src/gpui/status.rs` |
-| BucketBar | Counts in graded buckets, worst on the left: every bucket tinted from bad to good, the ones | `crates/dodai-ui-charts/src/gpui/status.rs` |
-| StageBars | Success per stage of a flow (connect, sign in, get an address, resolve names): each stage a | `crates/dodai-ui-charts/src/gpui/status.rs` |
-| GradientScale | A reading on a scale that runs from bad to good (signal strength, density, latency): a | `crates/dodai-ui-charts/src/gpui/status.rs` |
-| ParetoChart | Pareto chart: causes as bars, largest first, with the running share of the total as a | `crates/dodai-ui-charts/src/gpui/survey.rs` |
-| DivergingBars | Diverging stacked bars: each row's parts stacked out from a centre line, the first ones | `crates/dodai-ui-charts/src/gpui/survey.rs` |
-| StackedAreaChart | Stacked area chart: layers add up to the total. | `crates/dodai-ui-charts/src/gpui/trend.rs` |
-| Candlestick | Candlestick chart: candles, Heikin-Ashi or OHLC bars, optional volume, | `crates/dodai-ui-charts/src/gpui/trend.rs` |
+| BarChart | Bar chart: vertical or horizontal, grouped or stacked. | `crates/dodai-charts/src/gpui/bar.rs` |
+| BubbleTimeline | Bubble timeline: every event a bubble at its time, its area the event's size, piled up | `crates/dodai-charts/src/gpui/bubble_timeline.rs` |
+| SplitFlow | Split flow: a quantity pouring down through levels. Every block is as wide as its amount | `crates/dodai-charts/src/gpui/cascade.rs` |
+| Legend | Colour swatch + name row, shared by all multi-series charts. | `crates/dodai-charts/src/gpui/common.rs` |
+| Bullet | Bullet graph: a value bar over qualitative range bands with a target tick. | `crates/dodai-charts/src/gpui/compare.rs` |
+| PairedBars | Before/after bars per row. Each row is scaled to its own larger value, so | `crates/dodai-charts/src/gpui/compare.rs` |
+| Lollipop | Stems with dots; with [`Lollipop::compare`] a dumbbell (two dots joined by | `crates/dodai-charts/src/gpui/compare.rs` |
+| SlopeChart | Two-state slope chart: one line per item from its left to its right value, | `crates/dodai-charts/src/gpui/compare.rs` |
+| Histogram | Histogram of raw values with equal-width bins. | `crates/dodai-charts/src/gpui/distribution.rs` |
+| BoxPlot | Box-and-whisker plot from raw samples per category. | `crates/dodai-charts/src/gpui/distribution.rs` |
+| Sankey | Flow diagram: nodes in columns joined by ribbons whose thickness is the | `crates/dodai-charts/src/gpui/extra.rs` |
+| CalendarHeatmap | GitHub-style grid: one cell per day, weeks as columns, intensity in | `crates/dodai-charts/src/gpui/extra.rs` |
+| ViolinChart | Mirrored density per group with an inner quartile box and median dot. | `crates/dodai-charts/src/gpui/extra.rs` |
+| RoseChart | Polar-area ("Nightingale rose") chart: equal-angle wedges whose reach shows | `crates/dodai-charts/src/gpui/extra.rs` |
+| SpanFan | Span fan: one spoke per item, fanned round an arc from a hub. A spoke's length is the | `crates/dodai-charts/src/gpui/fan.rs` |
+| Funnel | Funnel of decreasing stages, drawn as joined trapezoids. | `crates/dodai-charts/src/gpui/flow.rs` |
+| Waterfall | Waterfall of deltas; increases green, decreases red, optional total bar. | `crates/dodai-charts/src/gpui/flow.rs` |
+| ScatterPlot | Scatter plot of `(x, y)` points per series, with hover tooltips. | `crates/dodai-charts/src/gpui/grid.rs` |
+| Heatmap | Grid of cells coloured by value, with hover tooltips. | `crates/dodai-charts/src/gpui/grid.rs` |
+| Sunburst | Sunburst: a hierarchy as nested rings. Each ring is one level; every node takes its share | `crates/dodai-charts/src/gpui/hierarchy.rs` |
+| Icicle | Icicle: a hierarchy as stacked rows, the top row the first level, each node as wide as | `crates/dodai-charts/src/gpui/hierarchy.rs` |
+| Waffle | Waffle: a grid of cells (10 × 10 by default, so one cell = 1 %), each coloured by the | `crates/dodai-charts/src/gpui/hierarchy.rs` |
+| Marimekko | Marimekko (mosaic): a 100 % stacked bar chart whose bars are also as wide as their share | `crates/dodai-charts/src/gpui/hierarchy.rs` |
+| KpiTile | A key figure: the label, the value (counting to it as it changes), the change since the | `crates/dodai-charts/src/gpui/kpi.rs` |
+| BumpChart | Bump chart: every series' rank (1 = highest value) at each step, so overtakes read at a | `crates/dodai-charts/src/gpui/layered.rs` |
+| RidgelineChart | Ridgeline: one smoothed distribution per group on a shared value axis, each row overlapping | `crates/dodai-charts/src/gpui/layered.rs` |
+| HorizonChart | Horizon chart: each series in a short strip, its range folded into stacked bands (deeper | `crates/dodai-charts/src/gpui/layered.rs` |
+| LineChart | Line / area chart with gridlines, axes, optional smoothing, point markers | `crates/dodai-charts/src/gpui/line.rs` |
+| RenkoChart | Renko chart: fixed-size price bricks, time ignored. | `crates/dodai-charts/src/gpui/market.rs` |
+| DepthChart | Order-book depth: cumulative bid (green) and ask (red) step areas. | `crates/dodai-charts/src/gpui/market.rs` |
+| Gantt | Gantt timeline: one row per task, progress fill and dependency links. | `crates/dodai-charts/src/gpui/market.rs` |
+| ChartStack | Vertical stack of chart panes sharing one total height, split by weight | `crates/dodai-charts/src/gpui/market.rs` |
+| TimeScatter | Time scatter: labelled milestones at `(time, value)`. Options draw the record frontier (a | `crates/dodai-charts/src/gpui/milestones.rs` |
+| ParallelCoordinates | Parallel coordinates: one vertical axis per measure, each item a line across them, so | `crates/dodai-charts/src/gpui/network.rs` |
+| Hexbin | Hexbin: a scatter plot too dense for dots, binned into hexagons shaded by how many | `crates/dodai-charts/src/gpui/network.rs` |
+| NetworkGraph | Network graph: nodes and links laid out by a force simulation (linked nodes pull | `crates/dodai-charts/src/gpui/network.rs` |
+| ChordDiagram | Chord diagram: groups around a circle, ribbons for the flow between each pair (both | `crates/dodai-charts/src/gpui/network.rs` |
+| ArcDiagram | Arc diagram: nodes in a row, each link an arc above them (thicker = heavier). Keeps the | `crates/dodai-charts/src/gpui/network.rs` |
+| ProportionalSquares | One square per item, its area proportional to the value, packed largest first: sizes that | `crates/dodai-charts/src/gpui/packed.rs` |
+| CirclePack | A hierarchy as circles inside circles: each leaf a circle sized (by area) by its value, | `crates/dodai-charts/src/gpui/packed.rs` |
+| Treemap | Treemap: rectangle area ∝ value. | `crates/dodai-charts/src/gpui/part_whole.rs` |
+| RadialBar | Concentric progress rings, one per `(name, value, max)`. | `crates/dodai-charts/src/gpui/part_whole.rs` |
+| PeakRange | Peak range: each series a solid mountain on one scale, the tallest at the back so smaller | `crates/dodai-charts/src/gpui/peaks.rs` |
+| PieChart | Pie or donut chart; `center` is shown in the donut hole. | `crates/dodai-charts/src/gpui/pie.rs` |
+| ControlChart | Control chart (individuals): the values against their centre line and ±3σ control limits | `crates/dodai-charts/src/gpui/process.rs` |
+| EventTimeline | Event timeline: one lane per system or person, coloured by the state it was in over time | `crates/dodai-charts/src/gpui/process.rs` |
+| Pulse | A professional pulse / vital-sign trace. Build with [`Pulse::ecg`], | `crates/dodai-charts/src/gpui/pulse.rs` |
+| RadarChart | Radar (spider) chart: one polygon per series over shared axes. | `crates/dodai-charts/src/gpui/radar.rs` |
+| ShardMap | Shard map (a Voronoi treemap): an outline (a circle by default, or a hexagon or square) | `crates/dodai-charts/src/gpui/shards.rs` |
+| Sparkline | Tiny inline line, no axes. | `crates/dodai-charts/src/gpui/spark.rs` |
+| Beeswarm | Beeswarm: every sample as a dot on a shared value axis, one lane per group, nudged | `crates/dodai-charts/src/gpui/spread.rs` |
+| Ecdf | Empirical cumulative distribution: for each value, the share of samples at or below it. | `crates/dodai-charts/src/gpui/spread.rs` |
+| ErrorBars | Error bars (a forest plot): one row per estimate, a mark at the value and a whisker over | `crates/dodai-charts/src/gpui/spread.rs` |
+| SlotGrid | A band of numbered slots and, per row, the blocks laid over them: which channels a radio | `crates/dodai-charts/src/gpui/status.rs` |
+| StatusStrip | Health over time as one thin strip: each span coloured by its [`Tone`], gaps left empty. | `crates/dodai-charts/src/gpui/status.rs` |
+| BucketBar | Counts in graded buckets, worst on the left: every bucket tinted from bad to good, the ones | `crates/dodai-charts/src/gpui/status.rs` |
+| StageBars | Success per stage of a flow (connect, sign in, get an address, resolve names): each stage a | `crates/dodai-charts/src/gpui/status.rs` |
+| GradientScale | A reading on a scale that runs from bad to good (signal strength, density, latency): a | `crates/dodai-charts/src/gpui/status.rs` |
+| ParetoChart | Pareto chart: causes as bars, largest first, with the running share of the total as a | `crates/dodai-charts/src/gpui/survey.rs` |
+| DivergingBars | Diverging stacked bars: each row's parts stacked out from a centre line, the first ones | `crates/dodai-charts/src/gpui/survey.rs` |
+| StackedAreaChart | Stacked area chart: layers add up to the total. | `crates/dodai-charts/src/gpui/trend.rs` |
+| Candlestick | Candlestick chart: candles, Heikin-Ashi or OHLC bars, optional volume, | `crates/dodai-charts/src/gpui/trend.rs` |
 
 ## Components (128)
 
 | component | toolkits | gpui reference |
 | --- | --- | --- |
-| Accordion | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/nav.rs` |
-| Alert | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/feedback.rs` |
-| Avatar | gpui, iced, dioxus, topcoat, leptos, yew | `crates/dodai-ui-gpui/src/data.rs` |
-| AxisGizmo | gpui, iced, dioxus, bevy, leptos, yew | `crates/dodai-ui-gpui/src/orientation.rs` |
-| Badge | gpui, dioxus, topcoat, leptos, yew, ratatui | `crates/dodai-ui-gpui/src/data.rs` |
-| Banner | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/display.rs` |
-| BottomAppBar | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/extras.rs` |
-| BottomSheet | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/sheets.rs` |
-| Breadcrumb | gpui, dioxus, topcoat, leptos, yew | `crates/dodai-ui-gpui/src/nav.rs` |
-| Button | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew, ratatui, xilem | `crates/dodai-ui-gpui/src/button.rs` |
-| Card | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/surfaces.rs` |
-| Carousel | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/carousel.rs` |
-| Chip | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/data.rs` |
-| CircularProgress | gpui, iced, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-ui-gpui/src/display.rs` |
-| Clock | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/time/clock.rs` |
-| CodeBlock | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/content.rs` |
-| ColorPicker | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/extras.rs` |
-| Column | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/datatable.rs` |
-| Combobox | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/command.rs` |
-| Command | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/command.rs` |
-| CommandPalette | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/command.rs` |
-| ContextMenu | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/popover.rs` |
-| CountUp | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/count.rs` |
-| DataTable | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/datatable.rs` |
-| DateInput | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/picker.rs` |
-| DatePicker | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/picker.rs` |
-| DateTimePicker | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/picker.rs` |
-| DateTimeRangePicker | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/picker.rs` |
-| DesignSystemSelector | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/select.rs` |
-| Dialog | gpui, dioxus, leptos, yew, ratatui | `crates/dodai-ui-gpui/src/overlay.rs` |
-| DialogCard | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/overlay.rs` |
-| Divider | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew, ratatui | `crates/dodai-ui-gpui/src/list.rs` |
-| DodaiTheme | gpui, dioxus, bevy, leptos, yew | `crates/dodai-ui-gpui/src/lib.rs` |
-| DodaiTooltip | gpui, dioxus, freya, leptos, yew | `crates/dodai-ui-gpui/src/panel.rs` |
-| DropdownMenu | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/popover.rs` |
-| EntryScope | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/motion.rs` |
-| Fab | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/surfaces.rs` |
-| FabMenu | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/surfaces.rs` |
-| Feed | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/live.rs` |
-| FileDropZone | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/extras.rs` |
-| Follow | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/follow.rs` |
-| FormField | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/forms.rs` |
-| FrostLayer | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/paint.rs` |
-| FrostedScene | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/frosted.rs` |
-| FullScreenDialog | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/sheets.rs` |
-| GlowLayer | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/paint.rs` |
-| Heading | gpui, iced, dioxus, bevy, topcoat, freya, leptos, yew | `crates/dodai-ui-gpui/src/text.rs` |
-| HoverCard | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/popover.rs` |
-| Icon | gpui, iced, dioxus, bevy, topcoat, egui, leptos, yew | `crates/dodai-ui-gpui/src/icons.rs` |
-| IconBadge | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/search.rs` |
-| IconButton | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/surfaces.rs` |
-| Image | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/display.rs` |
-| IndeterminateBar | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/feedback.rs` |
-| InputBox | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/panel.rs` |
-| Interact | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/interact.rs` |
-| Kbd | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/data.rs` |
-| Knob | gpui, iced, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-ui-gpui/src/knob.rs` |
-| Label | gpui, iced, dioxus, bevy, topcoat, freya, leptos, yew, ratatui | `crates/dodai-ui-gpui/src/text.rs` |
-| Lazy | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/lazy.rs` |
-| List | gpui, dioxus, topcoat, freya, leptos, yew | `crates/dodai-ui-gpui/src/list.rs` |
-| ListItem | gpui, iced, dioxus, bevy, egui, slint, leptos, yew | `crates/dodai-ui-gpui/src/list.rs` |
-| Live | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/live.rs` |
-| LoadingIndicator | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/expressive.rs` |
-| Markdown | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/markdown.rs` |
-| Menu | gpui, iced, dioxus, topcoat, leptos, yew | `crates/dodai-ui-gpui/src/menu.rs` |
-| MenuItem | gpui, dioxus, bevy, leptos, yew | `crates/dodai-ui-gpui/src/menu.rs` |
-| ModalDrawer | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/sheets.rs` |
-| Mono | gpui, dioxus, bevy, topcoat, freya, leptos, yew | `crates/dodai-ui-gpui/src/text.rs` |
-| Muted | gpui, iced, dioxus, bevy, topcoat, freya, leptos, yew, ratatui | `crates/dodai-ui-gpui/src/text.rs` |
-| NavigationBar | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/navigation.rs` |
-| NavigationDrawer | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/navigation.rs` |
-| NavigationItem | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/navigation.rs` |
-| NavigationRail | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/navigation.rs` |
-| NumberStepper | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/extras.rs` |
-| OtpInput | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/forms.rs` |
-| Overscroll | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/overscroll.rs` |
-| OverscrollFeel | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/overscroll.rs` |
-| PageGrid | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/page_grid.rs` |
-| Pagination | gpui, dioxus, topcoat, leptos, yew | `crates/dodai-ui-gpui/src/nav.rs` |
-| Panel | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew, xilem | `crates/dodai-ui-gpui/src/panel.rs` |
-| Popover | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/popover.rs` |
-| ProgressBar | gpui, dioxus, egui, leptos, yew | `crates/dodai-ui-gpui/src/controls/bars.rs` |
-| RangeSlider | gpui, iced, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-ui-gpui/src/range.rs` |
-| Rating | gpui, dioxus, topcoat, leptos, yew | `crates/dodai-ui-gpui/src/extras.rs` |
-| ResponsiveShell | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/shell.rs` |
-| RichTooltip | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/search.rs` |
-| Scanlines | gpui, iced, dioxus, slint, leptos, yew, ratatui | `crates/dodai-ui-gpui/src/scanlines.rs` |
-| ScrollArea | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/display.rs` |
-| ScrollSpy | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/spy.rs` |
-| SearchBar | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/surfaces.rs` |
-| SearchView | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/search.rs` |
-| Segmented | gpui, iced, dioxus, topcoat, leptos, yew | `crates/dodai-ui-gpui/src/nav.rs` |
-| Select | gpui, dioxus, bevy, topcoat, freya, leptos, yew | `crates/dodai-ui-gpui/src/select.rs` |
-| SelectOption | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/select.rs` |
-| SelectionMarker | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/selection.rs` |
-| SelectionTrack | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/selection.rs` |
-| Shimmer | gpui, dioxus, bevy, leptos, yew | `crates/dodai-ui-gpui/src/paint.rs` |
-| SideSheet | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/sheets.rs` |
-| Skeleton | gpui, iced, dioxus, topcoat, leptos, yew | `crates/dodai-ui-gpui/src/feedback.rs` |
-| Slider | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew | `crates/dodai-ui-gpui/src/controls/slider.rs` |
-| Snackbar | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/sheets.rs` |
-| SnapStack | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/snap_stack.rs` |
-| Spinner | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew | `crates/dodai-ui-gpui/src/feedback.rs` |
-| SplitButton | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/expressive.rs` |
-| SplitPane | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/layout.rs` |
-| Stepper | gpui, dioxus, topcoat, leptos, yew | `crates/dodai-ui-gpui/src/nav.rs` |
-| Stopwatch | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/time/stopwatch.rs` |
-| Table | gpui, dioxus, topcoat, leptos, yew | `crates/dodai-ui-gpui/src/data.rs` |
-| Tabs | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew, ratatui, xilem | `crates/dodai-ui-gpui/src/tabs.rs` |
-| Tag | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew, ratatui, xilem | `crates/dodai-ui-gpui/src/tag.rs` |
-| TagField | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/extras.rs` |
-| TapTempo | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/time/tap.rs` |
-| Text | gpui, dioxus, bevy, freya, slint, leptos, yew, xilem | `crates/dodai-ui-gpui/src/text.rs` |
-| TextInput | gpui, iced, dioxus, bevy, topcoat, egui, leptos, yew | `crates/dodai-ui-gpui/src/text_input.rs` |
-| ThemeSelector | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/select.rs` |
-| ThemeSwitcherBar | gpui, dioxus, egui, leptos, yew | `crates/dodai-ui-gpui/src/switcher.rs` |
-| TimeInput | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/picker.rs` |
-| TimePicker | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/picker.rs` |
-| Timeline | gpui, dioxus, topcoat, leptos, yew | `crates/dodai-ui-gpui/src/extras.rs` |
-| TimelineEvent | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/extras.rs` |
-| Timer | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/time/timer.rs` |
-| Toast | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/feedback.rs` |
-| Toolbar | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/extras.rs` |
-| TopAppBar | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/surfaces.rs` |
-| TreeItem | gpui, dioxus, topcoat, leptos, yew | `crates/dodai-ui-gpui/src/layout.rs` |
-| TreeNavigation | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/layout.rs` |
-| TreeRow | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/layout.rs` |
-| TreeView | gpui, dioxus, leptos, yew | `crates/dodai-ui-gpui/src/layout.rs` |
+| Accordion | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/nav.rs` |
+| Alert | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/feedback.rs` |
+| Avatar | gpui, iced, dioxus, topcoat, leptos, yew | `crates/dodai-gpui/src/data.rs` |
+| AxisGizmo | gpui, iced, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/orientation.rs` |
+| Badge | gpui, dioxus, topcoat, leptos, yew, ratatui | `crates/dodai-gpui/src/data.rs` |
+| Banner | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/display.rs` |
+| BottomAppBar | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/extras.rs` |
+| BottomSheet | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/sheets.rs` |
+| Breadcrumb | gpui, dioxus, topcoat, leptos, yew | `crates/dodai-gpui/src/nav.rs` |
+| Button | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew, ratatui, xilem | `crates/dodai-gpui/src/button.rs` |
+| Card | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/surfaces.rs` |
+| Carousel | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/carousel.rs` |
+| Chip | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/data.rs` |
+| CircularProgress | gpui, iced, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-gpui/src/display.rs` |
+| Clock | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/time/clock.rs` |
+| CodeBlock | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/content.rs` |
+| ColorPicker | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/extras.rs` |
+| Column | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/datatable.rs` |
+| Combobox | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/command.rs` |
+| Command | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/command.rs` |
+| CommandPalette | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/command.rs` |
+| ContextMenu | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/popover.rs` |
+| CountUp | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/count.rs` |
+| DataTable | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/datatable.rs` |
+| DateInput | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/picker.rs` |
+| DatePicker | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/picker.rs` |
+| DateTimePicker | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/picker.rs` |
+| DateTimeRangePicker | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/picker.rs` |
+| DesignSystemSelector | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/select.rs` |
+| Dialog | gpui, dioxus, leptos, yew, ratatui | `crates/dodai-gpui/src/overlay.rs` |
+| DialogCard | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/overlay.rs` |
+| Divider | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew, ratatui | `crates/dodai-gpui/src/list.rs` |
+| DodaiTheme | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/lib.rs` |
+| DodaiTooltip | gpui, dioxus, freya, leptos, yew | `crates/dodai-gpui/src/panel.rs` |
+| DropdownMenu | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/popover.rs` |
+| EntryScope | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/motion.rs` |
+| Fab | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/surfaces.rs` |
+| FabMenu | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/surfaces.rs` |
+| Feed | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/live.rs` |
+| FileDropZone | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/extras.rs` |
+| Follow | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/follow.rs` |
+| FormField | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/forms.rs` |
+| FrostLayer | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/paint.rs` |
+| FrostedScene | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/frosted.rs` |
+| FullScreenDialog | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/sheets.rs` |
+| GlowLayer | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/paint.rs` |
+| Heading | gpui, iced, dioxus, bevy, topcoat, freya, leptos, yew | `crates/dodai-gpui/src/text.rs` |
+| HoverCard | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/popover.rs` |
+| Icon | gpui, iced, dioxus, bevy, topcoat, egui, leptos, yew | `crates/dodai-gpui/src/icons.rs` |
+| IconBadge | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/search.rs` |
+| IconButton | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/surfaces.rs` |
+| Image | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/display.rs` |
+| IndeterminateBar | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/feedback.rs` |
+| InputBox | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/panel.rs` |
+| Interact | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/interact.rs` |
+| Kbd | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/data.rs` |
+| Knob | gpui, iced, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-gpui/src/knob.rs` |
+| Label | gpui, iced, dioxus, bevy, topcoat, freya, leptos, yew, ratatui | `crates/dodai-gpui/src/text.rs` |
+| Lazy | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/lazy.rs` |
+| List | gpui, dioxus, topcoat, freya, leptos, yew | `crates/dodai-gpui/src/list.rs` |
+| ListItem | gpui, iced, dioxus, bevy, egui, slint, leptos, yew | `crates/dodai-gpui/src/list.rs` |
+| Live | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/live.rs` |
+| LoadingIndicator | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/expressive.rs` |
+| Markdown | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/markdown.rs` |
+| Menu | gpui, iced, dioxus, topcoat, leptos, yew | `crates/dodai-gpui/src/menu.rs` |
+| MenuItem | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/menu.rs` |
+| ModalDrawer | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/sheets.rs` |
+| Mono | gpui, dioxus, bevy, topcoat, freya, leptos, yew | `crates/dodai-gpui/src/text.rs` |
+| Muted | gpui, iced, dioxus, bevy, topcoat, freya, leptos, yew, ratatui | `crates/dodai-gpui/src/text.rs` |
+| NavigationBar | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/navigation.rs` |
+| NavigationDrawer | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/navigation.rs` |
+| NavigationItem | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/navigation.rs` |
+| NavigationRail | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/navigation.rs` |
+| NumberStepper | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/extras.rs` |
+| OtpInput | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/forms.rs` |
+| Overscroll | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/overscroll.rs` |
+| OverscrollFeel | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/overscroll.rs` |
+| PageGrid | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/page_grid.rs` |
+| Pagination | gpui, dioxus, topcoat, leptos, yew | `crates/dodai-gpui/src/nav.rs` |
+| Panel | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew, xilem | `crates/dodai-gpui/src/panel.rs` |
+| Popover | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/popover.rs` |
+| ProgressBar | gpui, dioxus, egui, leptos, yew | `crates/dodai-gpui/src/controls/bars.rs` |
+| RangeSlider | gpui, iced, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-gpui/src/range.rs` |
+| Rating | gpui, dioxus, topcoat, leptos, yew | `crates/dodai-gpui/src/extras.rs` |
+| ResponsiveShell | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/shell.rs` |
+| RichTooltip | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/search.rs` |
+| Scanlines | gpui, iced, dioxus, slint, leptos, yew, ratatui | `crates/dodai-gpui/src/scanlines.rs` |
+| ScrollArea | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/display.rs` |
+| ScrollSpy | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/spy.rs` |
+| SearchBar | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/surfaces.rs` |
+| SearchView | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/search.rs` |
+| Segmented | gpui, iced, dioxus, topcoat, leptos, yew | `crates/dodai-gpui/src/nav.rs` |
+| Select | gpui, dioxus, bevy, topcoat, freya, leptos, yew | `crates/dodai-gpui/src/select.rs` |
+| SelectOption | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/select.rs` |
+| SelectionMarker | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/selection.rs` |
+| SelectionTrack | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/selection.rs` |
+| Shimmer | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/paint.rs` |
+| SideSheet | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/sheets.rs` |
+| Skeleton | gpui, iced, dioxus, topcoat, leptos, yew | `crates/dodai-gpui/src/feedback.rs` |
+| Slider | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew | `crates/dodai-gpui/src/controls/slider.rs` |
+| Snackbar | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/sheets.rs` |
+| SnapStack | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/snap_stack.rs` |
+| Spinner | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew | `crates/dodai-gpui/src/feedback.rs` |
+| SplitButton | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/expressive.rs` |
+| SplitPane | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/layout.rs` |
+| Stepper | gpui, dioxus, topcoat, leptos, yew | `crates/dodai-gpui/src/nav.rs` |
+| Stopwatch | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/time/stopwatch.rs` |
+| Table | gpui, dioxus, topcoat, leptos, yew | `crates/dodai-gpui/src/data.rs` |
+| Tabs | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew, ratatui, xilem | `crates/dodai-gpui/src/tabs.rs` |
+| Tag | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew, ratatui, xilem | `crates/dodai-gpui/src/tag.rs` |
+| TagField | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/extras.rs` |
+| TapTempo | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/time/tap.rs` |
+| Text | gpui, dioxus, bevy, freya, slint, leptos, yew, xilem | `crates/dodai-gpui/src/text.rs` |
+| TextInput | gpui, iced, dioxus, bevy, topcoat, egui, leptos, yew | `crates/dodai-gpui/src/text_input.rs` |
+| ThemeSelector | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/select.rs` |
+| ThemeSwitcherBar | gpui, dioxus, egui, leptos, yew | `crates/dodai-gpui/src/switcher.rs` |
+| TimeInput | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/picker.rs` |
+| TimePicker | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/picker.rs` |
+| Timeline | gpui, dioxus, topcoat, leptos, yew | `crates/dodai-gpui/src/extras.rs` |
+| TimelineEvent | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/extras.rs` |
+| Timer | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/time/timer.rs` |
+| Toast | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/feedback.rs` |
+| Toolbar | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/extras.rs` |
+| TopAppBar | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/surfaces.rs` |
+| TreeItem | gpui, dioxus, topcoat, leptos, yew | `crates/dodai-gpui/src/layout.rs` |
+| TreeNavigation | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/layout.rs` |
+| TreeRow | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/layout.rs` |
+| TreeView | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/layout.rs` |

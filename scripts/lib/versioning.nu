@@ -43,5 +43,5 @@ export def changelog-section [text: string, version: string]: nothing -> string 
 
 # Crates in dependency order: core must be published before adapters.
 export def publish-order []: nothing -> list<string> {
-    ["dodai-ui-frost" "dodai-ui-fx" "dodai-ui-spec" "dodai-ui-core" "dodai-ui-icons" "dodai-ui-gpui" "dodai-ui-charts" "dodai-ui-shaders" "dodai-ui-dash" "dodai-ui-iced" "dodai-ui-topcoat" "dodai-ui-dioxus" "dodai-ui-leptos" "dodai-ui-yew" "dodai-ui-bevy" "dodai-ui-egui" "dodai-ui-slint" "dodai-ui-ratatui"]
+    ["dodai-frost" "dodai-fx" "dodai-spec" "dodai-core" "dodai-icons" "dodai-gpui" "dodai-charts" "dodai-shaders" "dodai-dash" "dodai-iced" "dodai-topcoat" "dodai-dioxus" "dodai-leptos" "dodai-yew" "dodai-bevy" "dodai-egui" "dodai-slint" "dodai-ratatui"]
 }
