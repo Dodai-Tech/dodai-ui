@@ -3,7 +3,7 @@
 //! Fireworks over a car on a phone screen at a quarter of its size, lit with radiance cascades:
 //! the car blocks the bursts' light, the tiles below catch it on the edges facing the bursts.
 
-use dodai_shaders::radiance::{solve, Cascades, Cell, Scene};
+use dodai_shaders::radiance::{self, solve, Cascades, Cell, Scene};
 use dodai_shaders::{vec3, Vec3};
 use std::f32::consts::TAU;
 use std::time::Instant;
@@ -24,46 +24,10 @@ fn main() {
         started.elapsed()
     );
 
-    let sky = vec3(0.02, 0.03, 0.07);
     let mut out = format!("P6\n{W} {H}\n255\n").into_bytes();
-    for y in 0..H {
-        for x in 0..W {
-            let cell = scene.cell(x, y);
-            let base = match cell.absorption {
-                a if a > 10.0 && cell.source == Vec3::default() => vec3(0.16, 0.17, 0.2),
-                a if a > 0.0 => cell.source,
-                _ => sky,
-            };
-            // no light gets into a wall: its edge shows the light just outside it
-            let lit = if cell.absorption > 10.0 {
-                rim(&light, x, y) * 0.8
-            } else {
-                at(&light, x, y)
-            };
-            let c = base + lit * 1.2;
-            out.extend([c.x, c.y, c.z].map(|v| (v / (1.0 + v) * 1.3 * 255.0).min(255.0) as u8));
-        }
-    }
+    out.extend(radiance::picture(&scene, &light, 1.0));
     std::fs::write(&path, out).expect("write the picture");
     println!("wrote {path}");
-}
-
-fn at(light: &[Vec3], x: u32, y: u32) -> Vec3 {
-    light[(y.min(H - 1) * W + x.min(W - 1)) as usize]
-}
-
-/// The brightest of the four neighbours.
-fn rim(light: &[Vec3], x: u32, y: u32) -> Vec3 {
-    let n = [
-        at(light, x.saturating_sub(1), y),
-        at(light, x + 1, y),
-        at(light, x, y.saturating_sub(1)),
-        at(light, x, y + 1),
-    ];
-    n.into_iter().fold(
-        Vec3::default(),
-        |a, b| if b.luma() > a.luma() { b } else { a },
-    )
 }
 
 fn scene() -> Scene {

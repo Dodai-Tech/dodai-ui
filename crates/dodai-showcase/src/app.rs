@@ -311,6 +311,8 @@ impl Showcase {
             sh_fx: vec!["crt"],
             sh_int: 1.0,
             sh_theme: false,
+            rc_spot: 0,
+            rc_image: None,
             sh_px: 2.0,
         }
     }

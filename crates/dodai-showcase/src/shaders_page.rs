@@ -350,5 +350,65 @@ impl Showcase {
                 }
             }
         }
+        sections.push(self.radiance_section(&me, cx));
     }
+
+    /// Radiance cascades: light and soft shadows solved on the CPU, the lamp moved by a button.
+    fn radiance_section(&mut self, me: &Entity<Self>, cx: &mut Context<Self>) -> Section {
+        use crate::catalog::RADIANCE;
+        let t = theme_of(cx);
+        let spot = self.rc_spot % RC_SPOTS.len();
+        if self.rc_image.as_ref().map(|(s, _)| *s) != Some(spot) {
+            self.rc_image = radiance_scene(RC_SPOTS[spot]).map(|i| (spot, i));
+        }
+        let m = me.clone();
+        let mut panel = Panel::new()
+            .title(RADIANCE)
+            .scope(Some(self.scope_of(RADIANCE, cx)))
+            .child(Muted::new(
+                "Light with soft shadows from radiance cascades (Osborne & Sannikov 2024, \
+                 arXiv:2408.14425, the technique behind Path of Exile 2's lighting), solved on \
+                 the CPU by `dodai_shaders::radiance`. Walls block, the glowing cloud dims, \
+                 edges facing the lamp light up.",
+            ))
+            .child(
+                Button::new("rc-move", "Move the lamp")
+                    .variant(ButtonVariant::Secondary)
+                    .on_click(move |_, _, cx| {
+                        m.update(cx, |s, cx| {
+                            s.rc_spot = (s.rc_spot + 1) % RC_SPOTS.len();
+                            cx.notify();
+                        })
+                    }),
+            );
+        if let Some((_, image)) = &self.rc_image {
+            panel = panel.child(
+                gpui::img(image.clone())
+                    .w_full()
+                    .max_w(px(960.0))
+                    .h(px(360.0))
+                    .rounded(px(t.shape.radius)),
+            );
+        }
+        ("Shaders", RADIANCE, panel.into_any_element(), RADIANCE)
+    }
+}
+
+/// Where the lamp of the radiance demo can stand, in scene pixels.
+const RC_SPOTS: [(f32, f32); 4] = [(70.0, 60.0), (250.0, 50.0), (160.0, 150.0), (300.0, 140.0)];
+
+/// A 320×180 room: pillars, a wall with a gap, a violet cloud and a warm lamp at `lamp`.
+fn radiance_scene(lamp: (f32, f32)) -> Option<std::sync::Arc<gpui::RenderImage>> {
+    use dodai_shaders::radiance::{solve, Cascades, Cell, Scene};
+    use dodai_shaders::vec3;
+    let mut s = Scene::new(320, 180);
+    for (x, y) in [(110.0, 50.0), (210.0, 50.0), (110.0, 130.0), (210.0, 130.0)] {
+        s.fill_disc(x, y, 9.0, Cell::wall());
+    }
+    s.fill_rect(150.0, 0.0, 156.0, 70.0, Cell::wall());
+    s.fill_rect(150.0, 100.0, 156.0, 180.0, Cell::wall());
+    s.fill_disc(40.0, 140.0, 22.0, Cell::glow(vec3(0.5, 0.2, 1.0), 0.08));
+    s.fill_disc(lamp.0, lamp.1, 5.0, Cell::light(vec3(3.0, 2.2, 1.2)));
+    let light = solve(&s, &Cascades::default());
+    dodai_shaders::gpui::radiance_image(&s, &light, 1.0)
 }

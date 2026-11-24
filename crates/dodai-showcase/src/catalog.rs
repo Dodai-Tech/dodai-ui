@@ -266,7 +266,7 @@ pub(crate) fn subs(cat: &str) -> &'static [&'static str] {
         "Animation" => &["Entry", "Physics", "Dynamics"],
         "Charts" => &CHART_FAMILY_NAMES,
         // By what a shader is for, not by whose look it has: the family stays in each title.
-        "Shaders" => &["Playground", "Sources", "Effects", "Presets"],
+        "Shaders" => &["Playground", "Sources", "Effects", "Presets", "Light"],
         "Inputs" => &["Choice", "Sliders", "Text", "Date & time"],
         _ => &[],
     }
@@ -379,6 +379,9 @@ pub(crate) fn shader_count(sub: Option<&str>, group: Option<&str>) -> Option<usi
 }
 
 /// Which Shaders sub-group a section title belongs to (`None`: not a shader section).
+/// Title of the radiance cascades demo.
+pub(crate) const RADIANCE: &str = "Radiance cascades";
+
 pub(crate) fn shader_group(title: &str) -> Option<&'static str> {
     if title == "Shader playground" {
         Some("Playground")
@@ -388,6 +391,8 @@ pub(crate) fn shader_group(title: &str) -> Option<&'static str> {
         Some("Effects")
     } else if title.ends_with(" presets") {
         Some("Presets")
+    } else if title == RADIANCE {
+        Some("Light")
     } else {
         None
     }
@@ -435,6 +440,7 @@ mod owner_tests {
         assert_eq!(super::shader_group("Waves & flow"), Some("Sources"));
         assert_eq!(super::shader_group("Glow & light"), Some("Effects"));
         assert_eq!(super::shader_group("Ghibli presets"), Some("Presets"));
+        assert_eq!(super::shader_group(super::RADIANCE), Some("Light"));
         assert_eq!(super::shader_group("Buttons"), None);
     }
 

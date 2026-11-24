@@ -380,6 +380,54 @@ pub fn solve(scene: &Scene, cascades: &Cascades) -> Vec<Vec3> {
     out
 }
 
+/// A quick picture of a solved scene, 3 bytes (RGB) per pixel, row by row: empty space and walls
+/// lit by `light` (walls by the light just outside their edge, since none gets in), lights and
+/// glow in their own colour, all tone mapped. `exposure` scales the light; `1.0` suits lights
+/// of brightness around 1–4.
+pub fn picture(scene: &Scene, light: &[Vec3], exposure: f32) -> Vec<u8> {
+    let (w, h) = (scene.width, scene.height);
+    let at = |x: u32, y: u32| {
+        light
+            .get(
+                y.min(h.saturating_sub(1)) as usize * w as usize
+                    + x.min(w.saturating_sub(1)) as usize,
+            )
+            .copied()
+            .unwrap_or_default()
+    };
+    let mut out = Vec::with_capacity(w as usize * h as usize * 3);
+    for y in 0..h {
+        for x in 0..w {
+            let cell = scene.cell(x, y);
+            let wall = cell.absorption > OPAQUE * 0.5 && cell.source == Vec3::default();
+            let (base, lit) = if wall {
+                let n = [
+                    at(x.saturating_sub(1), y),
+                    at(x + 1, y),
+                    at(x, y.saturating_sub(1)),
+                    at(x, y + 1),
+                ];
+                let rim =
+                    n.into_iter().fold(
+                        Vec3::default(),
+                        |a, b| if b.luma() > a.luma() { b } else { a },
+                    );
+                (vec3(0.16, 0.17, 0.2), rim * 0.8)
+            } else if cell.absorption > 0.0 {
+                (cell.source, at(x, y))
+            } else {
+                (vec3(0.02, 0.03, 0.07), at(x, y))
+            };
+            let c = base + lit * (1.2 * exposure);
+            out.extend(
+                [c.x, c.y, c.z]
+                    .map(|v| (v.max(0.0) / (1.0 + v.max(0.0)) * 1.3 * 255.0).min(255.0) as u8),
+            );
+        }
+    }
+    out
+}
+
 /// Brute force for comparison: `rays` evenly spread rays from every pixel centre, each marched to
 /// the edge of the scene. Slow; costs `rays` times the scene size per pixel.
 pub fn reference(scene: &Scene, rays: u32) -> Vec<Vec3> {
@@ -756,6 +804,27 @@ mod tests {
         let light = solve(&lamp(), &broken);
         assert!(light.iter().all(|c| c.x.is_finite() && c.y.is_finite()));
         assert!(at(&light, 30, 32).x > 0.0);
+    }
+
+    #[test]
+    fn the_picture_shows_the_light_and_dark_walls() {
+        let mut s = lamp();
+        s.fill_rect(28.0, 20.0, 32.0, 44.0, Cell::wall());
+        let light = solve(&s, &Cascades::default());
+        let px = picture(&s, &light, 1.0);
+        assert_eq!(px.len(), (N * N * 3) as usize);
+        let red = |x: u32, y: u32| px[((y * N + x) * 3) as usize];
+        assert!(red(12, 32) > 200, "the lamp");
+        assert!(
+            red(20, 32) > red(44, 32),
+            "open space is brighter than the shadow"
+        );
+        assert!(
+            red(28, 32) > red(31, 32),
+            "the wall's lit face is brighter than its far face"
+        );
+        // a short light buffer does not panic
+        assert_eq!(picture(&s, &[], 1.0).len(), (N * N * 3) as usize);
     }
 
     #[test]

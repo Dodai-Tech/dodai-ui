@@ -259,3 +259,21 @@ impl RenderOnce for ShaderView {
         root
     }
 }
+
+/// A solved [`radiance`](crate::radiance) scene as a gpui image, for `gpui::img`.
+/// `None` only when the scene is empty.
+pub fn radiance_image(
+    scene: &crate::radiance::Scene,
+    light: &[crate::math::Vec3],
+    exposure: f32,
+) -> Option<Arc<RenderImage>> {
+    let rgb = crate::radiance::picture(scene, light, exposure);
+    // gpui images are BGRA
+    let bgra: Vec<u8> = rgb
+        .chunks(3)
+        .flat_map(|p| [p[2], p[1], p[0], 255])
+        .collect();
+    let buf = image::RgbaImage::from_raw(scene.width(), scene.height(), bgra)?;
+    (scene.width() > 0 && scene.height() > 0)
+        .then(|| Arc::new(RenderImage::new(vec![image::Frame::new(buf)])))
+}

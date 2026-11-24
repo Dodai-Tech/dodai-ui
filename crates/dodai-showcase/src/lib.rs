@@ -217,6 +217,9 @@ pub struct Showcase {
     sh_int: f32,
     sh_theme: bool,
     sh_px: f32,
+    /// Radiance cascades demo: where the lamp is, and the picture solved for it.
+    rc_spot: usize,
+    rc_image: Option<(usize, std::sync::Arc<gpui::RenderImage>)>,
 }
 
 /// How long after the last scroll the page counts as resting (and measures off-screen
