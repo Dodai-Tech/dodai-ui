@@ -706,6 +706,53 @@ pub fn tab(label: impl Into<String>, active: bool) -> impl Bundle {
     )
 }
 
+#[cfg(feature = "icons")]
+fn close_glyph() -> impl Bundle {
+    icon(dodai_icons::IconId::Close, 14)
+}
+
+#[cfg(not(feature = "icons"))]
+fn close_glyph() -> impl Bundle {
+    text("\u{00d7}", TextRole::Control)
+}
+
+/// The "+" tab that adds a tab: a plus icon.
+fn tab_add() -> impl Bundle {
+    (
+        UiTab { active: false },
+        Node {
+            align_items: AlignItems::Center,
+            justify_content: JustifyContent::Center,
+            ..default()
+        },
+        children![
+            plus_glyph(),
+            (
+                TabIndicator,
+                Node {
+                    position_type: PositionType::Absolute,
+                    left: Val::Px(0.0),
+                    right: Val::Px(0.0),
+                    bottom: Val::Px(0.0),
+                    height: Val::Px(2.0),
+                    ..default()
+                },
+                BackgroundColor::default(),
+            )
+        ],
+    )
+}
+
+#[cfg(feature = "icons")]
+fn plus_glyph() -> impl Bundle {
+    icon(dodai_icons::IconId::Plus, 14)
+}
+
+#[cfg(not(feature = "icons"))]
+fn plus_glyph() -> impl Bundle {
+    text("+", TextRole::Control)
+}
+
 /// One tab with a close cross after the label.
 pub fn tab_closable(label: impl Into<String>, active: bool) -> impl Bundle {
     (
@@ -724,7 +771,7 @@ pub fn tab_closable(label: impl Into<String>, active: bool) -> impl Bundle {
                     align_items: AlignItems::Center,
                     ..default()
                 },
-                children![text("\u{00d7}", TextRole::Control)],
+                children![close_glyph()],
             ),
             (
                 TabIndicator,
@@ -765,7 +812,7 @@ pub fn tabs_editable(
     }
     if addable {
         items.push(Box::new(|c: &mut ChildSpawner| {
-            c.spawn((tab("+", false), TabAdd));
+            c.spawn((tab_add(), TabAdd));
         }));
     }
     (

@@ -252,6 +252,9 @@ pub fn breadcrumb(crumbs: &[&str]) -> impl Bundle {
             let last = crumbs.len().saturating_sub(1);
             for (i, crumb) in crumbs.into_iter().enumerate() {
                 if i > 0 {
+                    #[cfg(feature = "icons")]
+                    c.spawn(crate::widgets::icon(dodai_icons::IconId::ChevronRight, 14));
+                    #[cfg(not(feature = "icons"))]
                     c.spawn(text("/", TextRole::Muted));
                 }
                 let role = if i == last {

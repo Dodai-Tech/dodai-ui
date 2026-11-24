@@ -297,11 +297,10 @@ impl Menu {
                                 .size(t.sizes().icon_sm)
                                 .color(fg),
                         ),
-                    None => div().w(px(slot * 0.7)).flex_none().child(if item.checked {
-                        "✓"
-                    } else {
-                        ""
-                    }),
+                    None => div().w(px(slot * 0.7)).flex_none().children(
+                        item.checked
+                            .then(|| crate::surfaces::glyph_el("✓".into(), t.sizes().icon_sm, fg)),
+                    ),
                 })
                 .child(
                     div()

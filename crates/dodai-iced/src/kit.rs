@@ -126,14 +126,26 @@ impl IcedTheme {
         };
         let segs = iced::widget::row(labels.iter().enumerate().map(|(i, l)| {
             let on = i == selected;
-            let label = if on && tonal {
-                format!("\u{2713} {}", self.label(l))
+            let label = iced::widget::text(self.label(l)).size(t.typography.size_md);
+            let content: Element<'a, Message> = if on && tonal {
+                #[cfg(feature = "icons")]
+                let check = self.icon(
+                    dodai_icons::IconId::Check,
+                    t.typography.size_md,
+                    Some(t.kit(Kit::Segment { selected: true }, false).fg),
+                );
+                #[cfg(not(feature = "icons"))]
+                let check = iced::widget::text("\u{2713}").size(t.typography.size_md);
+                iced::widget::row![check, label]
+                    .spacing(t.spacing.xs)
+                    .align_y(iced::Alignment::Center)
+                    .into()
             } else {
-                self.label(l)
+                label.into()
             };
             self.kit_button(
                 Kit::Segment { selected: on },
-                container(iced::widget::text(label).size(t.typography.size_md))
+                container(content)
                     .height(h)
                     .align_y(iced::alignment::Vertical::Center),
                 on_select(i),

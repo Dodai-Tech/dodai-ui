@@ -185,7 +185,18 @@ impl IcedTheme {
         for (i, item) in items.iter().enumerate() {
             let last = i + 1 == items.len();
             if i > 0 {
-                r = r.push(text("/").size(size).color(color(p.text_muted)));
+                #[cfg(feature = "icons")]
+                {
+                    r = r.push(self.icon(
+                        dodai_icons::IconId::ChevronRight,
+                        size,
+                        Some(p.text_muted),
+                    ));
+                }
+                #[cfg(not(feature = "icons"))]
+                {
+                    r = r.push(text("/").size(size).color(color(p.text_muted)));
+                }
             }
             r = r.push(text(item.to_string()).size(size).color(color(if last {
                 p.text

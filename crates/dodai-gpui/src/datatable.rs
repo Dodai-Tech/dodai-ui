@@ -389,12 +389,14 @@ impl DataTable {
             );
         }
         for (i, c) in self.columns.iter().enumerate() {
-            let mut label = format_label(&t.typography, &c.title).to_string();
-            if let Some((sc, asc)) = sort {
-                if sc == i {
-                    label.push_str(if asc { " ▲" } else { " ▼" });
-                }
-            }
+            let label = format_label(&t.typography, &c.title).to_string();
+            let arrow = sort.filter(|(sc, _)| *sc == i).map(|(_, asc)| {
+                crate::surfaces::glyph_el(
+                    if asc { "▲" } else { "▼" }.into(),
+                    t.sizes().icon_sm * 0.8,
+                    hsla(t.palette.text_muted),
+                )
+            });
             let mut h = div()
                 .id((self.id.clone(), format!("h{i}")))
                 .relative()
@@ -422,7 +424,7 @@ impl DataTable {
                     })
                 });
             }
-            h = h.child(label);
+            h = h.child(label).children(arrow);
             let st2 = st.clone();
             let w0 = w_of(i);
             h = h.child(
@@ -538,7 +540,13 @@ impl DataTable {
                             .w(px(check_w))
                             .flex_none()
                             .text_color(hsla(p.primary))
-                            .child(if is_sel { "✓" } else { "" }),
+                            .children(is_sel.then(|| {
+                                crate::surfaces::glyph_el(
+                                    "✓".into(),
+                                    t.sizes().icon_sm,
+                                    hsla(p.primary),
+                                )
+                            })),
                     );
             }
             for (i, c) in self.columns.iter().enumerate() {

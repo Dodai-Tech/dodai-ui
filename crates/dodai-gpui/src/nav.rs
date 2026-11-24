@@ -318,9 +318,11 @@ impl Stepper {
                             .justify_center()
                             .text_color(hsla(fg))
                             .child(if status == StepStatus::Done {
-                                "✓".to_string()
+                                crate::surfaces::glyph_el("✓".into(), side * 0.6, hsla(fg))
                             } else {
-                                (i + 1).to_string()
+                                gpui::IntoElement::into_any_element(
+                                    div().child((i + 1).to_string()),
+                                )
                             }),
                     )
                     .child(
@@ -492,7 +494,11 @@ impl Segmented {
                 seg = seg.border_l_1().border_color(hsla(outline));
             }
             if on {
-                seg = seg.child("✓");
+                seg = seg.child(crate::surfaces::glyph_el(
+                    "✓".into(),
+                    t.sizes().icon_sm,
+                    hsla(fg),
+                ));
             }
             seg = seg.child(format_label(&t.typography, label));
             if !self.disabled {

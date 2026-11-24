@@ -544,7 +544,7 @@ fn rating_half_click_sets_half_star(cx: &mut TestAppContext) {
     });
     let (x, y, w, h) = target(vcx);
     click(vcx, x + w - 2.0, y + h / 2.0); // right edge: the right half of the last star
-    click(vcx, x + w - 12.0, y + h / 2.0); // the left half of the last star
+    click(vcx, x + w - h * 0.75, y + h / 2.0); // the left half of the last star
     assert_eq!(*seen.borrow(), vec![5.0, 4.5]);
 }
 

@@ -131,13 +131,20 @@ impl Table {
             .text_size(px(t.typography.size_sm))
             .text_color(hsla(p.text_muted));
         for (i, c) in self.columns.iter().enumerate() {
-            let mut label = format_label(&t.typography, c).to_string();
-            if let Some((sc, asc)) = self.sort {
-                if sc == i {
-                    label.push_str(if asc { " ▲" } else { " ▼" });
-                }
-            }
-            let mut h = cell(i, label.into()).id((self.id.clone(), format!("h{i}")));
+            let label = format_label(&t.typography, c).to_string();
+            let arrow = self.sort.filter(|(sc, _)| *sc == i).map(|(_, asc)| {
+                crate::surfaces::glyph_el(
+                    if asc { "▲" } else { "▼" }.into(),
+                    t.sizes().icon_sm * 0.8,
+                    hsla(p.text_muted),
+                )
+            });
+            let mut h = cell(i, label.into())
+                .flex()
+                .items_center()
+                .gap(px(t.spacing.xs))
+                .children(arrow)
+                .id((self.id.clone(), format!("h{i}")));
             if let Some(f) = self.on_sort.clone() {
                 h = h.cursor_pointer().on_click(move |_, w, cx| f(i, w, cx));
             }

@@ -41,9 +41,16 @@ pub fn glow_controls(ui: &mut Ui, intensity: &mut f32) -> bool {
     ui.horizontal(|ui| {
         if ui
             .add(
-                Button::new("−")
-                    .variant(ButtonVariant::Ghost)
-                    .min_width(40.0),
+                glow_button("−", {
+                    #[cfg(feature = "icons")]
+                    {
+                        Some(dodai_icons::IconId::Minus)
+                    }
+                    #[cfg(not(feature = "icons"))]
+                    {
+                        None::<()>
+                    }
+                }),
             )
             .clicked()
         {
@@ -52,9 +59,16 @@ pub fn glow_controls(ui: &mut Ui, intensity: &mut f32) -> bool {
         ui.label(format!("glow {:.2}", *intensity));
         if ui
             .add(
-                Button::new("+")
-                    .variant(ButtonVariant::Ghost)
-                    .min_width(40.0),
+                glow_button("+", {
+                    #[cfg(feature = "icons")]
+                    {
+                        Some(dodai_icons::IconId::Plus)
+                    }
+                    #[cfg(not(feature = "icons"))]
+                    {
+                        None::<()>
+                    }
+                }),
             )
             .clicked()
         {
@@ -62,6 +76,23 @@ pub fn glow_controls(ui: &mut Ui, intensity: &mut f32) -> bool {
         }
     });
     *intensity != before
+}
+
+/// A ghost button showing `icon` (the `dodai-icons` glyph), or `fallback` text without it.
+#[cfg(feature = "icons")]
+fn glow_button(_fallback: &str, icon: Option<dodai_icons::IconId>) -> Button {
+    let b = Button::new("").variant(ButtonVariant::Ghost).min_width(40.0);
+    match icon {
+        Some(i) => b.icon(i),
+        None => b,
+    }
+}
+
+#[cfg(not(feature = "icons"))]
+fn glow_button(fallback: &str, _icon: Option<()>) -> Button {
+    Button::new(fallback)
+        .variant(ButtonVariant::Ghost)
+        .min_width(40.0)
 }
 
 /// Clamped intensity step.

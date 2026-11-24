@@ -345,14 +345,16 @@ impl Rating {
             let n = i as f32;
             // How much of this star is filled: 0, 0.5 or 1.
             let fill = (value - (n - 1.0)).clamp(0.0, 1.0);
-            let glyph = |c, g: &'static str| div().text_size(size).text_color(c).child(g);
+            let glyph = |c, filled: bool| {
+                crate::icons::Icon::new(crate::icons::IconId::Star)
+                    .size(f32::from(size))
+                    .color(c)
+                    .filled(filled)
+            };
             let mut s = div()
                 .id((self.id.clone(), i.to_string()))
                 .relative()
-                .child(glyph(
-                    if fill >= 1.0 { lit } else { dim },
-                    if fill >= 1.0 { "★" } else { "☆" },
-                ));
+                .child(glyph(if fill >= 1.0 { lit } else { dim }, fill >= 1.0));
             if fill > 0.0 && fill < 1.0 {
                 // The left half of a lit star over the outline.
                 s = s.child(
@@ -363,7 +365,7 @@ impl Rating {
                         .h_full()
                         .w_1_2()
                         .overflow_hidden()
-                        .child(glyph(lit, "★")),
+                        .child(glyph(lit, true)),
                 );
             }
             if let Some(f) = self.on_change.clone() {

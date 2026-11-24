@@ -275,7 +275,11 @@ pub(super) fn choice(mut c: Choice, window: &mut Window, cx: &mut App) -> gpui::
                     .left(px(m.dx))
                     .text_color(hsla(k.thumb).opacity(m.opacity.min(1.0)))
                     .text_size(px(h * CHECK_MARK * m.scale.max(0.0)))
-                    .child(if mixed { "−" } else { "✓" }),
+                    .child(check_mark(
+                        mixed,
+                        h * CHECK_MARK * m.scale.max(0.0),
+                        hsla(k.thumb).opacity(m.opacity.min(1.0)),
+                    )),
             ),
             _ => el,
         },
@@ -468,11 +472,11 @@ impl M3Look<'_> {
                 .text_color(thumb_c.opacity(mark.opacity.min(1.0)))
                 .text_size(px(bx * M3_CHECK_MARK * mark.scale.max(0.0)));
             if mark.opacity > 0.01 {
-                b = b.child(div().relative().left(px(mark.dx)).child(if mixed {
-                    "−"
-                } else {
-                    "✓"
-                }));
+                b = b.child(div().relative().left(px(mark.dx)).child(check_mark(
+                    mixed,
+                    bx * M3_CHECK_MARK * mark.scale.max(0.0),
+                    thumb_c.opacity(mark.opacity.min(1.0)),
+                )));
             }
             outer.child(b)
         } else {
@@ -676,3 +680,16 @@ choice_component!(
     Kind::Radio,
     true
 );
+
+/// The tick (or the dash for a mixed state) inside a checkbox or switch thumb, as an icon from
+/// `dodai-icons` in the active design's pack.
+fn check_mark(mixed: bool, size: f32, ink: gpui::Hsla) -> gpui::AnyElement {
+    crate::icons::Icon::new(if mixed {
+        crate::icons::IconId::Minus
+    } else {
+        crate::icons::IconId::Check
+    })
+    .size(size.max(1.0))
+    .color(ink)
+    .into_any_element()
+}
