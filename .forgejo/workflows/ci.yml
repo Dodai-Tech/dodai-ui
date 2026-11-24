@@ -110,7 +110,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [codeberg-medium]
-        crate: [dodai-ratatui, dodai-topcoat, dodai-dioxus, dodai-showcase-model]
+        crate: [dodai-tui, dodai-topcoat, dodai-dioxus, dodai-showcase-model]
         include:
           - { crate: dodai-iced, os: codeberg-medium, gui: true }
           - { crate: dodai-gpui, os: codeberg-medium, gui: true }

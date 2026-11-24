@@ -3,7 +3,7 @@
 //! Framework-agnostic **design tokens** for the Dodai UI design system:
 //! colours (semantic roles), typography, spacing, shape, effects, resolved
 //! component styles and a [`ThemeSwitcher`]. Adapter crates
-//! (`dodai-ratatui`, `dodai-iced`, `dodai-gpui`, `dodai-topcoat`)
+//! (`dodai-tui`, `dodai-iced`, `dodai-gpui`, `dodai-topcoat`)
 //! turn a [`Theme`] into native widgets/styles.
 //!
 //! ```

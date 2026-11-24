@@ -1,4 +1,4 @@
-//! # dodai-ratatui
+//! # dodai-tui
 //!
 //! Turns a [`dodai_core::Theme`] into Ratatui styles and widgets:
 //! chamfered (cut-corner) panels, outline-to-fill buttons, tabs, badges,
@@ -6,7 +6,7 @@
 //!
 //! ```
 //! use dodai_core::Theme;
-//! use dodai_ratatui::TuiTheme;
+//! use dodai_tui::TuiTheme;
 //! let tui = TuiTheme::new(Theme::default());
 //! let _block = tui.block("Dashboard", true);
 //! let _style = tui.selected();

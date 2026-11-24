@@ -7,7 +7,7 @@
 //! and sizes itself to its content.
 //!
 //! ```
-//! use dodai_ratatui::{Dialog, DialogTone};
+//! use dodai_tui::{Dialog, DialogTone};
 //! use ratatui::{buffer::Buffer, layout::Rect, text::Line};
 //!
 //! let theme = tui_nuances::Theme::default();

@@ -3,7 +3,7 @@
 //!
 //! Keys: `s` inline/block, `r` readout, `q` quits.
 use dodai_core::{themes, ControlState};
-use dodai_ratatui::{Checkbox, TuiTheme};
+use dodai_tui::{Checkbox, TuiTheme};
 use ratatui::{
     crossterm::event::{self, Event, KeyCode, KeyEventKind},
     layout::{Constraint, Layout, Margin, Rect},

@@ -1,4 +1,4 @@
-# dodai-ratatui
+# dodai-tui
 Ratatui adapter for Dodai UI: `TuiTheme` (styles, chamfered blocks, buttons, tabs, badges, inputs), `Scanlines`, `ThemeBadge`, 256-colour fallback.
 
 Components (all token-driven; border glyphs follow `Shape::kind()`: square `┌┐└┘`, rounded `╭╮╰╯`, chamfered `╱╲` on the cut corners only):
@@ -13,7 +13,7 @@ Components (all token-driven; border glyphs follow `Shape::kind()`: square `┌�
 `Checkbox::new(&tui, "Neural link", true)` draws the checkbox in the design system of the theme: the design comes from the theme's `Look` flags (tonal → Material, sinking hard-shadow controls → Neo-brutalism, cut corners or luminous → Cyberpunk, else Dodai) and the colours from its palette tokens. Glyphs are block elements, so they are gap-free in any terminal font.
 
 ```rust
-use dodai_ratatui::{Checkbox, TuiTheme};
+use dodai_tui::{Checkbox, TuiTheme};
 use dodai_core::ControlState;
 
 let tui = TuiTheme::new(dodai_core::Theme::default());
@@ -25,16 +25,16 @@ let cb = Checkbox::new(&tui, "Neural link", true)
     .shadow(true);                 // Cyberpunk only (adds a row and a column); off by default
 ```
 
-`Checkbox::design(CheckboxDesign::Material)` forces a design; `widget()` returns the underlying `tui_checkbox::Checkbox`. See `cargo run -p dodai-ratatui --example ratatui_checkboxes`.
+`Checkbox::design(CheckboxDesign::Material)` forces a design; `widget()` returns the underlying `tui_checkbox::Checkbox`. See `cargo run -p dodai-tui --example ratatui_checkboxes`.
 
-Showcase: `cargo run -p dodai-ratatui --example ratatui_showcase` (`DODAI_DUMP=out.html [DODAI_THEME=n]` for a headless HTML frame).
+Showcase: `cargo run -p dodai-tui --example ratatui_showcase` (`DODAI_DUMP=out.html [DODAI_THEME=n]` for a headless HTML frame).
 
 ## Ecosystem widgets
 
 `TuiTheme` is a [`tui_nuances::ThemeProvider`], so any widget crate that speaks `Themed` is styled from Dodai tokens with one call. The adapter depends on and re-exports `tui-chart`, `tui-piechart`, `tui-spinner`, `tui-rating`, `tui-slider` and `tui-checkbox`:
 
 ```rust
-use dodai_ratatui::{tui_checkbox::Checkbox, tui_piechart::PieChart, Themed, TuiTheme};
+use dodai_tui::{tui_checkbox::Checkbox, tui_piechart::PieChart, Themed, TuiTheme};
 
 let tui = TuiTheme::new(dodai_core::Theme::default());
 let cb = Checkbox::new("Neural link", true).themed(&tui);

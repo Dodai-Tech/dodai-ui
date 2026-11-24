@@ -7,7 +7,7 @@ A dashboard engine for the Dodai UI design system. It knows what a dashboard **i
 ┌──────────────┐  Catalogue   ┌────────────────────┐             ┌──────────────────┐
 │ its metrics, │─────────────►│ format · validate  │             │ dodai-gpui       │
 │ units,       │              │ import · export    │  DashboardView  │ dodai-dioxus     │
-│ dimensions   │  SeriesSource│ layout · variables │────────────►│ dodai-ratatui    │
+│ dimensions   │  SeriesSource│ layout · variables │────────────►│ dodai-tui    │
 │ its data     │◄─────────────│ resolve            │  (plain data)│ SVG on a server  │
 └──────────────┘  Query       └────────────────────┘             └──────────────────┘
 ```

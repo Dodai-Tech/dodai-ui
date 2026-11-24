@@ -1,11 +1,11 @@
-//! `cargo run -p dodai-ratatui --example ratatui_showcase`
+//! `cargo run -p dodai-tui --example ratatui_showcase`
 //! Keys: `t` next theme · `T` prev · `←/→` tabs · `q` quit.
 
 use std::io;
 
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 use dodai_core::{ButtonVariant, ControlState, ThemeSwitcher, Tone};
-use dodai_ratatui::{
+use dodai_tui::{
     tui_chart::{
         Axis, BarChart, BarGroup, Candle, CandlestickChart, Gauge, LineChart, Series, Sparkline,
     },

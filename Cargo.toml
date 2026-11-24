@@ -8,7 +8,7 @@ members = [
     "crates/dodai-frost",
     "crates/dodai-shaders",
     "crates/dodai-icons",
-    "crates/dodai-ratatui",
+    "crates/dodai-tui",
     "crates/dodai-iced",
     "crates/dodai-gpui",
     "crates/dodai-showcase",
@@ -71,7 +71,7 @@ dodai-slint = { path = "crates/dodai-slint", version = "0.1.6", default-features
 dodai-dioxus = { path = "crates/dodai-dioxus", version = "0.1.6", default-features = false }
 dodai-leptos = { path = "crates/dodai-leptos", version = "0.1.6", default-features = false }
 dodai-yew = { path = "crates/dodai-yew", version = "0.1.6", default-features = false }
-dodai-ratatui = { path = "crates/dodai-ratatui", version = "0.1.6", default-features = false }
+dodai-tui = { path = "crates/dodai-tui", version = "0.1.6", default-features = false }
 
 [profile.dev]
 opt-level = 1

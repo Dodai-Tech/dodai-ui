@@ -3,7 +3,7 @@
 //!
 //! ```sh
 //! cargo run -p dodai-ui --example themes --features all-designs
-//! cargo run -p dodai-ui --example themes --features "cyberpunk,ratatui"
+//! cargo run -p dodai-ui --example themes --features "cyberpunk,tui"
 //! ```
 
 use dodai_ui::core::{switcher, ButtonVariant, ControlState};
@@ -22,10 +22,10 @@ fn main() {
     }
 
     // Toolkit modules exist only when their feature is on.
-    #[cfg(feature = "ratatui")]
+    #[cfg(feature = "tui")]
     {
-        let _ = dodai_ui::ratatui::TuiTheme::new(sw.current().clone());
-        println!("ratatui adapter ready");
+        let _ = dodai_ui::tui::TuiTheme::new(sw.current().clone());
+        println!("tui adapter ready");
     }
     #[cfg(feature = "iced")]
     {

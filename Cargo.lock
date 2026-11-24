@@ -4365,22 +4365,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dodai-ratatui"
-version = "0.1.6"
-dependencies = [
- "crossterm",
- "dodai-core",
- "ratatui",
- "tui-chart",
- "tui-checkbox",
- "tui-nuances",
- "tui-piechart",
- "tui-rating",
- "tui-slider",
- "tui-spinner",
-]
-
-[[package]]
 name = "dodai-shaders"
 version = "0.1.6"
 dependencies = [
@@ -4466,6 +4450,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "dodai-tui"
+version = "0.1.6"
+dependencies = [
+ "crossterm",
+ "dodai-core",
+ "ratatui",
+ "tui-chart",
+ "tui-checkbox",
+ "tui-nuances",
+ "tui-piechart",
+ "tui-rating",
+ "tui-slider",
+ "tui-spinner",
+]
+
+[[package]]
 name = "dodai-ui"
 version = "0.1.6"
 dependencies = [
@@ -4481,10 +4481,10 @@ dependencies = [
  "dodai-iced",
  "dodai-icons",
  "dodai-leptos",
- "dodai-ratatui",
  "dodai-shaders",
  "dodai-slint",
  "dodai-topcoat",
+ "dodai-tui",
  "dodai-yew",
 ]
 

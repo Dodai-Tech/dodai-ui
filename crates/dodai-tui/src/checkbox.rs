@@ -26,7 +26,7 @@ pub fn checkbox_design(look: &Look) -> Design {
 /// Checkbox drawn in the design system of the theme.
 ///
 /// ```
-/// use dodai_ratatui::{Checkbox, TuiTheme};
+/// use dodai_tui::{Checkbox, TuiTheme};
 /// let tui = TuiTheme::new(dodai_core::Theme::default());
 /// let cb = Checkbox::new(&tui, "Neural link", true).block(true);
 /// assert_eq!(cb.height(), 3);

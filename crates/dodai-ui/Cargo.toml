@@ -57,8 +57,8 @@ dioxus   = ["dep:dodai-dioxus"]
 leptos   = ["dep:dodai-leptos"]
 ## `dodai::yew`.
 yew      = ["dep:dodai-yew"]
-## `dodai::ratatui`.
-ratatui  = ["dep:dodai-ratatui"]
+## `dodai::tui`: terminal UI (ratatui).
+tui      = ["dep:dodai-tui"]
 ## `dodai::topcoat`: server-rendered HTML.
 topcoat  = ["dep:dodai-topcoat"]
 
@@ -78,5 +78,5 @@ dodai-slint    = { workspace = true, optional = true }
 dodai-dioxus   = { workspace = true, optional = true }
 dodai-leptos   = { workspace = true, optional = true }
 dodai-yew      = { workspace = true, optional = true }
-dodai-ratatui  = { workspace = true, optional = true }
+dodai-tui  = { workspace = true, optional = true }
 dodai-topcoat  = { workspace = true, optional = true }

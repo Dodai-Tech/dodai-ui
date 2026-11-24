@@ -16,7 +16,7 @@ edition      = "2021"
 [workspace.dependencies]
 serde = { version = "1", features = ["derive"] }
 dodai-core    = { path = "crates/dodai-core",    version = "($v)" }
-dodai-ratatui = { path = "crates/dodai-ratatui", version = "($v)" }
+dodai-tui = { path = "crates/dodai-tui", version = "($v)" }
 '
 }
 
@@ -41,7 +41,7 @@ def "test bump: updates workspace + internal deps" [] {
     let out = (bump-workspace-text (sample "0.1.0") "0.2.0")
     assert equal (read-version $out) "0.2.0"
     assert ($out | str contains 'dodai-core    = { path = "crates/dodai-core",    version = "0.2.0" }')
-    assert ($out | str contains 'dodai-ratatui = { path = "crates/dodai-ratatui", version = "0.2.0" }')
+    assert ($out | str contains 'dodai-tui = { path = "crates/dodai-tui", version = "0.2.0" }')
 }
 
 def "test bump: leaves third-party deps alone" [] {

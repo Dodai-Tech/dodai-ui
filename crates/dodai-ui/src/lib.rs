@@ -16,7 +16,7 @@
 //! | --- | --- |
 //! | `dodai`, `cyberpunk`, `material`, `neobrutalism` (`all-designs`) | the designs inside [`core`] |
 //! | `icons`, `charts`, `dash`, `fx`, `frost`, `shaders` | [`icons`], [`charts`], [`dash`], [`fx`], [`frost`], [`shaders`] |
-//! | `iced`, `gpui`, `egui`, `bevy`, `slint`, `dioxus`, `leptos`, `yew`, `ratatui`, `topcoat` | the toolkit of that name |
+//! | `iced`, `gpui`, `egui`, `bevy`, `slint`, `dioxus`, `leptos`, `yew`, `tui`, `topcoat` | the toolkit of that name |
 //!
 //! Freya and xilem live in their own workspaces (their GPU stacks do not unify with the others)
 //! and are used through `dodai-freya` and `dodai-xilem` directly.
@@ -50,8 +50,8 @@ pub use dodai_gpui as gpui;
 pub use dodai_iced as iced;
 #[cfg(feature = "leptos")]
 pub use dodai_leptos as leptos;
-#[cfg(feature = "ratatui")]
-pub use dodai_ratatui as ratatui;
+#[cfg(feature = "tui")]
+pub use dodai_tui as tui;
 #[cfg(feature = "slint")]
 pub use dodai_slint as slint;
 #[cfg(feature = "topcoat")]

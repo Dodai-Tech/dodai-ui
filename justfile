@@ -28,7 +28,7 @@ install-tools:
 # Build the whole workspace (dev). Per-crate: `cargo build --workspace` cannot unify
 # iced's naga 27 with gpui's naga 25 (see dodai-iced dev-dependencies).
 build:
-    for c in dodai-core dodai-charts dodai-ratatui dodai-iced dodai-gpui dodai-topcoat; do cargo build -p $c || exit 1; done
+    for c in dodai-core dodai-charts dodai-tui dodai-iced dodai-gpui dodai-topcoat; do cargo build -p $c || exit 1; done
 
 build-core:
     cargo build -p dodai-core
@@ -51,7 +51,7 @@ build-charts:
     cargo build -p dodai-charts
 
 build-ratatui:
-    cargo build -p dodai-ratatui
+    cargo build -p dodai-tui
 
 build-iced:
     cargo build -p dodai-iced
@@ -63,13 +63,13 @@ build-topcoat:
     cargo build -p dodai-topcoat
 
 build-release:
-    for c in dodai-core dodai-charts dodai-ratatui dodai-iced dodai-gpui dodai-topcoat; do cargo build --release -p $c || exit 1; done
+    for c in dodai-core dodai-charts dodai-tui dodai-iced dodai-gpui dodai-topcoat; do cargo build --release -p $c || exit 1; done
 
 # ── Run the showcases ─────────────────────────────────────────────────────────
 
 # Ratatui showcase (t = next theme)
 run-ratatui:
-    cargo run -p dodai-ratatui --example ratatui_showcase
+    cargo run -p dodai-tui --example ratatui_showcase
 
 # Iced showcase
 run-iced:
@@ -144,7 +144,7 @@ check-gpui-features:
     cargo check -p dodai-core --features dodai
 
 test-ratatui:
-    cargo test -p dodai-ratatui
+    cargo test -p dodai-tui
 
 test-iced:
     cargo test -p dodai-iced

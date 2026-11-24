@@ -3,7 +3,7 @@
 Framework-agnostic design tokens (colour roles, typography, spacing, shape, effects),
 resolved component styles, `ThemeSwitcher` and the four design systems of Dodai UI:
 Cyberpunk, Material 3, Neo-Brutalism and Dodai. It knows no UI toolkit; the adapters
-(`dodai-gpui`, `dodai-iced`, `dodai-bevy`, `dodai-dioxus`, `dodai-topcoat`, `dodai-ratatui`)
+(`dodai-gpui`, `dodai-iced`, `dodai-bevy`, `dodai-dioxus`, `dodai-topcoat`, `dodai-tui`)
 turn its tokens into widgets.
 
 ```toml

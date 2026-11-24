@@ -24,7 +24,7 @@ Neo-Brutalism and Dodai.
 | [`dodai-frost`](crates/dodai-frost) | none | Frosted glass on RGBA pixels, GPU first with a CPU fallback |
 
 Also in the repository but **not part of the first release**: `dodai-charts` (70 gpui charts and their
-renderer-agnostic maths), `dodai-dash` (a dashboard engine: a TOML and JSON dashboard format, validation against your own metrics, view models; no storage and no rendering; see its [README](crates/dodai-dash/README.md)), `dodai-ratatui` (a terminal adapter, still small) and the egui,
+renderer-agnostic maths), `dodai-dash` (a dashboard engine: a TOML and JSON dashboard format, validation against your own metrics, view models; no storage and no rendering; see its [README](crates/dodai-dash/README.md)), `dodai-tui` (a terminal adapter, still small) and the egui,
 slint, yew, leptos and freya adapters.
 
 **Started:** [`dodai-xilem`](crates/dodai-xilem) for [xilem](https://github.com/linebender/xilem) (masonry widgets, vello renderer). Colour conversion, button, tag, panel and tabs; run the `xilem_showcase` example.
@@ -42,7 +42,7 @@ use dodai_ui::core::ThemeSwitcher;
 use dodai_ui::iced::IcedTheme;
 ```
 
-Features: designs `dodai` (default), `cyberpunk`, `material`, `neobrutalism`, `all-designs`; blocks `icons`, `charts`, `dash`, `fx`, `frost`, `shaders`; toolkits `iced`, `gpui`, `egui`, `bevy`, `slint`, `dioxus`, `leptos`, `yew`, `ratatui`, `topcoat`. Freya and xilem are separate workspaces: use `dodai-freya` / `dodai-xilem` directly.
+Features: designs `dodai` (default), `cyberpunk`, `material`, `neobrutalism`, `all-designs`; blocks `icons`, `charts`, `dash`, `fx`, `frost`, `shaders`; toolkits `iced`, `gpui`, `egui`, `bevy`, `slint`, `dioxus`, `leptos`, `yew`, `tui`, `topcoat`. Freya and xilem are separate workspaces: use `dodai-freya` / `dodai-xilem` directly.
 
 ## Status (0.1)
 
@@ -113,7 +113,7 @@ has the same picker. Frost per toolkit:
 | gpui, iced, bevy | blurred backdrop (`dodai-frost`; GPU first, CPU fallback) |
 | topcoat, dioxus, yew, leptos | CSS `backdrop-filter` |
 | egui, freya | painted by the adapter (freya uses `backdrop_blur`) |
-| slint, ratatui | none |
+| slint, tui | none |
 
 ## Pick only what you need
 
