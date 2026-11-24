@@ -38,9 +38,40 @@ pub struct UiAxisGizmo {
     pub basis: Basis,
     /// Sizes, derived from the side length.
     pub layout: GizmoLayout,
+    /// Opacity of the whole gizmo, `0.0..=1.0`: backdrop, balls, stems and buttons.
+    pub opacity: f32,
+    /// Opacity of the round backdrop on its own, `0.0..=1.0` (multiplied by [`opacity`](Self::opacity)).
+    pub backdrop: f32,
 }
 
+/// Default opacity of the round backdrop.
+pub const DEFAULT_BACKDROP: f32 = 0.72;
+
 impl UiAxisGizmo {
+    /// Sets the opacity of the whole gizmo (clamped to `0.0..=1.0`).
+    pub fn set_opacity(&mut self, opacity: f32) {
+        self.opacity = opacity.clamp(0.0, 1.0);
+    }
+
+    /// Sets the opacity of the backdrop only (clamped to `0.0..=1.0`).
+    pub fn set_backdrop(&mut self, backdrop: f32) {
+        self.backdrop = backdrop.clamp(0.0, 1.0);
+    }
+
+    /// Whole-gizmo opacity builder.
+    #[must_use]
+    pub fn with_opacity(mut self, opacity: f32) -> Self {
+        self.set_opacity(opacity);
+        self
+    }
+
+    /// Backdrop opacity builder.
+    #[must_use]
+    pub fn with_backdrop(mut self, backdrop: f32) -> Self {
+        self.set_backdrop(backdrop);
+        self
+    }
+
     /// Points the gizmo like an orbit camera (yaw 0 looks north from the south).
     pub fn set_orbit(&mut self, yaw: f32, pitch: f32) {
         self.basis = Basis::from_orbit(yaw, pitch);
@@ -60,6 +91,10 @@ pub(crate) enum GizmoPart {
     Home,
     HomeInk,
     HomeCut,
+    /// The plus (`true`) or minus (`false`) button.
+    Zoom(bool),
+    /// The bars of a plus or minus glyph.
+    ZoomInk,
 }
 
 /// Something the gizmo reported.
@@ -78,6 +113,10 @@ pub enum GizmoKind {
     Select(AxisId),
     /// The home button was clicked.
     Home,
+    /// The plus button was clicked: move the camera closer.
+    ZoomIn,
+    /// The minus button was clicked: move the camera away.
+    ZoomOut,
     /// The pointer dragged inside the gizmo by this many pixels (feed it to [`orbit`]).
     Drag(Vec2),
 }
@@ -176,12 +215,53 @@ pub fn axis_gizmo(size: f32) -> impl Bundle {
             glyph(GizmoPart::HomeCut, 0.44, 0.55, 0.12, 0.24, 0.0),
         ],
     );
+    let zoom_button = move |zoom_in: bool| {
+        let c = if zoom_in {
+            layout.zoom_in_centre()
+        } else {
+            layout.zoom_out_centre()
+        };
+        let d = layout.zoom;
+        let mut node = abs(c[0] - d / 2.0, c[1] - d / 2.0, d, d);
+        node.border = UiRect::all(Val::Px(1.0));
+        node.border_radius = BorderRadius::all(Val::Px(d / 2.0));
+        let bar = move |left: f32, top: f32, w: f32, hh: f32| {
+            (
+                GizmoPart::ZoomInk,
+                abs(left * d, top * d, w * d, hh * d),
+                BackgroundColor(Color::NONE),
+                Pickable::IGNORE,
+            )
+        };
+        (
+            GizmoPart::Zoom(zoom_in),
+            ControlPointer::default(),
+            node,
+            BackgroundColor(Color::NONE),
+            BorderColor::all(Color::NONE),
+            ZIndex(1000),
+            Children::spawn(SpawnWith(move |c: &mut ChildSpawner| {
+                c.spawn(bar(0.28, 0.46, 0.44, 0.08));
+                if zoom_in {
+                    c.spawn(bar(0.46, 0.28, 0.08, 0.44));
+                }
+            })),
+        )
+    };
     (
         UiAxisGizmo {
             basis: Basis::from_orbit(0.6, 0.45),
             layout,
+            opacity: 1.0,
+            backdrop: DEFAULT_BACKDROP,
         },
-        Children::spawn((SpawnIter(stems), SpawnIter(balls), Spawn(home))),
+        Children::spawn((
+            SpawnIter(stems),
+            SpawnIter(balls),
+            Spawn(home),
+            Spawn(zoom_button(false)),
+            Spawn(zoom_button(true)),
+        )),
     )
 }
 
@@ -189,6 +269,11 @@ fn upd<T: PartialEq>(slot: &mut T, v: T) {
     if *slot != v {
         *slot = v;
     }
+}
+
+/// `c` with its alpha scaled by `opacity`.
+fn fade(c: Rgba, opacity: f32) -> Rgba {
+    c.with_alpha(f32::from(c.a) / 255.0 * opacity.clamp(0.0, 1.0))
 }
 
 fn lighten(c: Rgba, towards: Rgba, t: f32) -> Rgba {
@@ -213,8 +298,14 @@ pub(crate) fn style_gizmo_roots(
         upd(&mut n.height, Val::Px(s));
         upd(&mut n.border, UiRect::all(Val::Px(bw)));
         upd(&mut n.border_radius, BorderRadius::all(Val::Px(s / 2.0)));
-        upd(&mut bg.0, color(p.surface.with_alpha(0.72)));
-        upd(&mut *bc, BorderColor::all(color(p.border_strong)));
+        upd(
+            &mut bg.0,
+            color(fade(p.surface.with_alpha(g.backdrop), g.opacity)),
+        );
+        upd(
+            &mut *bc,
+            BorderColor::all(color(fade(p.border_strong, g.opacity))),
+        );
     }
 }
 
@@ -264,6 +355,11 @@ pub(crate) fn style_gizmo_parts(
     mut parts: Parts,
     mut letters: Query<(Entity, &GizmoPart, &mut TextColor)>,
 ) {
+    let opacity_of = |e: Entity| {
+        find_root(e, &parents, &roots)
+            .and_then(|r| roots.get(r).ok())
+            .map_or(1.0, |g| g.opacity)
+    };
     let p = &theme.palette;
     let bw = theme.shape.border_width.max(1.0);
     // Absolute children sit inside the root's border: shift by it.
@@ -299,7 +395,7 @@ pub(crate) fn style_gizmo_parts(
                     } else {
                         col.with_alpha(0.55)
                     };
-                    upd(&mut bg.0, color(col));
+                    upd(&mut bg.0, color(fade(col, root.opacity)));
                 }
                 if let Some(mut z) = z {
                     upd(&mut z.0, (pl.depth * 40.0) as i32);
@@ -323,10 +419,10 @@ pub(crate) fn style_gizmo_parts(
                     } else {
                         Rgba::rgba(0, 0, 0, 0)
                     };
-                    upd(&mut bg.0, color(fill));
+                    upd(&mut bg.0, color(fade(fill, root.opacity)));
                 }
                 if let Some(mut bc) = bc {
-                    upd(&mut *bc, BorderColor::all(color(base)));
+                    upd(&mut *bc, BorderColor::all(color(fade(base, root.opacity))));
                 }
                 if let Some(mut z) = z {
                     upd(&mut z.0, 100 + (pl.depth * 40.0) as i32);
@@ -342,28 +438,57 @@ pub(crate) fn style_gizmo_parts(
                     } else {
                         p.surface_raised.with_alpha(0.85)
                     };
-                    upd(&mut bg.0, color(fill));
+                    upd(&mut bg.0, color(fade(fill, root.opacity)));
                 }
                 if let Some(mut bc) = bc {
-                    upd(&mut *bc, BorderColor::all(color(p.border)));
+                    upd(
+                        &mut *bc,
+                        BorderColor::all(color(fade(p.border, root.opacity))),
+                    );
                 }
             }
-            GizmoPart::HomeInk => {
+            GizmoPart::Zoom(zoom_in) => {
+                let hc = if zoom_in {
+                    layout.zoom_in_centre()
+                } else {
+                    layout.zoom_out_centre()
+                };
+                upd(&mut node.left, Val::Px(hc[0] - layout.zoom / 2.0 - bw));
+                upd(&mut node.top, Val::Px(hc[1] - layout.zoom / 2.0 - bw));
                 if let Some(mut bg) = bg {
-                    upd(&mut bg.0, color(p.text));
+                    let fill = if hovered {
+                        p.surface_raised
+                    } else {
+                        p.surface_raised.with_alpha(0.85)
+                    };
+                    upd(&mut bg.0, color(fade(fill, root.opacity)));
+                }
+                if let Some(mut bc) = bc {
+                    upd(
+                        &mut *bc,
+                        BorderColor::all(color(fade(p.border, root.opacity))),
+                    );
+                }
+            }
+            GizmoPart::HomeInk | GizmoPart::ZoomInk => {
+                if let Some(mut bg) = bg {
+                    upd(&mut bg.0, color(fade(p.text, root.opacity)));
                 }
             }
             GizmoPart::HomeCut => {
                 if let Some(mut bg) = bg {
-                    upd(&mut bg.0, color(p.surface_raised));
+                    upd(&mut bg.0, color(fade(p.surface_raised, root.opacity)));
                 }
             }
             GizmoPart::Letter(_) => {}
         }
     }
-    for (_, part, mut tc) in &mut letters {
+    for (e, part, mut tc) in &mut letters {
         if let GizmoPart::Letter(a) = *part {
-            upd(&mut tc.0, color(theme.on(tone(p, a.tone()))));
+            upd(
+                &mut tc.0,
+                color(fade(theme.on(tone(p, a.tone())), opacity_of(e))),
+            );
         }
     }
 }
@@ -398,6 +523,17 @@ pub(crate) fn gizmo_drag(
     }
 }
 
+/// What a click on `part` reports (`None`: the part is not clickable).
+fn click_kind(part: GizmoPart) -> Option<GizmoKind> {
+    match part {
+        GizmoPart::Ball(a) => Some(GizmoKind::Select(a)),
+        GizmoPart::Home => Some(GizmoKind::Home),
+        GizmoPart::Zoom(true) => Some(GizmoKind::ZoomIn),
+        GizmoPart::Zoom(false) => Some(GizmoKind::ZoomOut),
+        _ => None,
+    }
+}
+
 /// A click that was not a drag on a ball or the home button.
 pub(crate) fn gizmo_click(
     click: On<PointerClick>,
@@ -415,10 +551,8 @@ pub(crate) fn gizmo_click(
     if drags.get(root).is_ok_and(|d| d.0.is_drag()) {
         return;
     }
-    let kind = match *part {
-        GizmoPart::Ball(a) => GizmoKind::Select(a),
-        GizmoPart::Home => GizmoKind::Home,
-        _ => return,
+    let Some(kind) = click_kind(*part) else {
+        return;
     };
     out.write(GizmoEvent { entity: root, kind });
 }
@@ -477,5 +611,136 @@ mod tests {
             x1 < x0,
             "from the east +X points at the viewer, near the centre: {x0} {x1}"
         );
+    }
+
+    fn part_node(app: &mut App, part: GizmoPart) -> Node {
+        let mut q = app.world_mut().query::<(&GizmoPart, &Node)>();
+        q.iter(app.world())
+            .find(|(p, _)| **p == part)
+            .map(|(_, n)| n.clone())
+            .expect("part")
+    }
+
+    fn part_fill(app: &mut App, part: GizmoPart) -> Color {
+        let mut q = app.world_mut().query::<(&GizmoPart, &BackgroundColor)>();
+        q.iter(app.world())
+            .find(|(p, _)| **p == part)
+            .map(|(_, b)| b.0)
+            .expect("part")
+    }
+
+    #[test]
+    fn plus_and_minus_sit_at_the_bottom_corners_with_their_bars() {
+        let mut app = app();
+        app.world_mut().spawn(axis_gizmo(130.0));
+        app.update();
+        let px = |v: Val| match v {
+            Val::Px(x) => x,
+            _ => panic!("px"),
+        };
+        let minus = part_node(&mut app, GizmoPart::Zoom(false));
+        let plus = part_node(&mut app, GizmoPart::Zoom(true));
+        let home = part_node(&mut app, GizmoPart::Home);
+        assert!(px(minus.left) < 65.0 && px(plus.left) > 65.0, "left/right");
+        assert!(
+            px(minus.top) > 65.0 && px(plus.top) > 65.0,
+            "both below the centre"
+        );
+        assert!(px(home.top) < 65.0, "home stays on top");
+        // minus has one bar, plus has two
+        let kids = |app: &mut App, e: Entity| {
+            let mut q = app.world_mut().query::<(&GizmoPart, &ChildOf)>();
+            q.iter(app.world())
+                .filter(|(p, c)| **p == GizmoPart::ZoomInk && c.parent() == e)
+                .count()
+        };
+        let mut q2 = app.world_mut().query::<(Entity, &GizmoPart)>();
+        let ents: Vec<_> = q2
+            .iter(app.world())
+            .filter_map(|(e, p)| match p {
+                GizmoPart::Zoom(z) => Some((*z, e)),
+                _ => None,
+            })
+            .collect();
+        for (zoom_in, e) in ents {
+            assert_eq!(kids(&mut app, e), if zoom_in { 2 } else { 1 });
+        }
+    }
+
+    #[test]
+    fn opacity_scales_every_colour_and_clamps() {
+        let mut app = app();
+        let e = app.world_mut().spawn(axis_gizmo(130.0)).id();
+        app.update();
+        let alpha = |c: Color| c.to_srgba().alpha;
+        let full_ball = alpha(part_fill(&mut app, GizmoPart::Ball(AxisId::PosZ)));
+        let full_ink = alpha(part_fill(&mut app, GizmoPart::ZoomInk));
+        assert!((full_ball - 1.0).abs() < 0.01 && (full_ink - 1.0).abs() < 0.01);
+        app.world_mut()
+            .get_mut::<UiAxisGizmo>(e)
+            .expect("gizmo")
+            .set_opacity(0.5);
+        app.update();
+        assert!((alpha(part_fill(&mut app, GizmoPart::Ball(AxisId::PosZ))) - 0.5).abs() < 0.01);
+        assert!((alpha(part_fill(&mut app, GizmoPart::ZoomInk)) - 0.5).abs() < 0.01);
+        assert!((alpha(part_fill(&mut app, GizmoPart::HomeInk)) - 0.5).abs() < 0.01);
+        let mut g = app.world_mut().get_mut::<UiAxisGizmo>(e).expect("gizmo");
+        g.set_opacity(7.0);
+        assert_eq!(g.opacity, 1.0);
+        g.set_opacity(-1.0);
+        assert_eq!(g.opacity, 0.0);
+    }
+
+    #[test]
+    fn backdrop_opacity_only_changes_the_disc() {
+        let mut app = app();
+        let e = app.world_mut().spawn(axis_gizmo(130.0)).id();
+        app.update();
+        let disc = |app: &mut App| {
+            app.world()
+                .get::<BackgroundColor>(e)
+                .expect("disc")
+                .0
+                .to_srgba()
+                .alpha
+        };
+        let ball = |app: &mut App| {
+            part_fill(app, GizmoPart::Ball(AxisId::PosX))
+                .to_srgba()
+                .alpha
+        };
+        let (d0, b0) = (disc(&mut app), ball(&mut app));
+        assert!(d0 < 1.0, "the disc is translucent by default: {d0}");
+        app.world_mut()
+            .get_mut::<UiAxisGizmo>(e)
+            .expect("gizmo")
+            .set_backdrop(0.2);
+        app.update();
+        assert!(disc(&mut app) < d0);
+        assert!((ball(&mut app) - b0).abs() < 1e-4);
+        let g = UiAxisGizmo {
+            basis: Basis::from_orbit(0.0, 0.0),
+            layout: GizmoLayout::new(100.0),
+            opacity: 1.0,
+            backdrop: DEFAULT_BACKDROP,
+        }
+        .with_opacity(2.0)
+        .with_backdrop(-3.0);
+        assert_eq!((g.opacity, g.backdrop), (1.0, 0.0));
+    }
+
+    #[test]
+    fn clicking_reports_the_kind_of_each_button() {
+        assert_eq!(click_kind(GizmoPart::Zoom(true)), Some(GizmoKind::ZoomIn));
+        assert_eq!(click_kind(GizmoPart::Zoom(false)), Some(GizmoKind::ZoomOut));
+        assert_eq!(click_kind(GizmoPart::Home), Some(GizmoKind::Home));
+        assert_eq!(
+            click_kind(GizmoPart::Ball(AxisId::PosX)),
+            Some(GizmoKind::Select(AxisId::PosX))
+        );
+        // glyph bars, stems and letters are not buttons
+        assert_eq!(click_kind(GizmoPart::ZoomInk), None);
+        assert_eq!(click_kind(GizmoPart::HomeInk), None);
+        assert_eq!(click_kind(GizmoPart::Stem(AxisId::PosX)), None);
     }
 }

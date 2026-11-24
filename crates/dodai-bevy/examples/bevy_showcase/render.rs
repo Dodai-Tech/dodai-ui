@@ -1103,6 +1103,8 @@ pub fn spawn(p: &mut ChildSpawnerCommands, node: &Demo, cx: &Cx) {
             let g = UiAxisGizmo {
                 basis: Basis::from_orbit(vals.num(yaw), vals.num(pitch)),
                 layout: dodai_core::orientation::GizmoLayout::new(*size),
+                opacity: 1.0,
+                backdrop: dodai_bevy::gizmo::DEFAULT_BACKDROP,
             };
             p.spawn((
                 axis_gizmo(*size),

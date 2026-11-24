@@ -169,6 +169,8 @@ pub struct GizmoLayout {
     pub stem: f32,
     /// Diameter of the home button.
     pub home: f32,
+    /// Diameter of the zoom (plus and minus) buttons.
+    pub zoom: f32,
 }
 
 impl GizmoLayout {
@@ -182,6 +184,7 @@ impl GizmoLayout {
             ring: size * 0.14,
             stem: (size * 0.03).max(3.0),
             home: size * 0.23,
+            zoom: size * 0.2,
         }
     }
 
@@ -196,6 +199,20 @@ impl GizmoLayout {
     pub fn home_centre(&self) -> [f32; 2] {
         let r = self.size / 2.0 * std::f32::consts::FRAC_1_SQRT_2;
         [self.size / 2.0 - r, self.size / 2.0 - r]
+    }
+
+    /// Centre of the zoom-out (minus) button: on the circle line, bottom left.
+    #[must_use]
+    pub fn zoom_out_centre(&self) -> [f32; 2] {
+        let r = self.size / 2.0 * std::f32::consts::FRAC_1_SQRT_2;
+        [self.size / 2.0 - r, self.size / 2.0 + r]
+    }
+
+    /// Centre of the zoom-in (plus) button: on the circle line, bottom right.
+    #[must_use]
+    pub fn zoom_in_centre(&self) -> [f32; 2] {
+        let r = self.size / 2.0 * std::f32::consts::FRAC_1_SQRT_2;
+        [self.size / 2.0 + r, self.size / 2.0 + r]
     }
 }
 
@@ -343,6 +360,21 @@ mod tests {
 
     fn near(a: f32, b: f32) -> bool {
         (a - b).abs() < 1e-4
+    }
+
+    #[test]
+    fn corner_buttons_sit_on_the_circle_line() {
+        let l = GizmoLayout::new(130.0);
+        let c = l.centre();
+        for p in [l.home_centre(), l.zoom_out_centre(), l.zoom_in_centre()] {
+            let d = (p[0] - c[0]).hypot(p[1] - c[1]);
+            assert!(near(d, 65.0), "on the circle: {d}");
+        }
+        // home top left, minus bottom left, plus bottom right
+        assert!(l.home_centre()[1] < c[1] && l.home_centre()[0] < c[0]);
+        assert!(l.zoom_out_centre()[1] > c[1] && l.zoom_out_centre()[0] < c[0]);
+        assert!(l.zoom_in_centre()[1] > c[1] && l.zoom_in_centre()[0] > c[0]);
+        assert!(l.zoom > 0.0);
     }
 
     #[test]

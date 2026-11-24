@@ -89,6 +89,8 @@ pub fn gizmo(
                 (y.unwrap_or(now.0), p)
             }
             GizmoKind::Home => home,
+            // The showcase has no camera distance to change.
+            GizmoKind::ZoomIn | GizmoKind::ZoomOut => continue,
             GizmoKind::Drag(d) => dodai_core::orientation::orbit(now.0, now.1, d.x, d.y),
         };
         model.0.update(Action::Set(yaw.clone(), Value::Num(y)));
