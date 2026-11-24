@@ -28,7 +28,7 @@ use dodai_core::{Color as Rgba, Palette};
 pub use dodai_core::orientation::{orbit, AxisId, AxisTone, Basis};
 
 use crate::theme::{color, DodaiTheme};
-use crate::widgets::ControlPointer;
+use crate::widgets::{ControlPointer, Foreground};
 
 /// The gizmo root. Set [`basis`](Self::basis) from your camera every frame.
 #[derive(Component, Debug, Clone, PartialEq)]
@@ -82,8 +82,10 @@ impl UiAxisGizmo {
 #[derive(Component, Debug, Default, Clone, Copy)]
 pub struct GizmoDrag(DragTracker);
 
-/// A piece of a gizmo.
+/// A piece of a gizmo. With the `icons` feature the button glyphs are icons from `dodai-icons`;
+/// the ink and cut parts draw them from boxes otherwise.
 #[derive(Component, Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "icons", allow(dead_code))]
 pub(crate) enum GizmoPart {
     Stem(AxisId),
     Ball(AxisId),
@@ -189,6 +191,7 @@ pub fn axis_gizmo(size: f32) -> impl Bundle {
     let mut home_node = abs(hc[0] - h / 2.0, hc[1] - h / 2.0, h, h);
     home_node.border = UiRect::all(Val::Px(1.0));
     home_node.border_radius = BorderRadius::all(Val::Px(h / 2.0));
+    #[cfg(not(feature = "icons"))]
     let glyph = |part: GizmoPart, left: f32, top: f32, w: f32, hh: f32, turn: f32| {
         let mut n = abs(left * h, top * h, w * h, hh * h);
         if turn != 0.0 {
@@ -202,18 +205,25 @@ pub fn axis_gizmo(size: f32) -> impl Bundle {
             Pickable::IGNORE,
         )
     };
+    home_node.align_items = AlignItems::Center;
+    home_node.justify_content = JustifyContent::Center;
+    #[cfg(feature = "icons")]
+    let home_glyph = children![crate::widgets::icon(dodai_icons::IconId::Home, glyph_px(h))];
+    #[cfg(not(feature = "icons"))]
+    let home_glyph = children![
+        glyph(GizmoPart::HomeInk, 0.27, 0.17, 0.46, 0.46, 45.0),
+        glyph(GizmoPart::HomeInk, 0.27, 0.45, 0.46, 0.34, 0.0),
+        glyph(GizmoPart::HomeCut, 0.44, 0.55, 0.12, 0.24, 0.0),
+    ];
     let home = (
         GizmoPart::Home,
         ControlPointer::default(),
+        Foreground::default(),
         home_node,
         BackgroundColor(Color::NONE),
         BorderColor::all(Color::NONE),
         ZIndex(1000),
-        children![
-            glyph(GizmoPart::HomeInk, 0.27, 0.17, 0.46, 0.46, 45.0),
-            glyph(GizmoPart::HomeInk, 0.27, 0.45, 0.46, 0.34, 0.0),
-            glyph(GizmoPart::HomeCut, 0.44, 0.55, 0.12, 0.24, 0.0),
-        ],
+        home_glyph,
     );
     let zoom_button = move |zoom_in: bool| {
         let c = if zoom_in {
@@ -225,6 +235,9 @@ pub fn axis_gizmo(size: f32) -> impl Bundle {
         let mut node = abs(c[0] - d / 2.0, c[1] - d / 2.0, d, d);
         node.border = UiRect::all(Val::Px(1.0));
         node.border_radius = BorderRadius::all(Val::Px(d / 2.0));
+        node.align_items = AlignItems::Center;
+        node.justify_content = JustifyContent::Center;
+        #[cfg(not(feature = "icons"))]
         let bar = move |left: f32, top: f32, w: f32, hh: f32| {
             (
                 GizmoPart::ZoomInk,
@@ -239,11 +252,24 @@ pub fn axis_gizmo(size: f32) -> impl Bundle {
             node,
             BackgroundColor(Color::NONE),
             BorderColor::all(Color::NONE),
+            Foreground::default(),
             ZIndex(1000),
             Children::spawn(SpawnWith(move |c: &mut ChildSpawner| {
-                c.spawn(bar(0.28, 0.46, 0.44, 0.08));
-                if zoom_in {
-                    c.spawn(bar(0.46, 0.28, 0.08, 0.44));
+                #[cfg(feature = "icons")]
+                {
+                    let icon = if zoom_in {
+                        dodai_icons::IconId::Plus
+                    } else {
+                        dodai_icons::IconId::Minus
+                    };
+                    c.spawn(crate::widgets::icon(icon, glyph_px(d)));
+                }
+                #[cfg(not(feature = "icons"))]
+                {
+                    c.spawn(bar(0.28, 0.46, 0.44, 0.08));
+                    if zoom_in {
+                        c.spawn(bar(0.46, 0.28, 0.08, 0.44));
+                    }
                 }
             })),
         )
@@ -263,6 +289,12 @@ pub fn axis_gizmo(size: f32) -> impl Bundle {
             Spawn(zoom_button(true)),
         )),
     )
+}
+
+/// Side of an icon inside a button of diameter `d`.
+#[cfg(feature = "icons")]
+fn glyph_px(d: f32) -> u32 {
+    (d * 0.62).round().max(8.0) as u32
 }
 
 fn upd<T: PartialEq>(slot: &mut T, v: T) {
@@ -344,6 +376,7 @@ type Parts<'w, 's> = Query<
         Option<&'static mut BorderColor>,
         Option<&'static mut ZIndex>,
         Option<&'static mut UiTransform>,
+        Option<&'static mut Foreground>,
     ),
 >;
 
@@ -365,7 +398,7 @@ pub(crate) fn style_gizmo_parts(
     // Absolute children sit inside the root's border: shift by it.
     let placed_for = |root: &UiAxisGizmo| place(&root.basis, &root.layout, &AxisId::DEFAULT);
     let find = |placed: &[Placed], a: AxisId| placed.iter().copied().find(|x| x.axis == a);
-    for (e, part, pointer, mut node, bg, bc, z, tf) in &mut parts {
+    for (e, part, pointer, mut node, bg, bc, z, tf, fg) in &mut parts {
         let Some(root_e) = find_root(e, &parents, &roots) else {
             continue;
         };
@@ -446,6 +479,9 @@ pub(crate) fn style_gizmo_parts(
                         BorderColor::all(color(fade(p.border, root.opacity))),
                     );
                 }
+                if let Some(mut fg) = fg {
+                    upd(&mut fg.0, fade(p.text, root.opacity));
+                }
             }
             GizmoPart::Zoom(zoom_in) => {
                 let hc = if zoom_in {
@@ -468,6 +504,9 @@ pub(crate) fn style_gizmo_parts(
                         &mut *bc,
                         BorderColor::all(color(fade(p.border, root.opacity))),
                     );
+                }
+                if let Some(mut fg) = fg {
+                    upd(&mut fg.0, fade(p.text, root.opacity));
                 }
             }
             GizmoPart::HomeInk | GizmoPart::ZoomInk => {
@@ -648,23 +687,67 @@ mod tests {
         );
         assert!(px(home.top) < 65.0, "home stays on top");
         // minus has one bar, plus has two
-        let kids = |app: &mut App, e: Entity| {
-            let mut q = app.world_mut().query::<(&GizmoPart, &ChildOf)>();
-            q.iter(app.world())
-                .filter(|(p, c)| **p == GizmoPart::ZoomInk && c.parent() == e)
-                .count()
-        };
-        let mut q2 = app.world_mut().query::<(Entity, &GizmoPart)>();
-        let ents: Vec<_> = q2
+        let mut q = app.world_mut().query::<(Entity, &GizmoPart)>();
+        let ents: Vec<_> = q
             .iter(app.world())
             .filter_map(|(e, p)| match p {
                 GizmoPart::Zoom(z) => Some((*z, e)),
                 _ => None,
             })
             .collect();
+        assert_eq!(ents.len(), 2);
         for (zoom_in, e) in ents {
-            assert_eq!(kids(&mut app, e), if zoom_in { 2 } else { 1 });
+            #[cfg(feature = "icons")]
+            {
+                let kids = app.world().get::<Children>(e).expect("glyph");
+                assert_eq!(kids.len(), 1);
+                let u = app
+                    .world()
+                    .get::<crate::widgets::UiIcon>(kids[0])
+                    .expect("an icon");
+                let want = if zoom_in {
+                    dodai_icons::IconId::Plus
+                } else {
+                    dodai_icons::IconId::Minus
+                };
+                assert_eq!(u.icon, want, "glyph comes from the icons crate");
+            }
+            #[cfg(not(feature = "icons"))]
+            {
+                let mut q = app.world_mut().query::<(&GizmoPart, &ChildOf)>();
+                let bars = q
+                    .iter(app.world())
+                    .filter(|(p, c)| **p == GizmoPart::ZoomInk && c.parent() == e)
+                    .count();
+                assert_eq!(bars, if zoom_in { 2 } else { 1 });
+            }
         }
+    }
+
+    #[cfg(feature = "icons")]
+    #[test]
+    fn home_is_the_home_icon_and_buttons_carry_the_icon_colour() {
+        let mut app = app();
+        app.world_mut().spawn(axis_gizmo(130.0));
+        app.update();
+        let mut q = app
+            .world_mut()
+            .query::<(&GizmoPart, &Children, &Foreground)>();
+        let rows: Vec<_> = q
+            .iter(app.world())
+            .map(|(p, k, f)| (*p, k.iter().collect::<Vec<_>>(), f.0))
+            .collect();
+        let home = rows.iter().find(|r| r.0 == GizmoPart::Home).expect("home");
+        let icon = app
+            .world()
+            .get::<crate::widgets::UiIcon>(home.1[0])
+            .expect("an icon");
+        assert_eq!(icon.icon, dodai_icons::IconId::Home);
+        let text = app.world().resource::<DodaiTheme>().palette.text;
+        assert_eq!(
+            home.2, text,
+            "the icon is tinted with the theme text colour"
+        );
     }
 
     #[test]
@@ -674,16 +757,28 @@ mod tests {
         app.update();
         let alpha = |c: Color| c.to_srgba().alpha;
         let full_ball = alpha(part_fill(&mut app, GizmoPart::Ball(AxisId::PosZ)));
-        let full_ink = alpha(part_fill(&mut app, GizmoPart::ZoomInk));
-        assert!((full_ball - 1.0).abs() < 0.01 && (full_ink - 1.0).abs() < 0.01);
+        let ink = |app: &mut App| -> f32 {
+            #[cfg(feature = "icons")]
+            {
+                let mut q = app.world_mut().query::<(&GizmoPart, &Foreground)>();
+                let f = q
+                    .iter(app.world())
+                    .find(|(p, _)| **p == GizmoPart::Zoom(true))
+                    .map(|(_, f)| f.0)
+                    .expect("plus");
+                f32::from(f.a) / 255.0
+            }
+            #[cfg(not(feature = "icons"))]
+            alpha(part_fill(app, GizmoPart::ZoomInk))
+        };
+        assert!((full_ball - 1.0).abs() < 0.01 && (ink(&mut app) - 1.0).abs() < 0.01);
         app.world_mut()
             .get_mut::<UiAxisGizmo>(e)
             .expect("gizmo")
             .set_opacity(0.5);
         app.update();
         assert!((alpha(part_fill(&mut app, GizmoPart::Ball(AxisId::PosZ))) - 0.5).abs() < 0.01);
-        assert!((alpha(part_fill(&mut app, GizmoPart::ZoomInk)) - 0.5).abs() < 0.01);
-        assert!((alpha(part_fill(&mut app, GizmoPart::HomeInk)) - 0.5).abs() < 0.01);
+        assert!((ink(&mut app) - 0.5).abs() < 0.01);
         let mut g = app.world_mut().get_mut::<UiAxisGizmo>(e).expect("gizmo");
         g.set_opacity(7.0);
         assert_eq!(g.opacity, 1.0);
