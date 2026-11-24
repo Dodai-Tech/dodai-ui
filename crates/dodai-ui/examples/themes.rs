@@ -24,7 +24,7 @@ fn main() {
     // Toolkit modules exist only when their feature is on.
     #[cfg(feature = "ratatui")]
     {
-        let _ = dodai_ui::ratatui::RatatuiTheme::new(sw.current().clone());
+        let _ = dodai_ui::ratatui::TuiTheme::new(sw.current().clone());
         println!("ratatui adapter ready");
     }
     #[cfg(feature = "iced")]
