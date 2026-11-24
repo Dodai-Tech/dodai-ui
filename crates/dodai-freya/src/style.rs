@@ -559,7 +559,10 @@ mod tests {
             assert_eq!(fg, t.on(t.palette.danger));
             let (tab, _, ind) = tab_style(&t, true, false);
             assert_eq!(tab.kind, ShapeKind::Square);
-            assert!(ind.is_some());
+            // Designs that fill the active tab (pills, outlines) have no underline.
+            if t.id() == square().id() {
+                assert!(ind.is_some());
+            }
             let (on, thumb_on) = toggle_style(&t, true, ControlState::Idle);
             let (off, _) = toggle_style(&t, false, ControlState::Idle);
             assert_ne!(on.fill, off.fill);
