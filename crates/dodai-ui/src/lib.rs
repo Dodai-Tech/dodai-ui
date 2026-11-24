@@ -50,11 +50,11 @@ pub use dodai_gpui as gpui;
 pub use dodai_iced as iced;
 #[cfg(feature = "leptos")]
 pub use dodai_leptos as leptos;
-#[cfg(feature = "tui")]
-pub use dodai_tui as tui;
 #[cfg(feature = "slint")]
 pub use dodai_slint as slint;
 #[cfg(feature = "topcoat")]
 pub use dodai_topcoat as topcoat;
+#[cfg(feature = "tui")]
+pub use dodai_tui as tui;
 #[cfg(feature = "yew")]
 pub use dodai_yew as yew;
