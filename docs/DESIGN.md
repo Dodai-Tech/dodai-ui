@@ -93,7 +93,7 @@ differs (layout and colour, blind to font detail), and it fails on a wrong size.
 `nu scripts/compare.nu <dir-a> <dir-b> --max-blocks 5` runs it over two directories of same-named
 PNGs and paints the differences into `dist/compare/diff`.
 
-What is missing is the gpui side: gpui 0.2 has no offscreen render, so a per-component capture
+`nu scripts/capture-gpui.nu` screenshots each gpui showcase section (macOS, needs Screen Recording permission).
 needs a window and the OS screenshot (`DODAI_ONLY=<section> DODAI_SIZE=WxH` opens the showcase on
 one section). Sections are not frames, so the pairs have to be cropped to match before a diff
 means anything.
