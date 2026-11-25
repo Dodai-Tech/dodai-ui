@@ -16,7 +16,7 @@ use crate::theme::{color, DodaiTheme};
 
 /// A themed box. Requires the native UI colour components it may drive.
 #[derive(Component, Debug, Clone, Copy, PartialEq, Default)]
-#[require(Node, BackgroundColor, BorderColor)]
+#[require(Node, BackgroundColor, BorderColor, SurfaceShown)]
 pub struct Surface {
     /// `None` = transparent.
     pub fill: Option<Rgba>,
@@ -26,6 +26,93 @@ pub struct Surface {
     pub glow: bool,
     /// Fully round when the theme is `Rounded` (switch thumbs, radios).
     pub pill: bool,
+}
+
+/// The colours a [`Surface`] shows right now: its fill and border glide to each new value over the
+/// theme's motion (`Theme::motion`, the duration and easing every toolkit uses), so a hover, a
+/// press or a theme change fades instead of snapping.
+#[derive(Component, Debug, Clone, Copy, PartialEq, Default)]
+pub struct SurfaceShown {
+    from: (Option<Rgba>, Option<Rgba>),
+    to: (Option<Rgba>, Option<Rgba>),
+    now: (Option<Rgba>, Option<Rgba>),
+    /// Linear progress `0..=1` of the current glide.
+    t: f32,
+    started: bool,
+}
+
+/// Fill or border part of a glide: `None` is the other colour fully transparent.
+fn glide(a: Option<Rgba>, b: Option<Rgba>, e: f32) -> Option<Rgba> {
+    match (a, b) {
+        (None, None) => None,
+        (Some(x), Some(y)) => Some(x.mix(y, e)),
+        (None, Some(y)) => Some(y.with_alpha(0.0).mix(y, e)),
+        (Some(x), None) => Some(x.mix(x.with_alpha(0.0), e)),
+    }
+}
+
+impl SurfaceShown {
+    /// The colours shown (fill, border).
+    pub fn colours(&self) -> (Option<Rgba>, Option<Rgba>) {
+        self.now
+    }
+
+    /// Head for `fill` and `border` from wherever the glide is (the first value is shown at once).
+    fn retarget(&mut self, fill: Option<Rgba>, border: Option<Rgba>) {
+        if !self.started {
+            *self = Self {
+                from: (fill, border),
+                to: (fill, border),
+                now: (fill, border),
+                t: 1.0,
+                started: true,
+            };
+        } else if self.to != (fill, border) {
+            self.from = self.now;
+            self.to = (fill, border);
+            self.t = 0.0;
+        }
+    }
+
+    /// Advance by `dt` seconds of a `duration` glide eased by `ease`; whether the colours moved.
+    fn step(&mut self, dt: f32, duration: f32, ease: impl Fn(f32) -> f32) -> bool {
+        if self.t >= 1.0 {
+            return false;
+        }
+        self.t = if duration <= 0.0 {
+            1.0
+        } else {
+            (self.t + dt / duration).min(1.0)
+        };
+        self.now = if self.t >= 1.0 {
+            self.to
+        } else {
+            let e = ease(self.t);
+            (
+                glide(self.from.0, self.to.0, e),
+                glide(self.from.1, self.to.1, e),
+            )
+        };
+        true
+    }
+}
+
+/// Glides every [`Surface`]'s shown colours towards its colours.
+pub(crate) fn smooth_surfaces(
+    theme: Res<DodaiTheme>,
+    time: Res<Time>,
+    mut q: Query<(Ref<Surface>, &mut SurfaceShown)>,
+) {
+    let m = theme.motion;
+    let (dur, dt) = (m.duration.as_secs_f32(), time.delta_secs());
+    for (s, mut shown) in &mut q {
+        if s.is_changed() || !shown.started {
+            shown.retarget(s.fill, s.border);
+        }
+        if shown.t < 1.0 {
+            shown.step(dt, dur, |t| m.eased(t));
+        }
+    }
 }
 
 /// Frames this surface like a panel: [`dodai_core::Theme::panel_border`] sets its contour and
@@ -241,6 +328,7 @@ pub(crate) fn apply_surfaces(
         Option<Ref<SurfaceCrop>>,
         Option<Ref<crate::glass::UiGlass>>,
         Option<&SurfaceFramed>,
+        Ref<SurfaceShown>,
     )>,
     (windows, ui_scale, mut last_scale): (
         Query<&Window, With<bevy::window::PrimaryWindow>>,
@@ -252,12 +340,19 @@ pub(crate) fn apply_surfaces(
     let scale = windows.single().map_or(1.0, Window::scale_factor) * ui_scale.map_or(1.0, |s| s.0);
     let theme_changed = theme.is_changed() || glass.is_changed() || *last_scale != scale;
     *last_scale = scale;
-    for (e, s, mut node, mut bg, mut bc, mat, shadow, crop, ug, framed) in &mut q {
+    for (e, s, mut node, mut bg, mut bc, mat, shadow, crop, ug, framed, shown) in &mut q {
         let crop_changed = crop.as_ref().is_some_and(|c| c.is_changed());
         let glass_changed = ug.as_ref().is_some_and(|g| g.is_changed());
-        if !theme_changed && !s.is_changed() && !crop_changed && !glass_changed {
+        if !theme_changed
+            && !s.is_changed()
+            && !shown.is_changed()
+            && !crop_changed
+            && !glass_changed
+        {
             continue;
         }
+        let (fill, border) = shown.colours();
+        let s = Surface { fill, border, ..*s };
         let mut r = resolve_cropped(&theme, &s, crop.and_then(|c| c.0));
         // A panel: the contour softened and resized, the hard shadow on the accent corner.
         let mut hard = None;
@@ -580,5 +675,49 @@ mod tests {
             },
         );
         assert_eq!(b.border_width, t.shape.border_width);
+    }
+}
+
+#[cfg(test)]
+mod glide_tests {
+    use super::*;
+
+    fn c(r: u8) -> Option<Rgba> {
+        Some(Rgba::rgba(r, 0, 0, 255))
+    }
+
+    #[test]
+    fn the_first_colours_show_at_once() {
+        let mut s = SurfaceShown::default();
+        s.retarget(c(10), None);
+        assert_eq!(s.colours(), (c(10), None));
+        assert!(!s.step(0.1, 0.2, |t| t), "nothing to glide");
+    }
+
+    #[test]
+    fn a_new_colour_glides_and_lands_exactly() {
+        let mut s = SurfaceShown::default();
+        s.retarget(c(0), c(0));
+        s.retarget(c(200), None);
+        assert!(s.step(0.1, 0.2, |t| t));
+        let (fill, border) = s.colours();
+        assert_eq!(fill, c(100), "half way");
+        assert!(
+            border.is_some_and(|b| b.a > 0 && b.a < 255),
+            "the border fades out"
+        );
+        s.step(1.0, 0.2, |t| t);
+        assert_eq!(s.colours(), (c(200), None), "ends on the target, no border");
+    }
+
+    #[test]
+    fn retargeting_mid_glide_starts_from_where_it_is() {
+        let mut s = SurfaceShown::default();
+        s.retarget(c(0), None);
+        s.retarget(c(200), None);
+        s.step(0.1, 0.2, |t| t);
+        s.retarget(c(0), None);
+        assert_eq!(s.from.0, c(100));
+        assert_eq!(s.t, 0.0);
     }
 }

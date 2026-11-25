@@ -145,6 +145,7 @@ impl Plugin for DodaiUiPlugin {
                 (
                     style_text,
                     crate::glass::sync_backdrop,
+                    crate::surface::smooth_surfaces,
                     apply_surfaces,
                     crate::shimmer::animate_shimmer,
                     sync_clear_color,
