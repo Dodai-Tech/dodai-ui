@@ -2,6 +2,56 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.7] - 2026-11-25
+### ♻️  Refactor
+- move dodai-instruments to its own private repository
+- rename dodai-ratatui to dodai-tui (facade feature and module tui)
+- dodai-tui crate name, facade feature and module tui, CI and docs
+- component glyphs (tab close/add, breadcrumb, checks, sort arrows, rating, glow buttons) use dodai-icons instead of text characters
+### ✨ Features
+- dodai-showcase-web, the topcoat showcase as a WebAssembly module
+- Charts category from plain shapes (filled polygons in Plot), shown live in the web showcase
+- every chart of the gpui showcase in the web Charts category (73 charts in 11 sections, from dodai-charts layouts)
+- status, KPI and dashboard charts; stepped horizon strips; heavy sections redraw slower
+- badge, alert, chip, card, snackbar and dialog from the shared component recipes (iced 22 -> 28 of 128)
+- banner, toast, popover, rich tooltip, kbd and breadcrumb (iced 28 -> 34 of 128)
+- radiance cascades solver for 2D light with shadows
+- dodai-ui facade crate, designs, building blocks and toolkits behind features
+- themes example, feature-gated toolkit adapters
+- radiance cascades demo in the showcase (Light group, movable lamp)
+- named boxes - card, alert, banner, snackbar, toast, chip, badge, avatar, code block, tooltips, popover, dialog, kbd, skeleton, fab, toolbar, segmented, breadcrumb, pagination, stepper
+- gizmo plus/minus zoom buttons, whole-gizmo and backdrop opacity, tests
+- gizmo home, plus and minus are dodai-icons (drawn bars only without the icons feature)
+- every gpui component (126/126): nav, data, form, overlay, time, theme pickers, effects; overscroll physics moves to dodai-core
+- Motion and Behaviour pages, a frame for every catalog component (axis gizmo, dialogs, trees...), icons from the dodai-icons pack, coverage enforced by the build, catalog summaries
+- shaders in each design's own palette, glass baked so it shows in every export; document the format limits
+### 🐛 Bug Fixes
+- the nightly holds libc, mio and xattr back (libc 0.2.190+ drops ENOATTR)
+- cargo-deny chrono advisory (jiff for the UTC offset, slint's chrono ignored)
+- pin slint 1.18.1 (1.19 pulls fontique 0.12, which fails on linux-gnu)
+- cargo-deny chrono advisory (jiff for the UTC offset, slint's chrono ignored), clippy + fmt on the web showcase
+- escape | inside the wire table's code spans
+- refresh the dodai-freya lockfile (stale after the 0.1.6 bump; bump_version now does it)
+- themes example uses TuiTheme
+- tab style test no longer assumes every design underlines the active tab
+- rustdoc links in dodai-bevy and dodai-ui, sorted source scan so the catalog is the same on every OS
+### 💄 Style
+- cargo fmt
+- cargo fmt (egui glow buttons)
+### 📚 Documentation
+- mention xilem (masonry, vello) as a planned toolkit
+- generated toolkit glue (TokenSpec + dodai-gen)
+- DESIGN.md for the OpenPencil spec, linked from the README
+### 🔄 CI
+- bump softprops/action-gh-release from 2 to 3 (#4)
+- bump actions/upload-artifact from 4 to 7 (#3)
+- bump actions/checkout from 4 to 7 (#1)
+- machete ignores deps used via #[path] in dodai-showcase-web
+### 🔧 Chores
+- Gitea repo lives in the Dodai-Tech org
+### 🧪 Testing
+- smoke-render every fourth theme in CI (DODAI_ALL_THEMES=1 for all)
+**Full Changelog**: https://github.com/Dodai-Tech/dodai-ui/compare/v0.1.6...v0.1.7
 ## [0.1.6] - 2026-11-16
 ### 🐛 Bug Fixes
 - pin xattr 1.6.1 (1.7.0 fails on linux-gnu), regenerate dist

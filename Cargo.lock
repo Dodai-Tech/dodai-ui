@@ -4225,7 +4225,7 @@ dependencies = [
 
 [[package]]
 name = "dodai-bevy"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "bevy",
  "dodai-core",
@@ -4238,7 +4238,7 @@ dependencies = [
 
 [[package]]
 name = "dodai-charts"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "dodai-core",
  "dodai-gpui",
@@ -4247,7 +4247,7 @@ dependencies = [
 
 [[package]]
 name = "dodai-core"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "dodai-fx",
  "dodai-spec",
@@ -4255,7 +4255,7 @@ dependencies = [
 
 [[package]]
 name = "dodai-dash"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "dodai-core",
  "schemars",
@@ -4267,7 +4267,7 @@ dependencies = [
 
 [[package]]
 name = "dodai-dioxus"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "axum",
  "dioxus",
@@ -4283,7 +4283,7 @@ dependencies = [
 
 [[package]]
 name = "dodai-egui"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "dodai-core",
  "dodai-fx",
@@ -4298,7 +4298,7 @@ dependencies = [
 
 [[package]]
 name = "dodai-frost"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "pollster 1.0.3",
  "wgpu 30.0.2",
@@ -4306,21 +4306,21 @@ dependencies = [
 
 [[package]]
 name = "dodai-fx"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "dodai-frost",
 ]
 
 [[package]]
 name = "dodai-gen"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "dodai-core",
 ]
 
 [[package]]
 name = "dodai-gpui"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "dodai-core",
  "dodai-frost",
@@ -4334,7 +4334,7 @@ dependencies = [
 
 [[package]]
 name = "dodai-iced"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "dodai-core",
  "dodai-frost",
@@ -4348,14 +4348,14 @@ dependencies = [
 
 [[package]]
 name = "dodai-icons"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "dodai-core",
 ]
 
 [[package]]
 name = "dodai-leptos"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "base64 0.22.1",
  "dodai-core",
@@ -4366,7 +4366,7 @@ dependencies = [
 
 [[package]]
 name = "dodai-shaders"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "base64 0.22.1",
  "bevy",
@@ -4384,7 +4384,7 @@ dependencies = [
 
 [[package]]
 name = "dodai-showcase"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "dodai-charts",
  "dodai-core",
@@ -4399,7 +4399,7 @@ dependencies = [
 
 [[package]]
 name = "dodai-showcase-model"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "base64 0.22.1",
  "dodai-charts",
@@ -4413,7 +4413,7 @@ dependencies = [
 
 [[package]]
 name = "dodai-showcase-web"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "dodai-core",
  "dodai-icons",
@@ -4423,7 +4423,7 @@ dependencies = [
 
 [[package]]
 name = "dodai-slint"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "dodai-core",
  "slint",
@@ -4431,7 +4431,7 @@ dependencies = [
 
 [[package]]
 name = "dodai-spec"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4440,7 +4440,7 @@ dependencies = [
 
 [[package]]
 name = "dodai-topcoat"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "dodai-core",
  "dodai-icons",
@@ -4451,7 +4451,7 @@ dependencies = [
 
 [[package]]
 name = "dodai-tui"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "crossterm",
  "dodai-core",
@@ -4467,7 +4467,7 @@ dependencies = [
 
 [[package]]
 name = "dodai-ui"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "dodai-bevy",
  "dodai-charts",
@@ -4490,7 +4490,7 @@ dependencies = [
 
 [[package]]
 name = "dodai-yew"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "base64 0.22.1",
  "dodai-core",
