@@ -474,6 +474,29 @@ pub fn icon(icon: dodai_icons::IconId, size: u32) -> impl Bundle {
     )
 }
 
+/// Which of the design's icon sizes (`Sizes::icon_sm`, `Sizes::icon`) an icon takes; set by
+/// [`icon_sm`] and [`icon_std`], and kept in step with the theme (density) by the plugin.
+#[cfg(feature = "icons")]
+#[derive(Component, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum IconScale {
+    /// Inline with text and in compact controls.
+    Small,
+    /// The standard icon.
+    Standard,
+}
+
+/// An icon at the design's small icon size.
+#[cfg(feature = "icons")]
+pub fn icon_sm(id: dodai_icons::IconId) -> impl Bundle {
+    (icon(id, 14), IconScale::Small)
+}
+
+/// An icon at the design's standard icon size.
+#[cfg(feature = "icons")]
+pub fn icon_std(id: dodai_icons::IconId) -> impl Bundle {
+    (icon(id, 20), IconScale::Standard)
+}
+
 /// A dashboard symbol (vehicle, aviation, medical, military, industrial), drawn in the active
 /// design's own style and coloured by what it reports (or the inherited [`Foreground`]).
 #[cfg(feature = "symbols")]
@@ -708,7 +731,7 @@ pub fn tab(label: impl Into<String>, active: bool) -> impl Bundle {
 
 #[cfg(feature = "icons")]
 fn close_glyph() -> impl Bundle {
-    icon(dodai_icons::IconId::Close, 14)
+    icon_sm(dodai_icons::IconId::Close)
 }
 
 #[cfg(not(feature = "icons"))]
@@ -745,7 +768,7 @@ fn tab_add() -> impl Bundle {
 
 #[cfg(feature = "icons")]
 fn plus_glyph() -> impl Bundle {
-    icon(dodai_icons::IconId::Plus, 14)
+    icon_sm(dodai_icons::IconId::Plus)
 }
 
 #[cfg(not(feature = "icons"))]

@@ -16,11 +16,94 @@ use crate::widgets::{heading, text, TextRole};
 
 type Spawner<'a> = ChildSpawner<'a>;
 
+/// Which navigation part a box is: its sizes, gaps and indent come from the design's
+/// navigation tokens (`Theme::navigation`, the ones gpui reads), not from numbers in the spawn.
+#[derive(Component, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NavLayout {
+    /// A row of a rail, bar or drawer.
+    Item,
+    /// A row of a tree, `depth` levels in.
+    TreeRow(usize),
+    /// The narrow column of a rail.
+    Rail,
+    /// A drawer.
+    Drawer,
+    /// A bottom bar.
+    Bar,
+}
+
+impl NavLayout {
+    /// The padding this part takes (the left indent of a tree row, the row padding of an item).
+    pub(crate) fn pad(self, theme: &dodai_core::Theme, pad: &mut UiRect) {
+        let k = theme.navigation();
+        match self {
+            Self::Item => {
+                pad.left = Val::Px(k.item_padding);
+                pad.right = Val::Px(k.item_padding);
+            }
+            Self::TreeRow(depth) => pad.left = Val::Px(k.item_padding + k.indent * depth as f32),
+            Self::Rail | Self::Drawer => pad.left = Val::Px(k.container_padding),
+            Self::Bar => {}
+        }
+        if matches!(self, Self::Rail | Self::Drawer) {
+            pad.right = Val::Px(k.container_padding);
+            pad.top = Val::Px(k.container_padding);
+            pad.bottom = Val::Px(k.container_padding);
+        }
+    }
+
+    /// The gap between the children.
+    pub(crate) fn gap(self, theme: &dodai_core::Theme) -> f32 {
+        theme.navigation().item_content_gap
+    }
+}
+
+/// Sets the sizes of the navigation parts from the design's tokens.
+pub(crate) fn style_navigation(
+    theme: Res<crate::theme::DodaiTheme>,
+    mut q: Query<(&NavLayout, &mut Node)>,
+) {
+    let k = theme.navigation();
+    for (l, mut n) in &mut q {
+        let (w, h, gap) = match l {
+            NavLayout::Item => (None, Some(k.item_height), None),
+            NavLayout::TreeRow(d) => (
+                None,
+                Some(if *d == 0 {
+                    k.item_height
+                } else {
+                    k.nested_height
+                }),
+                None,
+            ),
+            NavLayout::Rail => (Some(k.rail_width), None, Some(k.item_gap)),
+            NavLayout::Drawer => (Some(k.drawer_max_width.min(360.0)), None, Some(k.item_gap)),
+            NavLayout::Bar => (None, Some(k.bar_height), None),
+        };
+        if let Some(w) = w {
+            if n.width != Val::Px(w) {
+                n.width = Val::Px(w);
+            }
+        }
+        if let Some(h) = h {
+            if n.min_height != Val::Px(h) {
+                n.min_height = Val::Px(h);
+            }
+        }
+        if let Some(g) = gap {
+            if n.row_gap != Val::Px(g) {
+                n.row_gap = Val::Px(g);
+            }
+        }
+    }
+}
+
 /// One navigation entry (a row; selected = the filled indicator).
 pub fn navigation_item(label: impl Into<String>, selected: bool) -> impl Bundle {
     let label = label.into();
     (
         kit_pressable(Kit::Row { selected }),
+        NavLayout::Item,
         Node {
             width: Val::Percent(100.0),
             ..default()
@@ -50,6 +133,7 @@ pub fn navigation_bar(labels: &[&str], selected: usize) -> impl Bundle {
             floating: false,
             vibrant: false,
         }),
+        NavLayout::Bar,
         UiSelectGroup {
             selected: Some(selected),
         },
@@ -66,13 +150,12 @@ pub fn navigation_bar(labels: &[&str], selected: usize) -> impl Bundle {
 pub fn navigation_rail(labels: &[&str], selected: usize) -> impl Bundle {
     (
         kit(Kit::Card(CardVariant::Filled)),
+        NavLayout::Rail,
         UiSelectGroup {
             selected: Some(selected),
         },
         Node {
             flex_direction: FlexDirection::Column,
-            width: Val::Px(96.0),
-            row_gap: Val::Px(4.0),
             ..default()
         },
         items(owned(labels), selected),
@@ -84,13 +167,12 @@ pub fn navigation_drawer(title: &str, labels: &[&str], selected: usize) -> impl 
     let (title, labels) = (title.to_string(), owned(labels));
     (
         kit(Kit::Card(CardVariant::Filled)),
+        NavLayout::Drawer,
         UiSelectGroup {
             selected: Some(selected),
         },
         Node {
             flex_direction: FlexDirection::Column,
-            width: Val::Px(280.0),
-            row_gap: Val::Px(4.0),
             align_items: AlignItems::Stretch,
             ..default()
         },
@@ -342,10 +424,9 @@ pub fn tree_row(
     let label = label.into();
     (
         kit_pressable(Kit::Row { selected }),
+        NavLayout::TreeRow(depth),
         Node {
             width: Val::Percent(100.0),
-            padding: UiRect::left(Val::Px(8.0 + 18.0 * depth as f32)),
-            column_gap: Val::Px(6.0),
             ..default()
         },
         Children::spawn(SpawnWith(move |c: &mut Spawner| {
@@ -463,7 +544,8 @@ pub(crate) fn add(app: &mut App) {
     app.add_systems(
         Update,
         (responsive_shells, tree_selection).after(crate::kit::press_input),
-    );
+    )
+    .add_systems(Update, style_navigation);
 }
 
 #[cfg(test)]
@@ -475,6 +557,24 @@ mod tests {
 
     fn app() -> App {
         crate::testing::component_app()
+    }
+
+    #[test]
+    fn navigation_sizes_come_from_the_design_tokens() {
+        let mut app = app();
+        let rail = app.world_mut().spawn(navigation_rail(&["A", "B"], 0)).id();
+        let row = app.world_mut().spawn(tree_row("x", 2, None, false)).id();
+        app.update();
+        let theme = app.world().resource::<crate::theme::DodaiTheme>().clone();
+        let k = theme.navigation();
+        let n = app.world().get::<Node>(rail).unwrap();
+        assert_eq!(n.width, Val::Px(k.rail_width));
+        assert_eq!(n.row_gap, Val::Px(k.item_gap));
+        let n = app.world().get::<Node>(row).unwrap();
+        assert_eq!(n.min_height, Val::Px(k.nested_height));
+        let mut pad = UiRect::ZERO;
+        NavLayout::TreeRow(2).pad(&theme, &mut pad);
+        assert_eq!(pad.left, Val::Px(k.item_padding + 2.0 * k.indent));
     }
 
     #[test]

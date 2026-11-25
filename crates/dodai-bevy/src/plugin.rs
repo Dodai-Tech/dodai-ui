@@ -138,7 +138,7 @@ impl Plugin for DodaiUiPlugin {
                     ),
                     update_tooltip,
                     #[cfg(feature = "icons")]
-                    style_icons,
+                    (size_icons, style_icons).chain(),
                     #[cfg(feature = "symbols")]
                     style_symbols,
                 ),

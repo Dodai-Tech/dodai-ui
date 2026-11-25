@@ -730,7 +730,8 @@ pub(crate) fn style_sliders(
     owners: Query<(&UiSlider, Has<SliderCentred>), (Without<SliderFill>, Without<SliderThumb>)>,
 ) {
     let p = &theme.palette;
-    let track_h = theme.spacing.sm + 2.0;
+    let sizes = theme.sizes();
+    let track_h = sizes.slider_track.max(theme.spacing.sm + 2.0);
     let thumb_w = 10.0;
     for (sl, mut s, mut n) in &mut q {
         upd(
@@ -782,11 +783,11 @@ pub(crate) fn style_sliders(
             continue;
         };
         if let Some(t) = tick {
-            upd(&mut n.width, Val::Px(2.0));
-            upd(&mut n.height, Val::Px(10.0));
+            upd(&mut n.width, Val::Px(sizes.tick_width));
+            upd(&mut n.height, Val::Px(sizes.tick_len));
             upd(&mut n.left, Val::Percent(t.0 * 100.0));
-            upd(&mut n.margin.left, Val::Px(-1.0));
-            upd(&mut n.top, Val::Px(track_h / 2.0 - 5.0));
+            upd(&mut n.margin.left, Val::Px(-sizes.tick_width / 2.0));
+            upd(&mut n.top, Val::Px((track_h - sizes.tick_len) / 2.0));
             upd(
                 &mut *s,
                 Surface {
@@ -1088,6 +1089,29 @@ pub struct IconCache(
 /// the inherited foreground colour.
 #[cfg(feature = "icons")]
 #[allow(clippy::type_complexity)]
+/// Keeps the icons that follow the design's size scale at its current size.
+#[cfg(feature = "icons")]
+pub(crate) fn size_icons(
+    theme: Res<DodaiTheme>,
+    mut q: Query<(&crate::widgets::IconScale, &mut UiIcon, &mut Node)>,
+) {
+    let sizes = theme.sizes();
+    for (scale, mut u, mut n) in &mut q {
+        let px = match scale {
+            crate::widgets::IconScale::Small => sizes.icon_sm,
+            crate::widgets::IconScale::Standard => sizes.icon,
+        }
+        .round()
+        .max(1.0);
+        if u.size != px as u32 {
+            u.size = px as u32;
+        }
+        upd(&mut n.width, Val::Px(px));
+        upd(&mut n.height, Val::Px(px));
+    }
+}
+
+#[cfg(feature = "icons")]
 pub(crate) fn style_icons(
     mut commands: Commands,
     theme: Res<DodaiTheme>,

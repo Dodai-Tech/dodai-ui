@@ -253,7 +253,7 @@ pub fn breadcrumb(crumbs: &[&str]) -> impl Bundle {
             for (i, crumb) in crumbs.into_iter().enumerate() {
                 if i > 0 {
                     #[cfg(feature = "icons")]
-                    c.spawn(crate::widgets::icon(dodai_icons::IconId::ChevronRight, 14));
+                    c.spawn(crate::widgets::icon_sm(dodai_icons::IconId::ChevronRight));
                     #[cfg(not(feature = "icons"))]
                     c.spawn(text("/", TextRole::Muted));
                 }

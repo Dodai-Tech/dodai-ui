@@ -4,6 +4,7 @@
 
 use bevy::prelude::*;
 
+use crate::nav::NavLayout;
 use crate::surface::Surface;
 use crate::theme::DodaiTheme;
 use crate::widgets::{ControlEvent, ControlKind, ControlPointer, Foreground};
@@ -19,6 +20,7 @@ pub struct UiKit(pub Kit);
 #[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct UiPress;
 
+#[allow(clippy::type_complexity)]
 pub(crate) fn style_kits(
     theme: Res<DodaiTheme>,
     mut q: Query<(
@@ -27,9 +29,10 @@ pub(crate) fn style_kits(
         &mut Surface,
         &mut Node,
         &mut Foreground,
+        Option<&NavLayout>,
     )>,
 ) {
-    for (k, pointer, mut s, mut n, mut fg) in &mut q {
+    for (k, pointer, mut s, mut n, mut fg, nav) in &mut q {
         let st = theme.kit(k.0, *pointer != ControlPointer::None);
         let surface = Surface {
             fill: st.fill,
@@ -43,7 +46,10 @@ pub(crate) fn style_kits(
         if fg.0 != st.fg {
             fg.0 = st.fg;
         }
-        let pad = UiRect::axes(Val::Px(st.padding.0), Val::Px(st.padding.1));
+        let mut pad = UiRect::axes(Val::Px(st.padding.0), Val::Px(st.padding.1));
+        if let Some(l) = nav {
+            l.pad(&theme, &mut pad);
+        }
         if n.padding != pad {
             n.padding = pad;
         }
@@ -55,7 +61,7 @@ pub(crate) fn style_kits(
         if n.align_items != align {
             n.align_items = align;
         }
-        let gap = Val::Px(theme.spacing.sm);
+        let gap = Val::Px(nav.map_or(theme.spacing.sm, |l| l.gap(&theme)));
         if n.column_gap != gap {
             n.column_gap = gap;
         }

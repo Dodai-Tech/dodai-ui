@@ -126,10 +126,11 @@ pub fn display_text(raw: &str, style: &TextStyle) -> String {
 
 /// Outer size `(w, h)` of a toggle control, from shape tokens.
 pub fn toggle_size(theme: &Theme, kind: ToggleKind) -> (f32, f32) {
-    let h = (theme.shape.control_height * 0.5).max(16.0);
+    // The design's own box edge (the same `Sizes` gpui reads), so every toolkit draws the same control.
+    let edge = theme.sizes().selection_box;
     match kind {
-        ToggleKind::Switch => (h * 2.0, h),
-        _ => (h, h),
+        ToggleKind::Switch => ((edge + 2.0) * 1.9, edge + 2.0),
+        _ => (edge, edge),
     }
 }
 
@@ -213,10 +214,13 @@ mod tests {
     }
 
     #[test]
-    fn toggle_size_scales_with_control_height() {
-        let (w, h) = toggle_size(&rounded_light(), ToggleKind::Switch);
-        assert_eq!((w, h), (40.0, 20.0));
-        let (w, h) = toggle_size(&square_theme(), ToggleKind::Checkbox);
-        assert_eq!((w, h), (16.0, 16.0));
+    fn toggle_size_follows_the_design_sizes() {
+        let t = rounded_light();
+        let edge = t.sizes().selection_box;
+        let (w, h) = toggle_size(&t, ToggleKind::Switch);
+        assert_eq!((w, h), ((edge + 2.0) * 1.9, edge + 2.0));
+        let sq = square_theme();
+        let (w, h) = toggle_size(&sq, ToggleKind::Checkbox);
+        assert_eq!((w, h), (sq.sizes().selection_box, sq.sizes().selection_box));
     }
 }
