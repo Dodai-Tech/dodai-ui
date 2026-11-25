@@ -101,9 +101,11 @@ def table-md [group: record]: nothing -> string {
 
 # component name -> gpui source file (the reference implementation), one scan for all.
 def gpui-sources []: nothing -> record {
-    ^rg -o --no-heading --no-line-number '^pub (struct|enum|fn|type) [A-Z][A-Za-z0-9]*' crates/dodai-gpui/src | lines
-        | each { |l| let p = ($l | parse -r '^(?<file>[^:]+):pub \w+ (?<name>\w+)$'); if ($p | is-empty) { null } else { $p | first } }
-        | compact | reduce --fold {} { |r, acc| if ($acc | get -o $r.name | is-empty) { $acc | insert $r.name $r.file } else { $acc } }
+    glob crates/dodai-gpui/src/**/*.rs | sort | each { |f|
+        let rel = ($f | path relative-to (pwd))
+        open --raw $f | lines | parse --regex '^pub (?:struct|enum|fn|type) (?<name>[A-Z][A-Za-z0-9]*)' | each { |m| { name: $m.name, file: $rel } }
+    } | flatten
+    | reduce --fold {} { |r, acc| if ($acc | get -o $r.name | is-empty) { $acc | insert $r.name $r.file } else { $acc } }
 }
 
 # Every chart of the gpui chart set (a `#[derive(IntoElement)]` struct), with its summary and source.
