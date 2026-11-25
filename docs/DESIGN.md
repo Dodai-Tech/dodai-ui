@@ -34,7 +34,7 @@ mode). Switching a mode in the editor recolours everything bound to variables. P
 | Icons | all 1769 icons of the design's pack (Stroked for Cyberpunk, Bold for Neo-Brutalism, Material Symbols for Material and Dodai), vectors bound to the text colour |
 | Symbols | the 264 dashboard symbols by group (vehicle, medical, military, industrial, aviation) |
 | Surfaces & glass | the design's frosted glass (tint, blur, saturation, edge) over the showcase backdrop at three blur radii, and every texture and effect the design owns, as the same vectors the web toolkits draw |
-| Shaders | a thumbnail of all 199 shaders by family, rendered on the GPU by the code every toolkit runs |
+| Shaders | a thumbnail of all 199 shaders by family, rendered on the GPU by the code every toolkit runs, in the palette of the design's own theme (`shaders-<design>.json`) |
 | Motion | the duration scale, all 18 easing curves, every entry effect at five points and the overscroll feels, drawn from `motion.json` |
 | Behaviour | the components that draw nothing themselves (`EntryScope`, `Follow`, `Interact`, `Lazy`, `Live`, `PageGrid`, `Feed`, `DodaiTheme`), each with what it does |
 
@@ -77,9 +77,10 @@ coverage. CI fails on a stale catalog or spec.
 the Behaviour page, and when a frame uses an icon the design's pack does not have. So adding a gpui
 component without drawing it (or listing it as behaviour in `scripts/lib/parity.nu`) breaks the build.
 
-## Not covered yet
+## Limits of the format
 
-- Motion is drawn as curves and keyframe poses, not as clickable prototypes.
-- The backdrop blur of the glass panes is a native effect: the editor shows it, but PNG exports
-  of the file may not.
-- Shaders are shown in their family's palette, not once per design palette.
+- Motion is drawn as curves and keyframe poses. The OpenPencil engine has no prototype
+  interactions (no `reactions`), so nothing in the file can play; `motion.json` is the playable source.
+- The Surfaces & glass page bakes the glass (blur, saturation and tint, by `dodai-frost`, the code
+  the toolkits run) into pictures, so it shows in every export. The small `FrostLayer` and
+  `FrostedScene` frames on the Components page still use the native backdrop blur effect.

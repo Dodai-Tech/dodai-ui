@@ -810,24 +810,35 @@ function buildSystem(sys, label) {
     sfPage.appendChild(pic);
     pic.x = px;
     pic.y = 64;
-    const pane = figma.createFrame();
-    pane.name = `Glass blur ${blur}px`;
-    pane.resize(280, 140);
-    pane.cornerRadius = 0;
-    bind(pane, 'cornerRadius', 'shape/radius');
-    bindFill(pane, 'color/surface');
-    pane.fills = pane.fills.map((p) => ({ ...p, opacity: hexRgba(SF.frost.tint).a }));
-    pane.effects = [{ type: 'BACKGROUND_BLUR', radius: blur, visible: true }];
-    if (SF.frost.edge) { pane.strokes = [{ type: 'SOLID', color: hexRgba(SF.frost.edge[0]) }]; pane.strokeWeight = SF.frost.edge[1]; }
-    else { bindStroke(pane, 'color/border'); }
-    pane.layoutMode = 'VERTICAL';
-    pane.paddingLeft = pane.paddingRight = pane.paddingTop = pane.paddingBottom = 16;
-    pane.itemSpacing = 6;
-    pane.appendChild(text('Glass', 18, 'color/text'));
-    pane.appendChild(text(`blur ${blur}px`, 13, 'color/text-muted'));
-    sfPage.appendChild(pane);
-    pane.x = px + 100;
-    pane.y = 130;
+    // The glass is baked (blur, saturation and tint, by the same code the toolkits run): the
+    // backdrop blur effect is not drawn by every renderer, a picture is.
+    const glass = figma.createFrame();
+    glass.name = `Glass blur ${blur}px`;
+    glass.layoutMode = 'NONE';
+    glass.resize(280, 140);
+    glass.clipsContent = true;
+    bind(glass, 'cornerRadius', 'shape/radius');
+    glass.fills = [];
+    const baked = figma.createRectangle();
+    baked.name = 'Blurred backdrop';
+    baked.resize(480, 270);
+    baked.fills = [{ type: 'IMAGE', imageHash: figma.createImage(b64(SF.panes[i].png)).hash, scaleMode: 'FILL' }];
+    glass.appendChild(baked);
+    baked.x = -100;
+    baked.y = -66;
+    if (SF.frost.edge) { glass.strokes = [{ type: 'SOLID', color: hexRgba(SF.frost.edge[0]) }]; glass.strokeWeight = SF.frost.edge[1]; }
+    else { bindStroke(glass, 'color/border'); }
+    const label = figma.createFrame();
+    label.layoutMode = 'VERTICAL';
+    label.fills = [];
+    label.paddingLeft = label.paddingRight = label.paddingTop = label.paddingBottom = 16;
+    label.itemSpacing = 6;
+    label.appendChild(text('Glass', 18, 'color/text'));
+    label.appendChild(text(`blur ${blur}px`, 13, 'color/text-muted'));
+    glass.appendChild(label);
+    sfPage.appendChild(glass);
+    glass.x = px + 100;
+    glass.y = 130;
     return pic;
   });
   let sfY = 64 + 270 + 56;
@@ -865,6 +876,7 @@ function buildSystem(sys, label) {
   // --- Shaders: a thumbnail of every shader of the catalogue (rendered on the GPU by the same
   // code every toolkit runs), grouped by family. Generators and post effects (over the family's
   // default source) in the family's palette.
+  const SHADERS = SHADERS_BY[sys];
   const shPage = figma.createPage();
   shPage.name = `${label} / Shaders`;
   figma.currentPage = shPage;

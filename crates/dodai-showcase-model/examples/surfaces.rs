@@ -124,10 +124,29 @@ fn main() {
             .edge
             .map(|(c, wd)| format!("[\"{}\",{wd}]", hex(c)))
             .unwrap_or_else(|| "null".into());
+        // The glass the toolkits draw (blur, saturation and tint) over the whole scene at three
+        // radii, baked, so the design file does not depend on the editor's backdrop blur.
+        let panes: Vec<String> = [0.0, frost.blur / 2.0, frost.blur]
+            .into_iter()
+            .map(|sigma| {
+                let params = dodai_frost::FrostParams {
+                    tint: [frost.tint.r, frost.tint.g, frost.tint.b, frost.tint.a],
+                    blur: sigma,
+                    edge: None,
+                    saturation: frost.saturation,
+                };
+                let px = dodai_frost::glass(&scene, w, h, &params);
+                format!(
+                    "{{\"blur\":{sigma},\"png\":\"{}\"}}",
+                    png_b64(&px, w as u32, h as u32)
+                )
+            })
+            .collect();
         let mut text = String::new();
         let _ = writeln!(
             text,
-            "{{\"frost\":{{\"tint\":\"{}\",\"blur\":{},\"saturation\":{},\"edge\":{}}},\"scene\":\"{}\",\"textures\":[{}],\"effects\":[{}]}}",
+            "{{\"panes\":[{}],\"frost\":{{\"tint\":\"{}\",\"blur\":{},\"saturation\":{},\"edge\":{}}},\"scene\":\"{}\",\"textures\":[{}],\"effects\":[{}]}}",
+            panes.join(","),
             hex(frost.tint),
             frost.blur,
             frost.saturation,
