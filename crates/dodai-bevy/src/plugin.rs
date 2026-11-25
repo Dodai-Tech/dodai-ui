@@ -155,6 +155,14 @@ impl Plugin for DodaiUiPlugin {
                 .chain()
                 .in_set(DodaiSet),
         );
+        crate::interact::add(app);
+        crate::nav::add(app);
+        crate::data::add(app);
+        crate::form::add(app);
+        crate::overlay::add(app);
+        crate::time::add(app);
+        crate::themes::add(app);
+        crate::effects::add(app);
         #[cfg(feature = "icons")]
         app.init_resource::<IconCache>();
         #[cfg(feature = "symbols")]
@@ -172,21 +180,7 @@ fn sync_clear_color(theme: Res<DodaiTheme>, mut clear: ResMut<ClearColor>) {
 }
 
 fn spawn_scanlines(mut commands: Commands, mut mats: ResMut<Assets<ScanlineMaterial>>) {
-    commands.spawn((
-        ScanlineOverlay,
-        Node {
-            position_type: PositionType::Absolute,
-            width: Val::Percent(100.0),
-            height: Val::Percent(100.0),
-            display: Display::None,
-            ..default()
-        },
-        MaterialNode(mats.add(ScanlineMaterial {
-            color: LinearRgba::BLACK,
-            params: Vec4::new(3.0, 0.34, 0.0, 0.0),
-        })),
-        GlobalZIndex(1000),
-    ));
+    commands.spawn(crate::effects::scanlines(&mut mats));
 }
 
 fn sync_scanlines(

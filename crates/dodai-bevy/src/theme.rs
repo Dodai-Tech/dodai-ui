@@ -71,6 +71,13 @@ impl DodaiTheme {
         ok
     }
 
+    /// Switch to the first variant of `family` (`false` if unknown).
+    pub fn select_family(&mut self, family: &str) -> bool {
+        let ok = self.switcher.select_family(family);
+        self.rebuild();
+        ok
+    }
+
     /// Select by index (clamped).
     pub fn select_index(&mut self, i: usize) {
         self.switcher.select_index(i);

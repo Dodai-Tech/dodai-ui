@@ -46,3 +46,25 @@ pub fn square_theme() -> Theme {
         },
     )
 }
+
+/// A headless app with the component systems and their messages, for the constructor tests.
+pub fn component_app() -> bevy::prelude::App {
+    use bevy::prelude::*;
+    let mut app = App::new();
+    app.add_plugins(MinimalPlugins);
+    app.init_resource::<ButtonInput<MouseButton>>()
+        .init_resource::<ButtonInput<KeyCode>>();
+    app.init_resource::<crate::theme::DodaiTheme>();
+    app.add_message::<crate::widgets::ControlEvent>();
+    app.add_message::<bevy::input::mouse::MouseWheel>();
+    crate::interact::add(&mut app);
+    crate::nav::add(&mut app);
+    crate::data::add(&mut app);
+    app.add_systems(Update, crate::systems::input_keys);
+    crate::form::add(&mut app);
+    crate::time::add(&mut app);
+    crate::themes::add(&mut app);
+    crate::effects::add(&mut app);
+    crate::overlay::add(&mut app);
+    app
+}

@@ -35,6 +35,7 @@ pub mod markdown;
 pub mod math;
 pub mod menu;
 pub mod orientation;
+pub mod overscroll;
 pub mod paging;
 mod palette;
 mod panel_border;

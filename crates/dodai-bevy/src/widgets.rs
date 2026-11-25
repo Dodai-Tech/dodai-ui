@@ -1034,6 +1034,29 @@ pub fn text_input(placeholder: impl Into<String>) -> impl Bundle {
 }
 
 fn text_field(placeholder: impl Into<String>, masked: bool, lines: u8) -> impl Bundle {
+    text_field_with(placeholder, masked, lines, |_| {})
+}
+
+/// A text input whose [`Node`] is adjusted by `tweak` (width, grow, ...).
+pub(crate) fn text_input_with(
+    placeholder: impl Into<String>,
+    tweak: impl FnOnce(&mut Node),
+) -> impl Bundle {
+    text_field_with(placeholder, false, 1, tweak)
+}
+
+fn text_field_with(
+    placeholder: impl Into<String>,
+    masked: bool,
+    lines: u8,
+    tweak: impl FnOnce(&mut Node),
+) -> impl Bundle {
+    let mut node = Node {
+        align_items: AlignItems::Center,
+        overflow: Overflow::clip(),
+        ..default()
+    };
+    tweak(&mut node);
     (
         UiTextInput {
             value: String::new(),
@@ -1043,11 +1066,7 @@ fn text_field(placeholder: impl Into<String>, masked: bool, lines: u8) -> impl B
         },
         // Input fields take part in the glass the surface gives them.
         crate::glass::UiGlass::of(dodai_core::SurfaceClass::Input),
-        Node {
-            align_items: AlignItems::Center,
-            overflow: Overflow::clip(),
-            ..default()
-        },
+        node,
         children![(
             InputText,
             text("", TextRole::Content),

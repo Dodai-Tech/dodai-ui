@@ -23,12 +23,19 @@
 //! [`material`] (shader materials), [`plugin`].
 
 pub mod components;
+pub mod data;
+pub mod effects;
+pub mod form;
 pub mod gizmo;
 pub mod glass;
+pub mod interact;
 pub mod kit;
 pub mod knob;
 pub mod material;
 pub mod menu;
+pub mod nav;
+pub mod overlay;
+mod parts;
 pub mod plot;
 pub mod plugin;
 pub mod shimmer;
@@ -38,6 +45,8 @@ pub mod surface;
 pub mod surface_fx;
 mod systems;
 pub mod theme;
+pub mod themes;
+pub mod time;
 pub mod widgets;
 
 #[cfg(test)]
@@ -50,13 +59,19 @@ pub use theme::{color, DodaiTheme};
 /// Everything needed to build a themed UI.
 pub mod prelude {
     pub use crate::components::*;
+    pub use crate::data::*;
+    pub use crate::effects::*;
+    pub use crate::form::*;
     pub use crate::gizmo::{axis_gizmo, AxisId, Basis, GizmoEvent, GizmoKind, UiAxisGizmo};
     pub use crate::glass::{DodaiGlass, UiBackdrop, UiGlass};
+    pub use crate::interact::{UiDisclosure, UiRating, UiSelectGroup, UiSelectable, UiStepper};
     pub use crate::kit::{kit, kit_pressable, Kit, UiKit, UiPress};
     pub use crate::knob::{knob, UiKnob};
     pub use crate::menu::{
         menu_bar, MenuEvent, MenuItem, MenuSpec, UiMenuBar, UiMenuEntry, UiMenuPanel, UiMenuTitle,
     };
+    pub use crate::nav::*;
+    pub use crate::overlay::*;
     pub use crate::plot::{plot, PlotLine};
     pub use crate::plugin::{theme_hotkeys, DodaiSet, DodaiUiPlugin, ScanlineOverlay};
     pub use crate::shimmer::Shimmer;
@@ -67,6 +82,8 @@ pub mod prelude {
     pub use crate::surface::{Surface, SurfaceCrop};
     pub use crate::systems::FocusedInput;
     pub use crate::theme::{color, DodaiTheme};
+    pub use crate::themes::*;
+    pub use crate::time::*;
     pub use crate::widgets::*;
     pub use dodai_core::{themes, ButtonVariant, SymbolState, Theme, ThemeSwitcher, Tone};
 }
