@@ -14,7 +14,7 @@ categories   = ["gui"]
 [dependencies]
 dodai-core = { workspace = true }
 ratatui = { workspace = true }
-tui-nuances = "0.1.11"
+tui-nuances = "0.1.12"
 tui-chart = { version = "0.6", features = ["theme"] }
 tui-piechart = { version = "1.4", features = ["theme"] }
 tui-spinner = { version = "0.5", features = ["theme"] }
