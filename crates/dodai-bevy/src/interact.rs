@@ -108,6 +108,8 @@ fn nav_key(k: &Key) -> Option<&'static str> {
         Key::ArrowDown => "down",
         Key::Home => "home",
         Key::End => "end",
+        Key::PageUp => "pageup",
+        Key::PageDown => "pagedown",
         _ => return None,
     })
 }
@@ -206,6 +208,52 @@ pub(crate) fn roving_keys(
                     entity,
                     kind: ControlKind::Slid(next),
                 });
+            }
+        }
+    }
+}
+
+/// Arrows, Page Up/Down, Home and End move the slider under the pointer by the shared rule of
+/// `dodai_core::slider_math::key_value`; the arrows page the carousel under it.
+pub(crate) fn slider_carousel_keys(
+    mut keys: MessageReader<KeyboardInput>,
+    mut sliders: Query<(Entity, &ControlPointer, &mut crate::widgets::UiSlider)>,
+    mut carousels: Query<(&mut crate::data::UiCarousel, &Children)>,
+    pointers: Query<&ControlPointer>,
+    mut out: MessageWriter<ControlEvent>,
+) {
+    for k in keys.read() {
+        if !k.state.is_pressed() {
+            continue;
+        }
+        let Some(name) = nav_key(&k.logical_key) else {
+            continue;
+        };
+        for (entity, p, mut s) in &mut sliders {
+            if *p == ControlPointer::None {
+                continue;
+            }
+            // a range slider moves its high thumb
+            if let Some(to) = dodai_core::slider_math::key_value(name, s.value, s.min, s.max, None)
+            {
+                s.value = s.lo.map_or(to, |lo| to.max(lo));
+                out.write(ControlEvent {
+                    entity,
+                    kind: ControlKind::Slid(s.value),
+                });
+            }
+        }
+        for (mut c, kids) in &mut carousels {
+            if !kids
+                .iter()
+                .any(|e| pointers.get(e).is_ok_and(|p| *p != ControlPointer::None))
+            {
+                continue;
+            }
+            let to = roving::next(name, Axis::Horizontal, c.start, c.len, |_| true)
+                .map(|t| t.min(c.len.saturating_sub(c.visible)));
+            if let Some(t) = to.filter(|t| *t != c.start) {
+                c.start = t;
             }
         }
     }
@@ -411,6 +459,7 @@ pub(crate) fn add(app: &mut App) {
         (
             select_groups,
             roving_keys,
+            slider_carousel_keys,
             disclosures,
             disclosure_chevrons,
             steppers,

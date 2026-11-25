@@ -999,6 +999,46 @@ mod tests {
     }
 
     #[test]
+    fn keys_move_a_hovered_slider_and_carousel() {
+        use crate::widgets::UiSlider;
+        use bevy::input::keyboard::{Key, KeyboardInput};
+        let mut app = app();
+        let sl = app
+            .world_mut()
+            .spawn(crate::widgets::slider(0.0, 0.0, 10.0))
+            .id();
+        let ca = app
+            .world_mut()
+            .spawn(carousel(&["a", "b", "c", "d"], 2))
+            .id();
+        app.update();
+        *app.world_mut().get_mut::<ControlPointer>(sl).unwrap() = ControlPointer::Hovered;
+        let arrow = app.world().get::<Children>(ca).unwrap()[0];
+        *app.world_mut().get_mut::<ControlPointer>(arrow).unwrap() = ControlPointer::Hovered;
+        for k in [Key::End, Key::ArrowLeft] {
+            app.world_mut().write_message(KeyboardInput {
+                key_code: KeyCode::Unidentified(bevy::input::keyboard::NativeKeyCode::Unidentified),
+                logical_key: k,
+                state: bevy::input::ButtonState::Pressed,
+                text: None,
+                repeat: false,
+                window: Entity::PLACEHOLDER,
+            });
+            app.update();
+        }
+        assert_eq!(
+            app.world().get::<UiSlider>(sl).unwrap().value,
+            9.5,
+            "End, then a step back"
+        );
+        assert_eq!(
+            app.world().get::<UiCarousel>(ca).unwrap().start,
+            1,
+            "End stops at the last page, Left steps back"
+        );
+    }
+
+    #[test]
     fn data_table_order_sorts_numbers_by_value_and_text_by_text() {
         let mut t = UiDataTable {
             rows: vec![

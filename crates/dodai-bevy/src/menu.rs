@@ -20,6 +20,7 @@
 //! The bar and its dropdowns are made of the design's own buttons and panels, so a theme switch
 //! restyles them.
 
+use bevy::input::keyboard::{Key, KeyboardInput};
 use bevy::prelude::*;
 use bevy::ui::FocusPolicy;
 use dodai_core::{ButtonVariant, ControlSize};
@@ -110,6 +111,10 @@ pub struct UiMenuTitle(pub usize);
 #[derive(Component, Debug, Clone, Copy)]
 pub struct UiMenuPanel;
 
+/// The item the keyboard has highlighted in an open dropdown (an index into the menu's items).
+#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct MenuCursor(pub Option<usize>);
+
 /// An item of an open dropdown.
 #[derive(Component, Debug, Clone, PartialEq, Eq)]
 pub struct UiMenuEntry {
@@ -185,6 +190,7 @@ fn spawn_panel(commands: &mut Commands, title: Entity, menu: usize, items: &[Men
         .spawn((
             crate::widgets::panel_untitled(),
             UiMenuPanel,
+            MenuCursor::default(),
             Node {
                 position_type: PositionType::Absolute,
                 top: Val::Percent(100.0),
@@ -234,6 +240,107 @@ fn spawn_panel(commands: &mut Commands, title: Entity, menu: usize, items: &[Men
             commands.entity(entry).add_child(s);
         }
         commands.entity(panel).add_child(entry);
+    }
+}
+
+/// The rows of a menu for the shared keyboard rule: separators are not items, so they are left
+/// out; a disabled item is skipped.
+fn rows(items: &[MenuItem]) -> Vec<dodai_core::menu::MenuRow> {
+    items
+        .iter()
+        .map(|i| {
+            let r = dodai_core::menu::MenuRow::new(i.label.clone());
+            if i.enabled {
+                r
+            } else {
+                r.disabled()
+            }
+        })
+        .collect()
+}
+
+/// Arrows, Home and End move the highlight of an open dropdown; Enter and Space choose it (the
+/// rule is `dodai_core::menu::step`, the one gpui uses).
+pub(crate) fn menu_keys(
+    mut keys: MessageReader<KeyboardInput>,
+    bars: Query<&UiMenuBar>,
+    mut panels: Query<(&mut MenuCursor, &Children), With<UiMenuPanel>>,
+    entries: Query<(Entity, &UiMenuEntry)>,
+    mut out: MessageWriter<ControlEvent>,
+) {
+    let Some(open) = bars.iter().find_map(|b| b.open.map(|o| (b, o))) else {
+        keys.clear();
+        return;
+    };
+    let (bar, at) = open;
+    let items = &bar.menus[at].items;
+    let rows = rows(items);
+    for k in keys.read() {
+        if !k.state.is_pressed() {
+            continue;
+        }
+        let name = match &k.logical_key {
+            Key::ArrowUp => "up",
+            Key::ArrowDown => "down",
+            Key::Home => "home",
+            Key::End => "end",
+            Key::Enter => "enter",
+            Key::Space => "space",
+            _ => continue,
+        };
+        for (mut cur, kids) in &mut panels {
+            let step = match cur.0 {
+                Some(a) => dodai_core::menu::step(name, &rows, a),
+                None => dodai_core::menu::first(&rows)
+                    .map(dodai_core::menu::Step::Move)
+                    .filter(|_| matches!(name, "down" | "home" | "up" | "end")),
+            };
+            match step {
+                Some(dodai_core::menu::Step::Move(to)) => cur.0 = Some(to),
+                Some(dodai_core::menu::Step::Pick(i)) => {
+                    let id = &items[i].id;
+                    if let Some(e) = kids
+                        .iter()
+                        .find(|c| entries.get(*c).is_ok_and(|(_, e)| &e.id == id))
+                    {
+                        out.write(ControlEvent {
+                            entity: e,
+                            kind: ControlKind::Pressed,
+                        });
+                    }
+                }
+                None => {}
+            }
+        }
+    }
+}
+
+/// Lights the keyboard's item like a hovered one and clears the others, when the highlight moved.
+pub(crate) fn show_menu_cursor(
+    bars: Query<&UiMenuBar>,
+    panels: Query<(&MenuCursor, &Children), Changed<MenuCursor>>,
+    entries: Query<&UiMenuEntry>,
+    mut pointers: Query<&mut ControlPointer>,
+) {
+    for bar in &bars {
+        let Some(open) = bar.open else { continue };
+        for (cur, kids) in &panels {
+            let Some(at) = cur.0 else { continue };
+            let id = &bar.menus[open].items[at].id;
+            for c in kids.iter() {
+                let Ok(e) = entries.get(c) else { continue };
+                if let Ok(mut p) = pointers.get_mut(c) {
+                    let want = if &e.id == id {
+                        ControlPointer::Hovered
+                    } else {
+                        ControlPointer::None
+                    };
+                    if *p != want {
+                        *p = want;
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -327,7 +434,11 @@ mod tests {
         app.insert_resource(DodaiTheme::new())
             .add_message::<ControlEvent>()
             .add_message::<MenuEvent>()
-            .add_systems(Update, (build_bars, drive_menus).chain());
+            .add_message::<KeyboardInput>()
+            .add_systems(
+                Update,
+                (build_bars, menu_keys, show_menu_cursor, drive_menus).chain(),
+            );
         app
     }
 
@@ -375,6 +486,60 @@ mod tests {
         let mut cursor = app.world_mut().resource_mut::<Messages<MenuEvent>>();
         v.extend(cursor.drain());
         v
+    }
+
+    #[test]
+    fn arrows_walk_an_open_dropdown_and_enter_chooses() {
+        let mut app = app();
+        app.world_mut().spawn(menu_bar(vec![MenuSpec::new(
+            "File",
+            vec![
+                MenuItem::new("a", "A"),
+                MenuItem::new("b", "B").enabled(false),
+                MenuItem::new("c", "C"),
+            ],
+        )]));
+        app.update();
+        let file = title(&mut app, 0);
+        press(&mut app, file);
+        let key = |app: &mut App, k: Key| {
+            app.world_mut().write_message(KeyboardInput {
+                key_code: KeyCode::Unidentified(bevy::input::keyboard::NativeKeyCode::Unidentified),
+                logical_key: k,
+                state: bevy::input::ButtonState::Pressed,
+                text: None,
+                repeat: false,
+                window: Entity::PLACEHOLDER,
+            });
+            app.update();
+        };
+        key(&mut app, Key::ArrowDown);
+        key(&mut app, Key::ArrowDown);
+        let cursor = app
+            .world_mut()
+            .query::<&MenuCursor>()
+            .single(app.world())
+            .unwrap()
+            .0;
+        assert_eq!(cursor, Some(2), "skipped the disabled B");
+        let c = entry(&mut app, "c");
+        assert_eq!(
+            *app.world().get::<ControlPointer>(c).unwrap(),
+            ControlPointer::Hovered
+        );
+        key(&mut app, Key::Enter);
+        app.update();
+        let got = messages(&mut app);
+        assert_eq!(got.len(), 1);
+        assert_eq!(got[0].id, "c");
+        assert_eq!(
+            app.world_mut()
+                .query::<&UiMenuPanel>()
+                .iter(app.world())
+                .count(),
+            0,
+            "choosing closes it"
+        );
     }
 
     #[test]

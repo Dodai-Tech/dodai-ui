@@ -93,7 +93,12 @@ impl Plugin for DodaiUiPlugin {
         .add_message::<crate::menu::MenuEvent>()
         .add_systems(
             Update,
-            (crate::menu::build_bars, crate::menu::drive_menus)
+            (
+                crate::menu::build_bars,
+                crate::menu::menu_keys,
+                crate::menu::show_menu_cursor,
+                crate::menu::drive_menus,
+            )
                 .chain()
                 .after(button_input),
         )
