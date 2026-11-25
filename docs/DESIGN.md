@@ -84,3 +84,16 @@ component without drawing it (or listing it as behaviour in `scripts/lib/parity.
 - The Surfaces & glass page bakes the glass (blur, saturation and tint, by `dodai-frost`, the code
   the toolkits run) into pictures, so it shows in every export. The small `FrostLayer` and
   `FrostedScene` frames on the Components page still use the native backdrop blur effect.
+
+## Comparing a toolkit with the design
+
+`dodai-diff` (`crates/dodai-diff`) compares two renderings of a component by numbers, so nobody has
+to read pictures: the share of pixels that differ and the share of 8x8 cells whose mean colour
+differs (layout and colour, blind to font detail), and it fails on a wrong size.
+`nu scripts/compare.nu <dir-a> <dir-b> --max-blocks 5` runs it over two directories of same-named
+PNGs and paints the differences into `dist/compare/diff`.
+
+What is missing is the gpui side: gpui 0.2 has no offscreen render, so a per-component capture
+needs a window and the OS screenshot (`DODAI_ONLY=<section> DODAI_SIZE=WxH` opens the showcase on
+one section). Sections are not frames, so the pairs have to be cropped to match before a diff
+means anything.
