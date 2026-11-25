@@ -40,36 +40,32 @@ pub fn glow_controls(ui: &mut Ui, intensity: &mut f32) -> bool {
     let before = *intensity;
     ui.horizontal(|ui| {
         if ui
-            .add(
-                glow_button("−", {
-                    #[cfg(feature = "icons")]
-                    {
-                        Some(dodai_icons::IconId::Minus)
-                    }
-                    #[cfg(not(feature = "icons"))]
-                    {
-                        None::<()>
-                    }
-                }),
-            )
+            .add(glow_button("−", {
+                #[cfg(feature = "icons")]
+                {
+                    Some(dodai_icons::IconId::Minus)
+                }
+                #[cfg(not(feature = "icons"))]
+                {
+                    None::<()>
+                }
+            }))
             .clicked()
         {
             *intensity = step_glow(*intensity, -GLOW_STEP);
         }
         ui.label(format!("glow {:.2}", *intensity));
         if ui
-            .add(
-                glow_button("+", {
-                    #[cfg(feature = "icons")]
-                    {
-                        Some(dodai_icons::IconId::Plus)
-                    }
-                    #[cfg(not(feature = "icons"))]
-                    {
-                        None::<()>
-                    }
-                }),
-            )
+            .add(glow_button("+", {
+                #[cfg(feature = "icons")]
+                {
+                    Some(dodai_icons::IconId::Plus)
+                }
+                #[cfg(not(feature = "icons"))]
+                {
+                    None::<()>
+                }
+            }))
             .clicked()
         {
             *intensity = step_glow(*intensity, GLOW_STEP);
@@ -81,7 +77,9 @@ pub fn glow_controls(ui: &mut Ui, intensity: &mut f32) -> bool {
 /// A ghost button showing `icon` (the `dodai-icons` glyph), or `fallback` text without it.
 #[cfg(feature = "icons")]
 fn glow_button(_fallback: &str, icon: Option<dodai_icons::IconId>) -> Button {
-    let b = Button::new("").variant(ButtonVariant::Ghost).min_width(40.0);
+    let b = Button::new("")
+        .variant(ButtonVariant::Ghost)
+        .min_width(40.0);
     match icon {
         Some(i) => b.icon(i),
         None => b,
