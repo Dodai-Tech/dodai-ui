@@ -1,0 +1,13 @@
+[package]
+name         = "dodai-diff"
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license.workspace      = true
+repository.workspace   = true
+rust-version.workspace = true
+description  = "Pixel and layout diff of two renderings of a component (toolkit capture vs. design-file export)"
+publish      = false
+
+[dependencies]
+png = "0.18"

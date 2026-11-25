@@ -23,6 +23,7 @@ members = [
     "crates/dodai-bevy",
     "crates/dodai-spec",
     "crates/dodai-gen",
+    "crates/dodai-diff",
 ]
 resolver = "2"
 # Own workspaces: freya (own Skia) and xilem (its wgpu/naga 26 does not unify with gpui and
