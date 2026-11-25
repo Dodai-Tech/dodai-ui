@@ -4,7 +4,9 @@
 
 #![allow(clippy::type_complexity)]
 
+use bevy::input::keyboard::{Key, KeyboardInput};
 use bevy::prelude::*;
+use dodai_core::roving::{self, Axis};
 
 use crate::kit::{Kit, UiKit};
 use crate::parts::{Glyph, GlyphSlot};
@@ -85,6 +87,130 @@ pub fn with_selected(k: Kit, on: bool) -> Kit {
     }
 }
 
+/// Lights item `at` of a group and clears the others.
+fn light(kids: &Children, at: usize, items: &mut Query<(&UiSelectable, &mut UiKit)>) {
+    for kid in kids.iter() {
+        if let Ok((s, mut k)) = items.get_mut(kid) {
+            let next = with_selected(k.0, s.0 == at);
+            if k.0 != next {
+                k.0 = next;
+            }
+        }
+    }
+}
+
+/// The key a roving rule understands, from a bevy logical key.
+fn nav_key(k: &Key) -> Option<&'static str> {
+    Some(match k {
+        Key::ArrowLeft => "left",
+        Key::ArrowRight => "right",
+        Key::ArrowUp => "up",
+        Key::ArrowDown => "down",
+        Key::Home => "home",
+        Key::End => "end",
+        _ => return None,
+    })
+}
+
+/// Roving focus for the choice group, rating and stepper under the pointer (bevy has no focus
+/// ring to move): the arrows, Home and End act like a click on the next item, by the shared rule
+/// of `dodai-core`.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn roving_keys(
+    mut keys: MessageReader<KeyboardInput>,
+    pointers: Query<&ControlPointer>,
+    mut groups: Query<(Entity, &mut UiSelectGroup, &Children, &Node)>,
+    mut items: Query<(&UiSelectable, &mut UiKit)>,
+    mut ratings: Query<(Entity, &mut UiRating, &Children)>,
+    mut steppers: Query<(Entity, &mut UiStepper, &Children)>,
+    mut readouts: Query<&mut UiText, With<StepperReadout>>,
+    mut out: MessageWriter<ControlEvent>,
+) {
+    let over = |kids: &Children| {
+        kids.iter()
+            .any(|c| pointers.get(c).is_ok_and(|p| *p != ControlPointer::None))
+    };
+    for k in keys.read() {
+        if !k.state.is_pressed() {
+            continue;
+        }
+        let Some(name) = nav_key(&k.logical_key) else {
+            continue;
+        };
+        for (_, mut g, kids, node) in &mut groups {
+            if !over(kids) {
+                continue;
+            }
+            let Some(at) = g.selected else {
+                continue;
+            };
+            let axis = match node.flex_direction {
+                FlexDirection::Column | FlexDirection::ColumnReverse => Axis::Vertical,
+                _ => Axis::Horizontal,
+            };
+            let order: Vec<(Entity, usize)> = kids
+                .iter()
+                .filter_map(|c| items.get(c).ok().map(|(s, _)| (c, s.0)))
+                .collect();
+            let Some(pos) = order.iter().position(|(_, i)| *i == at) else {
+                continue;
+            };
+            if let Some(to) = roving::next(name, axis, pos, order.len(), |_| true) {
+                g.selected = Some(order[to].1);
+                light(kids, order[to].1, &mut items);
+                out.write(ControlEvent {
+                    entity: order[to].0,
+                    kind: ControlKind::Selected,
+                });
+            }
+        }
+        for (entity, mut r, kids) in &mut ratings {
+            if !over(kids) {
+                continue;
+            }
+            let next = match name {
+                "left" | "down" => r.value.saturating_sub(1),
+                "right" | "up" => (r.value + 1).min(r.max),
+                "home" => 0,
+                "end" => r.max,
+                _ => continue,
+            };
+            if next != r.value {
+                r.value = next;
+                out.write(ControlEvent {
+                    entity,
+                    kind: ControlKind::Slid(f32::from(next)),
+                });
+            }
+        }
+        for (entity, mut s, kids) in &mut steppers {
+            if !over(kids) {
+                continue;
+            }
+            let next = match name {
+                "left" | "down" => s.stepped(-1.0),
+                "right" | "up" => s.stepped(1.0),
+                "home" => s.min,
+                "end" => s.max,
+                _ => continue,
+            };
+            if next != s.value {
+                s.value = next;
+                let shown = format_value(next, s.step);
+                for c in kids.iter() {
+                    if let Ok(mut t) = readouts.get_mut(c) {
+                        t.raw = shown.clone();
+                    }
+                }
+                out.write(ControlEvent {
+                    entity,
+                    kind: ControlKind::Slid(next),
+                });
+            }
+        }
+    }
+}
+
 pub(crate) fn select_groups(
     pressed: Query<(Entity, &UiSelectable, &ChildOf, &ControlPointer), Changed<ControlPointer>>,
     mut groups: Query<(&mut UiSelectGroup, &Children)>,
@@ -99,14 +225,7 @@ pub(crate) fn select_groups(
             continue;
         };
         group.selected = Some(sel.0);
-        for kid in kids.iter() {
-            if let Ok((s, mut k)) = items.get_mut(kid) {
-                let next = with_selected(k.0, s.0 == sel.0);
-                if k.0 != next {
-                    k.0 = next;
-                }
-            }
-        }
+        light(kids, sel.0, &mut items);
         out.write(ControlEvent {
             entity,
             kind: ControlKind::Selected,
@@ -291,6 +410,7 @@ pub(crate) fn add(app: &mut App) {
         Update,
         (
             select_groups,
+            roving_keys,
             disclosures,
             disclosure_chevrons,
             steppers,

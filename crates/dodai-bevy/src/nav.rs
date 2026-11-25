@@ -577,6 +577,64 @@ mod tests {
         assert_eq!(pad.left, Val::Px(k.item_padding + 2.0 * k.indent));
     }
 
+    fn press(app: &mut App, key: bevy::input::keyboard::Key) {
+        app.world_mut()
+            .write_message(bevy::input::keyboard::KeyboardInput {
+                key_code: KeyCode::Unidentified(bevy::input::keyboard::NativeKeyCode::Unidentified),
+                logical_key: key,
+                state: bevy::input::ButtonState::Pressed,
+                text: None,
+                repeat: false,
+                window: Entity::PLACEHOLDER,
+            });
+        app.update();
+    }
+
+    #[test]
+    fn arrow_keys_rove_a_rail_vertically_and_a_bar_horizontally() {
+        use bevy::input::keyboard::Key;
+        let mut app = app();
+        let rail = app
+            .world_mut()
+            .spawn(navigation_rail(&["A", "B", "C"], 0))
+            .id();
+        let bar = app
+            .world_mut()
+            .spawn(navigation_bar(&["A", "B", "C"], 0))
+            .id();
+        app.update();
+        let kids = |app: &App, e: Entity| -> Vec<Entity> {
+            app.world().get::<Children>(e).unwrap().iter().collect()
+        };
+        let hover = |app: &mut App, e: Entity| {
+            let k = kids(app, e)[0];
+            *app.world_mut().get_mut::<ControlPointer>(k).unwrap() = ControlPointer::Hovered;
+        };
+        hover(&mut app, rail);
+        press(&mut app, Key::ArrowRight);
+        assert_eq!(
+            app.world().get::<UiSelectGroup>(rail).unwrap().selected,
+            Some(0),
+            "a column ignores left and right"
+        );
+        press(&mut app, Key::ArrowDown);
+        assert_eq!(
+            app.world().get::<UiSelectGroup>(rail).unwrap().selected,
+            Some(1)
+        );
+        press(&mut app, Key::End);
+        assert_eq!(
+            app.world().get::<UiSelectGroup>(rail).unwrap().selected,
+            Some(2)
+        );
+        hover(&mut app, bar);
+        press(&mut app, Key::ArrowRight);
+        assert_eq!(
+            app.world().get::<UiSelectGroup>(bar).unwrap().selected,
+            Some(1)
+        );
+    }
+
     #[test]
     fn pressing_a_navigation_item_selects_only_it() {
         let mut app = app();

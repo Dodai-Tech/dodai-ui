@@ -57,6 +57,7 @@ pub fn component_app() -> bevy::prelude::App {
     app.init_resource::<crate::theme::DodaiTheme>();
     app.add_message::<crate::widgets::ControlEvent>();
     app.add_message::<bevy::input::mouse::MouseWheel>();
+    app.add_message::<bevy::input::keyboard::KeyboardInput>();
     crate::interact::add(&mut app);
     crate::nav::add(&mut app);
     crate::data::add(&mut app);

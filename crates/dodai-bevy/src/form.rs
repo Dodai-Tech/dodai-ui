@@ -620,6 +620,50 @@ mod tests {
     }
 
     #[test]
+    fn arrows_change_a_hovered_rating_and_stepper() {
+        use crate::interact::{UiRating, UiStepper};
+        let mut app = app();
+        let r = app.world_mut().spawn(rating(2, 5)).id();
+        let st = app
+            .world_mut()
+            .spawn(number_stepper(3.0, 0.0, 5.0, 1.0))
+            .id();
+        app.update();
+        for e in [r, st] {
+            let k = app.world().get::<Children>(e).unwrap()[0];
+            *app.world_mut().get_mut::<ControlPointer>(k).unwrap() = ControlPointer::Hovered;
+        }
+        fn key(app: &mut App, k: bevy::input::keyboard::Key) {
+            app.world_mut().write_message(KeyboardInput {
+                key_code: KeyCode::Unidentified(bevy::input::keyboard::NativeKeyCode::Unidentified),
+                logical_key: k,
+                state: ButtonState::Pressed,
+                text: None,
+                repeat: false,
+                window: Entity::PLACEHOLDER,
+            });
+            app.update();
+        }
+        key(&mut app, bevy::input::keyboard::Key::ArrowRight);
+        key(&mut app, bevy::input::keyboard::Key::ArrowRight);
+        key(&mut app, bevy::input::keyboard::Key::ArrowRight);
+        key(&mut app, bevy::input::keyboard::Key::ArrowRight);
+        assert_eq!(
+            app.world().get::<UiRating>(r).unwrap().value,
+            5,
+            "stops at the last star"
+        );
+        assert_eq!(
+            app.world().get::<UiStepper>(st).unwrap().value,
+            5.0,
+            "stops at the maximum"
+        );
+        key(&mut app, bevy::input::keyboard::Key::Home);
+        assert_eq!(app.world().get::<UiRating>(r).unwrap().value, 0);
+        assert_eq!(app.world().get::<UiStepper>(st).unwrap().value, 0.0);
+    }
+
+    #[test]
     fn enter_adds_the_typed_tag_before_the_input() {
         let mut app = app();
         let f = app.world_mut().spawn(tag_field(&["a"])).id();
