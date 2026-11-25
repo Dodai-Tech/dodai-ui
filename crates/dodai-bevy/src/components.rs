@@ -1,7 +1,7 @@
 //! Named constructors for the token-styled boxes: [`card`], [`alert`], [`chip`], [`avatar`],
 //! [`tooltip`], [`toolbar`], [`breadcrumb`], [`pagination`], [`stepper`] and the rest.
 //!
-//! Each is a [`kit`](crate::kit::kit) box (so the theme restyles it) with its label children
+//! Each is a [`kit`] box (so the theme restyles it) with its label children
 //! already spawned. Give it a [`Node`] of your own for size; extra children go through
 //! `.with_children`.
 //!

@@ -15,7 +15,7 @@
 //! | feature | module |
 //! | --- | --- |
 //! | `dodai`, `cyberpunk`, `material`, `neobrutalism` (`all-designs`) | the designs inside [`core`] |
-//! | `icons`, `charts`, `dash`, `fx`, `frost`, `shaders` | [`icons`], [`charts`], [`dash`], [`fx`], [`frost`], [`shaders`] |
+//! | `icons`, `charts`, `dash`, `fx`, `frost`, `shaders` | the module of the same name (`dodai_ui::icons`, `dodai_ui::charts`, ...) |
 //! | `iced`, `gpui`, `egui`, `bevy`, `slint`, `dioxus`, `leptos`, `yew`, `tui`, `topcoat` | the toolkit of that name |
 //!
 //! Freya and xilem live in their own workspaces (their GPU stacks do not unify with the others)

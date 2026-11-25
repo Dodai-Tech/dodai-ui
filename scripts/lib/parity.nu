@@ -67,6 +67,7 @@ def crate-src [crate: string, kind: string]: nothing -> string {
     $exts
     | each { |e| glob $"crates/($crate)/{src,ui}/**/*.($e)" }
     | flatten
+    | sort
     | each { open --raw $in }
     | str join "\n"
 }
