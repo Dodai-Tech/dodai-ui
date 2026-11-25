@@ -330,136 +330,176 @@ The `dist/design/dodai.fig` collection `neobrutalism` has one mode per theme. Pa
 | Symbols | the dashboard symbol groups |
 | Surfaces & glass | the design's frosted glass, and the textures and effects it owns |
 | Shaders | a thumbnail of every shader of the catalogue |
+| Motion | the duration scale, every easing curve, every entry effect and the overscroll feels |
+| Behaviour | the components that draw nothing themselves: what each does |
 
-## Components (128)
+## Motion
 
-| component | toolkits | gpui reference |
+The duration scale in ms: `short1 50`, `short2 100`, `short3 150`, `short4 200`, `medium1 250`, `medium2 300`, `medium3 350`, `medium4 400`, `long1 450`, `long2 500`, `long3 550`, `long4 600`, `extra-long1 700`, `extra-long2 800`, `extra-long3 900`, `extra-long4 1000`.
+
+| easing | group | css |
 | --- | --- | --- |
-| Accordion | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/nav.rs` |
-| Alert | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/feedback.rs` |
-| Avatar | gpui, iced, dioxus, topcoat, leptos, yew | `crates/dodai-gpui/src/data.rs` |
-| AxisGizmo | gpui, iced, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/orientation.rs` |
-| Badge | gpui, dioxus, topcoat, leptos, yew, ratatui | `crates/dodai-gpui/src/data.rs` |
-| Banner | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/display.rs` |
-| BottomAppBar | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/extras.rs` |
-| BottomSheet | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/sheets.rs` |
-| Breadcrumb | gpui, dioxus, topcoat, leptos, yew | `crates/dodai-gpui/src/nav.rs` |
-| Button | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew, ratatui, xilem | `crates/dodai-gpui/src/button.rs` |
-| Card | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/surfaces.rs` |
-| Carousel | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/carousel.rs` |
-| Chip | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/data.rs` |
-| CircularProgress | gpui, iced, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-gpui/src/display.rs` |
-| Clock | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/time/clock.rs` |
-| CodeBlock | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/content.rs` |
-| ColorPicker | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/extras.rs` |
-| Column | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/datatable.rs` |
-| Combobox | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/command.rs` |
-| Command | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/command.rs` |
-| CommandPalette | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/command.rs` |
-| ContextMenu | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/popover.rs` |
-| CountUp | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/count.rs` |
-| DataTable | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/datatable.rs` |
-| DateInput | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/picker.rs` |
-| DatePicker | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/picker.rs` |
-| DateTimePicker | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/picker.rs` |
-| DateTimeRangePicker | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/picker.rs` |
-| DesignSystemSelector | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/select.rs` |
-| Dialog | gpui, dioxus, leptos, yew, ratatui | `crates/dodai-gpui/src/overlay.rs` |
-| DialogCard | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/overlay.rs` |
-| Divider | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew, ratatui | `crates/dodai-gpui/src/list.rs` |
-| DodaiTheme | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/lib.rs` |
-| DodaiTooltip | gpui, dioxus, freya, leptos, yew | `crates/dodai-gpui/src/panel.rs` |
-| DropdownMenu | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/popover.rs` |
-| EntryScope | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/motion.rs` |
-| Fab | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/surfaces.rs` |
-| FabMenu | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/surfaces.rs` |
-| Feed | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/live.rs` |
-| FileDropZone | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/extras.rs` |
-| Follow | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/follow.rs` |
-| FormField | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/forms.rs` |
-| FrostLayer | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/paint.rs` |
-| FrostedScene | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/frosted.rs` |
-| FullScreenDialog | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/sheets.rs` |
-| GlowLayer | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/paint.rs` |
-| Heading | gpui, iced, dioxus, bevy, topcoat, freya, leptos, yew | `crates/dodai-gpui/src/text.rs` |
-| HoverCard | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/popover.rs` |
-| Icon | gpui, iced, dioxus, bevy, topcoat, egui, leptos, yew | `crates/dodai-gpui/src/icons.rs` |
-| IconBadge | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/search.rs` |
-| IconButton | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/surfaces.rs` |
-| Image | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/display.rs` |
-| IndeterminateBar | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/feedback.rs` |
-| InputBox | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/panel.rs` |
-| Interact | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/interact.rs` |
-| Kbd | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/data.rs` |
-| Knob | gpui, iced, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-gpui/src/knob.rs` |
-| Label | gpui, iced, dioxus, bevy, topcoat, freya, leptos, yew, ratatui | `crates/dodai-gpui/src/text.rs` |
-| Lazy | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/lazy.rs` |
-| List | gpui, dioxus, topcoat, freya, leptos, yew | `crates/dodai-gpui/src/list.rs` |
-| ListItem | gpui, iced, dioxus, bevy, egui, slint, leptos, yew | `crates/dodai-gpui/src/list.rs` |
-| Live | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/live.rs` |
-| LoadingIndicator | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/expressive.rs` |
-| Markdown | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/markdown.rs` |
-| Menu | gpui, iced, dioxus, topcoat, leptos, yew | `crates/dodai-gpui/src/menu.rs` |
-| MenuItem | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/menu.rs` |
-| ModalDrawer | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/sheets.rs` |
-| Mono | gpui, dioxus, bevy, topcoat, freya, leptos, yew | `crates/dodai-gpui/src/text.rs` |
-| Muted | gpui, iced, dioxus, bevy, topcoat, freya, leptos, yew, ratatui | `crates/dodai-gpui/src/text.rs` |
-| NavigationBar | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/navigation.rs` |
-| NavigationDrawer | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/navigation.rs` |
-| NavigationItem | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/navigation.rs` |
-| NavigationRail | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/navigation.rs` |
-| NumberStepper | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/extras.rs` |
-| OtpInput | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/forms.rs` |
-| Overscroll | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/overscroll.rs` |
-| OverscrollFeel | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/overscroll.rs` |
-| PageGrid | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/page_grid.rs` |
-| Pagination | gpui, dioxus, topcoat, leptos, yew | `crates/dodai-gpui/src/nav.rs` |
-| Panel | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew, xilem | `crates/dodai-gpui/src/panel.rs` |
-| Popover | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/popover.rs` |
-| ProgressBar | gpui, dioxus, egui, leptos, yew | `crates/dodai-gpui/src/controls/bars.rs` |
-| RangeSlider | gpui, iced, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-gpui/src/range.rs` |
-| Rating | gpui, dioxus, topcoat, leptos, yew | `crates/dodai-gpui/src/extras.rs` |
-| ResponsiveShell | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/shell.rs` |
-| RichTooltip | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/search.rs` |
-| Scanlines | gpui, iced, dioxus, slint, leptos, yew, ratatui | `crates/dodai-gpui/src/scanlines.rs` |
-| ScrollArea | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/display.rs` |
-| ScrollSpy | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/spy.rs` |
-| SearchBar | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/surfaces.rs` |
-| SearchView | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/search.rs` |
-| Segmented | gpui, iced, dioxus, topcoat, leptos, yew | `crates/dodai-gpui/src/nav.rs` |
-| Select | gpui, dioxus, bevy, topcoat, freya, leptos, yew | `crates/dodai-gpui/src/select.rs` |
-| SelectOption | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/select.rs` |
-| SelectionMarker | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/selection.rs` |
-| SelectionTrack | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/selection.rs` |
-| Shimmer | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/paint.rs` |
-| SideSheet | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/sheets.rs` |
-| Skeleton | gpui, iced, dioxus, topcoat, leptos, yew | `crates/dodai-gpui/src/feedback.rs` |
-| Slider | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew | `crates/dodai-gpui/src/controls/slider.rs` |
-| Snackbar | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/sheets.rs` |
-| SnapStack | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/snap_stack.rs` |
-| Spinner | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew | `crates/dodai-gpui/src/feedback.rs` |
-| SplitButton | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/expressive.rs` |
-| SplitPane | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/layout.rs` |
-| Stepper | gpui, dioxus, topcoat, leptos, yew | `crates/dodai-gpui/src/nav.rs` |
-| Stopwatch | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/time/stopwatch.rs` |
-| Table | gpui, dioxus, topcoat, leptos, yew | `crates/dodai-gpui/src/data.rs` |
-| Tabs | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew, ratatui, xilem | `crates/dodai-gpui/src/tabs.rs` |
-| Tag | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew, ratatui, xilem | `crates/dodai-gpui/src/tag.rs` |
-| TagField | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/extras.rs` |
-| TapTempo | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/time/tap.rs` |
-| Text | gpui, dioxus, bevy, freya, slint, leptos, yew, xilem | `crates/dodai-gpui/src/text.rs` |
-| TextInput | gpui, iced, dioxus, bevy, topcoat, egui, leptos, yew | `crates/dodai-gpui/src/text_input.rs` |
-| ThemeSelector | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/select.rs` |
-| ThemeSwitcherBar | gpui, dioxus, egui, leptos, yew | `crates/dodai-gpui/src/switcher.rs` |
-| TimeInput | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/picker.rs` |
-| TimePicker | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/picker.rs` |
-| Timeline | gpui, dioxus, topcoat, leptos, yew | `crates/dodai-gpui/src/extras.rs` |
-| TimelineEvent | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/extras.rs` |
-| Timer | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/time/timer.rs` |
-| Toast | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/feedback.rs` |
-| Toolbar | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/extras.rs` |
-| TopAppBar | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/surfaces.rs` |
-| TreeItem | gpui, dioxus, topcoat, leptos, yew | `crates/dodai-gpui/src/layout.rs` |
-| TreeNavigation | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/layout.rs` |
-| TreeRow | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/layout.rs` |
-| TreeView | gpui, dioxus, leptos, yew | `crates/dodai-gpui/src/layout.rs` |
+| `linear` | basic | `linear` |
+| `ease-in` | basic | `ease-in` |
+| `ease-out` | basic | `ease-out` |
+| `ease-in-out` | basic | `ease-in-out` |
+| `standard` | material | `cubic-bezier(0.2, 0, 0, 1)` |
+| `standard-decelerate` | material | `cubic-bezier(0, 0, 0, 1)` |
+| `standard-accelerate` | material | `cubic-bezier(0.3, 0, 1, 1)` |
+| `emphasized` | material | `cubic-bezier(0.2, 0, 0, 1)` |
+| `emphasized-decelerate` | material | `cubic-bezier(0.05, 0.7, 0.1, 1)` |
+| `emphasized-accelerate` | material | `cubic-bezier(0.3, 0, 0.8, 0.15)` |
+| `spring` | physical | `linear(0, 0.249, 0.699, 1.044, 1.188, 1.173, 1.089, 1.01, 0.9` |
+| `spring-stiff` | physical | `linear(0, 0.433, 0.904, 1.062, 1.051, 1.014, 0.997, 0.996, 0.` |
+| `spring-wobbly` | physical | `linear(0, 0.2, 0.638, 1.075, 1.347, 1.404, 1.291, 1.104, 0.93` |
+| `spring-gentle` | physical | `linear(0, 0.13, 0.355, 0.559, 0.713, 0.819, 0.888, 0.932, 0.9` |
+| `bounce` | physical | `linear(0, 0.03, 0.118, 0.266, 0.473, 0.739, 0.97, 0.838, 0.76` |
+| `elastic` | physical | `linear(0, 0.832, 1.364, 1.193, 0.912, 0.889, 1, 1.047, 1.016,` |
+| `back` | physical | `linear(0, 0.269, 0.493, 0.674, 0.817, 0.926, 1.005, 1.057, 1.` |
+| `anticipate` | physical | `linear(-0, -0.006, -0.021, -0.042, -0.064, -0.084, -0.097, -0` |
+
+Entry effects: Fade, Rise, Drop, Slide from left, Slide from right. Overscroll feels: soft (rounded designs): max 96 px, stiffness 160, damping 25.3; snappy (square designs): max 56 px, stiffness 420, damping 22. The design file draws all of them on the `<System> / Motion` page.
+
+## Behaviour (8 components with no visual)
+
+| component | what it does | toolkits |
+| --- | --- | --- |
+| DodaiTheme | Global theme state: the [`ThemeSwitcher`] plus the active theme. | gpui, dioxus, bevy, leptos, yew |
+| EntryScope | Wraps a subtree so every component inside uses `kind` for its entry and value-in animation instead of the default [`Motion::entry`]. Components render while their parent lays out, so the override is installed around the child's `request_layout` and restored afterwards. | gpui, dioxus, bevy, leptos, yew |
+| Feed | Samples waiting for a [`Live`] window, pushed from any thread (a socket reader, a sensor loop). Clones share the queue; attach it with [`Live::attach`]. | gpui, dioxus, bevy, leptos, yew |
+| Follow | Animation identity and feel of one instrument. | gpui, dioxus, bevy, leptos, yew |
+| Interact | Pointer state of one control (kept in gpui keyed element state). | gpui, dioxus, bevy, leptos, yew |
+| Lazy | See [`lazy`]. | gpui, dioxus, bevy, leptos, yew |
+| Live | A fixed-size window of recent samples. Clones share the same data. | gpui, dioxus, bevy, leptos, yew |
+| PageGrid | The design's page grid (columns, gap and outer margins at the viewport width) laid out as wrapping rows of cells that each span a number of columns. | gpui, dioxus, bevy, leptos, yew |
+
+## Components (126)
+
+| component | summary | toolkits | gpui reference |
+| --- | --- | --- | --- |
+| Accordion | Collapsible sections `(title, body)`. Each toggles independently; sections listed in `expanded` start expanded. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/nav.rs` |
+| Alert | Inline status message with title + optional body. `banner()` = full solid strip. | gpui, iced, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/feedback.rs` |
+| Avatar | Initials in a shaped tile, optional status dot. | gpui, iced, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-gpui/src/data.rs` |
+| AxisGizmo | Orientation gizmo for a 3D view (Z up). Controlled: pass the camera basis. | gpui, iced, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/orientation.rs` |
+| Badge | Count / dot indicator. Round on rounded themes, shaped otherwise. | gpui, iced, dioxus, bevy, topcoat, leptos, yew, tui | `crates/dodai-gpui/src/data.rs` |
+| Banner | Full-width message strip with an optional action and a dismiss ✕. | gpui, iced, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/display.rs` |
+| BottomAppBar | Bottom app bar: actions (children) at the start, a floating action at the end. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/extras.rs` |
+| BottomSheet | Sheet anchored to the bottom edge with a drag-handle affordance. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/sheets.rs` |
+| Breadcrumb | Path trail; the last crumb is the current page. Earlier crumbs are clickable. | gpui, iced, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-gpui/src/nav.rs` |
+| Button | Themed button. Construct with an id so hover/press state can be tracked. | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew, tui, xilem | `crates/dodai-gpui/src/button.rs` |
+| Card | Container with optional headline, supporting text and children. | gpui, iced, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/surfaces.rs` |
+| Carousel | Controlled carousel; each item gets a fixed `item_width`. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/carousel.rs` |
+| Chip | Selectable filter chip with optional ✕ remove affordance. | gpui, iced, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/data.rs` |
+| CircularProgress | Ring progress. `new(0.0..=1.0)` is determinate; [`CircularProgress::indeterminate`] spins. | gpui, iced, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-gpui/src/display.rs` |
+| Clock | Live clock: analog dial, or a futuristic seven-segment face (see [`ClockFace`]). | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/time/clock.rs` |
+| CodeBlock | Monospace code with line numbers, highlighting, a copy button, scrolling in both directions (optionally with scrollbars) and selectable text (drag, then Cmd/Ctrl-C). | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/content.rs` |
+| ColorPicker | Swatch grid; shows the selected colour's hex code. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/extras.rs` |
+| Column | One column of a [`DataTable`]. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/datatable.rs` |
+| Combobox | Text input with a filtered option list shown while `open`. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/command.rs` |
+| Command | One command in a [`CommandPalette`]. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/command.rs` |
+| CommandPalette | Modal launcher: query input on top, filtered commands below. `on_run` receives the index into the original `commands`. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/command.rs` |
+| ContextMenu | Right-click anywhere on the wrapped area to open a [`Menu`] at the pointer. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/popover.rs` |
+| CountUp | Animated numeric readout (`0 -> value`). | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/count.rs` |
+| DataTable | Table with sorting (click a header), filtering, row selection, draggable column edges and windowed rendering for long lists. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/datatable.rs` |
+| DateInput | Typed date entry (the picker's text-input mode): a labelled field that reports each valid date and shows an error line for text that is not one. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/picker.rs` |
+| DatePicker | Controlled month calendar. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/picker.rs` |
+| DateTimePicker | Controlled calendar and time of day in one panel, with the chosen moment read out below. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/picker.rs` |
+| DateTimeRangePicker | Controlled range calendar with a start and an end time of day in one panel, the chosen span read out below. Feed day clicks through [`range_pick`] in `on_select`. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/picker.rs` |
+| DesignSystemSelector | Dropdown of registered design systems (families). Choosing one switches to its first variant. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/select.rs` |
+| Dialog | Modal: scrim over the whole (relatively positioned) parent with a centred [`DialogCard`]. Clicking the scrim calls `on_dismiss`. Render it last in the root element; it sits above siblings via `deferred`. | gpui, iced, dioxus, bevy, leptos, yew, tui | `crates/dodai-gpui/src/overlay.rs` |
+| DialogCard | Dialog box: title, body children, action row (right aligned). | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/overlay.rs` |
+| Divider | Thin separator line in the `divider` colour. | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew, tui | `crates/dodai-gpui/src/list.rs` |
+| DodaiTheme | Global theme state: the [`ThemeSwitcher`] plus the active theme. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/lib.rs` |
+| DodaiTooltip | Tooltip view: `.tooltip(DodaiTooltip::text("Hint"))` on an id'd element. | gpui, dioxus, bevy, freya, leptos, yew | `crates/dodai-gpui/src/panel.rs` |
+| DropdownMenu | A button that opens a [`Menu`] below it; closes after a choice or an outside click. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/popover.rs` |
+| EntryScope | Wraps a subtree so every component inside uses `kind` for its entry and value-in animation instead of the default [`Motion::entry`]. Components render while their parent lays out, so the override is installed around the child's `request_layout` and restored afterwards. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/motion.rs` |
+| Fab | Floating action button; `extended` adds a text label. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/surfaces.rs` |
+| FabMenu | A FAB that opens a stack of labelled actions above it (Material 3 FAB menu). The main button turns into a close button while open. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/surfaces.rs` |
+| Feed | Samples waiting for a [`Live`] window, pushed from any thread (a socket reader, a sensor loop). Clones share the queue; attach it with [`Live::attach`]. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/live.rs` |
+| FileDropZone | Drop target look (click to browse). Wire `on_click` to your file dialog. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/extras.rs` |
+| Follow | Animation identity and feel of one instrument. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/follow.rs` |
+| FormField | Label + control + help or validation message. When an error appears (or changes) the control shakes, in the design's personality; fields are told apart by their label. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/forms.rs` |
+| FrostLayer | Frosted glass under a fill: a blurred copy of the app's backdrop (feature `frost`; without it only the see-through fill is drawn). | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/paint.rs` |
+| FrostedScene | A picture with frosted-glass panels over it. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/frosted.rs` |
+| FullScreenDialog | Dialog covering the whole parent: close button, title, primary action. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/sheets.rs` |
+| GlowLayer | One layer of the layered-stroke glow. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/paint.rs` |
+| Heading | Display-font heading in the primary text colour. | gpui, iced, dioxus, bevy, topcoat, freya, leptos, yew | `crates/dodai-gpui/src/text.rs` |
+| HoverCard | Card shown while the pointer is over the trigger or the card itself. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/popover.rs` |
+| Icon | Vector icon. Defaults: 16 px, the theme text colour; set `.color(..)` to override. | gpui, iced, dioxus, bevy, topcoat, egui, leptos, yew | `crates/dodai-gpui/src/icons.rs` |
+| IconBadge | Pins a [`Badge`] to the top-right corner of `child` (icon, avatar, …). | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/search.rs` |
+| IconButton | Square icon button. Pass any glyph string (emoji, symbol, icon-font char). | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/surfaces.rs` |
+| Image | Image in a themed frame, with an optional caption and a play badge for video posters. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/display.rs` |
+| IndeterminateBar | Indeterminate progress bar: a segment sliding across the track. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/feedback.rs` |
+| InputBox | Styled container for a text-input entity. gpui 0.2.2 ships no text input; put your own editor view/entity inside (or use `.placeholder`). | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/panel.rs` |
+| Interact | Pointer state of one control (kept in gpui keyed element state). | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/interact.rs` |
+| Kbd | Keyboard key hint, e.g. `Kbd::new("⌘K")`. | gpui, iced, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/data.rs` |
+| Knob | Rotary knob over `min..=max` (default `0..=1`). Controlled. | gpui, iced, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-gpui/src/knob.rs` |
+| Label | Small body-font label (uppercased when the theme says so). | gpui, iced, dioxus, bevy, topcoat, freya, leptos, yew, tui | `crates/dodai-gpui/src/text.rs` |
+| Lazy | See [`lazy`]. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/lazy.rs` |
+| List | A column of [`ListItem`]s with one selected row and the keyboard: once the list has focus (a click inside it, or Tab), Up and Down move the selection, Home and End jump to the ends, and disabled rows are skipped. The selection works without state in the parent (`.selected(i)` only sets the start, and a changed value wins again). | gpui, dioxus, bevy, topcoat, freya, leptos, yew | `crates/dodai-gpui/src/list.rs` |
+| ListItem | Selectable list/menu row with a left accent marker when selected. | gpui, iced, dioxus, bevy, egui, slint, leptos, yew | `crates/dodai-gpui/src/list.rs` |
+| Live | A fixed-size window of recent samples. Clones share the same data. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/live.rs` |
+| LoadingIndicator | Material 3 expressive loading indicator: a 48 px container with a 38 px shape that morphs and turns. `contained` draws it on a filled pill/circle. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/expressive.rs` |
+| Markdown | Rich text from Markdown source. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/markdown.rs` |
+| Menu | Floating action list. `on_select` receives the index into the item list. | gpui, iced, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-gpui/src/menu.rs` |
+| MenuItem | One row of a [`Menu`]. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/menu.rs` |
+| ModalDrawer | Modal navigation drawer: a [`crate::NavigationDrawer`] sliding over the page from the left edge with a scrim; picking an item or clicking the scrim dismisses it. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/sheets.rs` |
+| Mono | Monospace text (never uppercased). | gpui, dioxus, bevy, topcoat, freya, leptos, yew | `crates/dodai-gpui/src/text.rs` |
+| Muted | Secondary body text in `text_muted`. | gpui, iced, dioxus, bevy, topcoat, freya, leptos, yew, tui | `crates/dodai-gpui/src/text.rs` |
+| NavigationBar | Navigation bar: the destinations side by side along the bottom of a compact screen. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/navigation.rs` |
+| NavigationDrawer | Vertical drawer: items, section headlines and dividers. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/navigation.rs` |
+| NavigationItem | One destination of a drawer or rail. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/navigation.rs` |
+| NavigationRail | Narrow icon rail (width from the design's tokens): label under each icon, indicator pill behind the icon. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/navigation.rs` |
+| NumberStepper | − value + control. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/extras.rs` |
+| OtpInput | Row of single-character cells for verification codes. Type or paste; Backspace deletes. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/forms.rs` |
+| PageGrid | The design's page grid (columns, gap and outer margins at the viewport width) laid out as wrapping rows of cells that each span a number of columns. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/page_grid.rs` |
+| Pagination | Page selector: `‹ 1 … 4 [5] 6 … 20 ›`. Pages are 1-based. Controlled. | gpui, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-gpui/src/nav.rs` |
+| Panel | Shaped card with optional title; focused border/glow; hard shadow from tokens. | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew, xilem | `crates/dodai-gpui/src/panel.rs` |
+| Popover | Click-to-open panel anchored to a trigger. Closes on outside click or `Esc`. | gpui, iced, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/popover.rs` |
+| ProgressBar | Horizontal progress bar (`0.0..=1.0`). | gpui, dioxus, bevy, egui, leptos, yew | `crates/dodai-gpui/src/controls/bars.rs` |
+| RangeSlider | Two-thumb slider (controlled), horizontal or vertical. | gpui, iced, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-gpui/src/range.rs` |
+| Rating | Star rating (`value` of `max`). With [`Rating::half`] it also takes half stars: the left half of a star is `n - 0.5`, the right half is `n`. | gpui, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-gpui/src/extras.rs` |
+| ResponsiveShell | Responsive app frame. Wide: `[sidebar / content]`. Narrow: content only, with a menu button that opens the sidebar as an overlay drawer. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/shell.rs` |
+| RichTooltip | Tooltip with a title, body text and optional action label: `.tooltip(RichTooltip::build("Title", "Body", Some("Learn more")))`. | gpui, iced, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/search.rs` |
+| Scanlines | Absolutely-positioned overlay filling its (relative) parent. Place it as the last child of the root. It adds no hitbox, so it never blocks input. | gpui, iced, dioxus, bevy, slint, leptos, yew, tui | `crates/dodai-gpui/src/scanlines.rs` |
+| ScrollArea | Scroll container with thin themed scrollbars (drag a thumb or use the wheel). Scrolls vertically; [`horizontal`](Self::horizontal) adds the other axis. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/display.rs` |
+| ScrollSpy | Scroll-spy state: just the optional pinned (clicked) key. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/spy.rs` |
+| SearchBar | Search field shell: leading glyph + placeholder/value text; click to focus your own input. Use [`crate::TextInput`] inside for real editing. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/surfaces.rs` |
+| SearchView | Full-text search: input, clear button and a fuzzy-filtered result list with matched characters highlighted. Owns no state: pass the [`TextInput`] entity and an `open` flag. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/search.rs` |
+| Segmented | Exclusive option group in one bordered strip. Controlled. | gpui, iced, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-gpui/src/nav.rs` |
+| Select | Dropdown list. Controlled: pass `selected` and update it in `on_select`. Keyboard (trigger focused): ↑/↓ move, Enter/Space open or choose, Esc close. | gpui, dioxus, bevy, topcoat, freya, leptos, yew | `crates/dodai-gpui/src/select.rs` |
+| SelectOption | One entry of a [`Select`]. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/select.rs` |
+| SelectionMarker | What the indicator looks like. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/selection.rs` |
+| SelectionTrack | The travelling indicator of one row of choices. Cheap to clone; keyed by its id. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/selection.rs` |
+| Shimmer | Shimmer sweep painted by [`shaped`] over any shape. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/paint.rs` |
+| SideSheet | Sheet attached to the left or right edge with a header and close button. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/sheets.rs` |
+| Skeleton | Pulsing placeholder block for loading content. | gpui, iced, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-gpui/src/feedback.rs` |
+| Slider | Draggable slider over `min..=max` (default `0..=1`). Controlled. | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew | `crates/dodai-gpui/src/controls/slider.rs` |
+| Snackbar | Message bar with an optional text action. | gpui, iced, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/sheets.rs` |
+| SnapStack | Items stacked vertically, one shown at a time. The wheel turns one page a notch; two fingers drag the stack and snap the nearest page into place when lifted. At either end the scroll passes on, so a page around the stack still scrolls. Small dots just past the trailing edge show where. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/snap_stack.rs` |
+| Spinner | Indeterminate spinner: a row of bars with a travelling highlight. | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew | `crates/dodai-gpui/src/feedback.rs` |
+| SplitButton | A button with a trailing menu toggle: `[ Label / ▾ ]`. `on_click` runs the main action, `on_toggle` opens or closes the menu (rendered by the caller, e.g. a `DropdownMenu`). `crop(Left)` cuts the lead's outer corner, `crop(Right)` the menu's. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/expressive.rs` |
+| SplitPane | Two panes with a draggable divider (controlled ratio of the first pane). | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/layout.rs` |
+| Stepper | Multi-step progress: numbered nodes joined by lines. Done steps show ✓. | gpui, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-gpui/src/nav.rs` |
+| Stopwatch | Chronometer: start/stop, lap, reset; shows the newest laps with splits. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/time/stopwatch.rs` |
+| Table | Data table: header + rows, optional selected row. Cells are text. Column `i` gets flex weight `weights[i]` (default 1). | gpui, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-gpui/src/data.rs` |
+| Tabs | Tab strip. Controlled: pass `selected` and update it in `on_select`. | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew, tui, xilem | `crates/dodai-gpui/src/tabs.rs` |
+| Tag | Small status badge. | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew, tui, xilem | `crates/dodai-gpui/src/tag.rs` |
+| TagField | Removable chips inside an input-style box (pair with a text input to add). | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/extras.rs` |
+| TapTempo | Measure the tempo of music: tap along and read the BPM, then press Play to hear/see it back as a visual metronome (a bar of beat lights, beat 1 accented). | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/time/tap.rs` |
+| Text | Text in a type-scale role (Material 3: 15 roles; other designs derive them from their sizes). | gpui, dioxus, bevy, freya, slint, leptos, yew, xilem | `crates/dodai-gpui/src/text.rs` |
+| TextInput | Editable text entity. Create with `cx.new(/cx/ TextInput::new(cx))`. | gpui, iced, dioxus, bevy, topcoat, egui, leptos, yew | `crates/dodai-gpui/src/text_input.rs` |
+| ThemeSelector | Dropdown of the variants (sub-themes) of the active design system; choosing one applies it live. New variants appear automatically. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/select.rs` |
+| ThemeSwitcherBar | Row of buttons, one per theme in the global switcher; the active one is filled. | gpui, dioxus, bevy, egui, leptos, yew | `crates/dodai-gpui/src/switcher.rs` |
+| TimeInput | Typed time entry: `HH:MM` or `H:MM AM/PM`. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/picker.rs` |
+| TimePicker | Controlled time picker (hour : minute with steppers, optional 12 h mode). | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/picker.rs` |
+| Timeline | Vertical sequence of events joined by a line. | gpui, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-gpui/src/extras.rs` |
+| TimelineEvent | One timeline entry. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/extras.rs` |
+| Timer | Countdown timer with a progress ring, start/pause/reset and ±1 min. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/time/timer.rs` |
+| Toast | Compact floating notification: raised surface, tone bar at the left, glow from tokens. | gpui, iced, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/feedback.rs` |
+| Toolbar | Compact bar of actions (children), optionally with a trailing floating action. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/extras.rs` |
+| TopAppBar | Top app bar: leading glyph, title, trailing actions (children). | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/surfaces.rs` |
+| TreeItem | Node of a [`TreeView`]. `expanded` is owned by the caller (controlled). | gpui, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-gpui/src/layout.rs` |
+| TreeNavigation | Navigation tree that keeps its own expansion and selection: a click on a branch folds or unfolds it, a click on a leaf selects it and calls `on_select`. Built on [`TreeView`]. It never touches global state, so it can show any hierarchy (design systems and their themes, files, settings) without side effects. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/layout.rs` |
+| TreeRow | One visible row of a flattened tree. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/layout.rs` |
+| TreeView | Hierarchical list with expand/collapse. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/layout.rs` |

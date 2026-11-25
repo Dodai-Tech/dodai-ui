@@ -3,7 +3,7 @@
 
 use std/assert
 use runner.nu *
-use ../lib/parity.nu [node-variants matched-variants component-names snake exposes]
+use ../lib/parity.nu [node-variants matched-variants component-names component-docs behaviour-names snake exposes]
 
 def "test parity: node variants are read from the enum" [] {
     let src = "pub enum Node {\n    /// doc\n    Stack(Stack),\n    Text { t: String },\n    Space,\n}\n"
@@ -18,6 +18,16 @@ def "test parity: matched variants need the whole name" [] {
 def "test parity: component names skip plumbing" [] {
     let src = "pub struct Button {\n}\npub struct ButtonState {\n}\npub struct Tag;\npub struct Tag2 {\n}\n"
     assert equal (component-names $src) [Button Tag Tag2]
+}
+
+def "test parity: docs are the first line above a struct, past attributes" [] {
+    let src = "/// A button.\n/// More.\n///\n/// Other paragraph.\n#[derive(Clone)]\npub struct Button {\n}\n\npub struct Bare;\n/// Late.\npub struct Late;\n"
+    assert equal (component-docs $src) { Button: "A button. More.", Late: "Late." }
+}
+
+def "test parity: behaviour names are components with no visual" [] {
+    assert ("Lazy" in (behaviour-names))
+    assert ("Button" not-in (behaviour-names))
 }
 
 def "test parity: snake case" [] {

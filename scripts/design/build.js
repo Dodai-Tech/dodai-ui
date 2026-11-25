@@ -39,6 +39,37 @@ function text(content, size, fillVar) {
 
 function buildSystem(sys, label) {
   use(sys);
+  // Every catalog component must have a frame (or a Behaviour row) in the file: the build fails
+  // when one has not, so the spec cannot fall behind the components.
+  const covered = new Set();
+  const cover = (name) => {
+    for (const t of name.split(/[^A-Za-z0-9]+/)) if (t) covered.add(t.toLowerCase());
+    covered.add(name.replace(/[^A-Za-z0-9]/g, '').toLowerCase());
+  };
+  const packName = { cyberpunk: 'stroked', material: 'material', dodai: 'material', neobrutalism: 'bold' }[sys];
+  const paintIcon = (n, lined) => {
+    if (n.type === 'FRAME' || n.type === 'GROUP') n.fills = [];
+    else {
+      if (lined) n.fills = [];
+      else bindFill(n, 'color/text');
+      if (n.strokes && n.strokes.length) bindStroke(n, 'color/text');
+    }
+    if (n.children) for (const c of n.children) paintIcon(c, lined);
+  };
+  // The icons are the design's own pack (dodai-icons), painted with a colour variable, so the
+  // spec shows what every toolkit draws instead of a font glyph.
+  const missingIcons = new Set();
+  const ico = (id, size = 16, fill = 'color/text') => {
+    const found = ICONS[packName].find((x) => x.id === id);
+    if (!found) { missingIcons.add(id); { const e = figma.createEllipse(); e.resize(size, size); bindFill(e, fill); return e; } }
+    const n = figma.createNodeFromSvg(found.svg);
+    const lined = found.svg.includes('fill="none"');
+    paintIcon(n, lined);
+    if (lined) { const tint = (m) => { if (m.strokes && m.strokes.length) bindStroke(m, fill); if (m.children) m.children.forEach(tint); }; tint(n); }
+    else { const tint = (m) => { if (m.fills && m.fills.length && m.type !== 'FRAME' && m.type !== 'GROUP') bindFill(m, fill); if (m.children) m.children.forEach(tint); }; tint(n); }
+    n.rescale(size / n.width);
+    return n;
+  };
   // --- Foundations: colour roles as swatches bound to the variables.
   const foundations = figma.createPage();
   foundations.name = `${label} / Foundations`;
@@ -215,10 +246,10 @@ function buildSystem(sys, label) {
     bindStroke(b, 'color/outline');
     c.appendChild(b);
     if (on) {
-      const t = text('✓', n - 6, 'color/on-primary');
+      const t = ico('check', n - 4, 'color/on-primary');
       c.appendChild(t);
-      t.x = 3;
-      t.y = 1;
+      t.x = 2;
+      t.y = 2;
     }
   });
   row('Radio', 140, (c, on) => {
@@ -348,7 +379,7 @@ function buildSystem(sys, label) {
     bind(c, 'cornerRadius', 'shape/radius');
     tint(c, role);
     bindStroke(c, `color/${role}`);
-    c.appendChild(text(['i', '✓', '!', 'x'][i], 16, `color/${role}`));
+    c.appendChild(ico(['info', 'check', 'warning', 'close'][i], 18, `color/${role}`));
     const col = figma.createFrame();
     col.layoutMode = 'VERTICAL';
     col.fills = [];
@@ -463,6 +494,7 @@ function buildSystem(sys, label) {
   kit.appendChild(bg0);
   let kx = 0, ky = 0, krow = 0, kcount = 0;
   const put = (name, node) => {
+    cover(name);
     node.name = name;
     kit.appendChild(node);
     if (kx > 0 && kx + node.width > 1200) { kx = 0; ky += krow + 56; krow = 0; }
@@ -503,59 +535,59 @@ function buildSystem(sys, label) {
   const dot = (d, fill, stroke) => { const e = figma.createEllipse(); e.resize(d, d); bindFill(e, fill); if (stroke) bindStroke(e, stroke); return e; };
   const bar = (w, h, fill, r = h / 2) => { const e = figma.createRectangle(); e.resize(w, h); e.cornerRadius = r; bindFill(e, fill); return e; };
   const field = (s, w = 200, muted = true, o = {}) => box({ w, h: num('shape/control-height'), pad: [12, 0], fill: 'color/surface', stroke: 'color/outline', round: true, gap: 8, ...o }, T(s, 14, muted ? 'color/text-muted' : 'color/text'));
-  const ch = (s = 'v') => T(s, 12, 'color/text-muted');
+  const ch = (s = 'v') => ico(s === '^' ? 'chevron_up' : 'chevron_down', 16, 'color/text-muted');
   const ctrl = num('shape/control-height');
   // Inter has no ▾ ⌕ ⋮ ☰ ⌂ ≡, so the icons the spec needs are drawn or spelled with glyphs it has.
   const ring = (d = 14, fill = 'color/text-muted') => { const e = figma.createEllipse(); e.resize(d, d); e.fills = []; bindStroke(e, fill); e.strokeWeight = 2; return e; };
-  const burger = (fill = 'color/text') => box({ dir: 'V', gap: 3 }, bar(16, 2, fill, 1), bar(16, 2, fill, 1), bar(16, 2, fill, 1));
+  const burger = (fill = 'color/text') => ico('menu', 20, fill);
 
   // Inputs
   put('TextInput', field('Placeholder'));
   put('Select', box({ w: 200, h: ctrl, pad: [12, 0], fill: 'color/surface', stroke: 'color/outline', round: true, main: 'SPACE_BETWEEN' }, T('Choose…', 14, 'color/text-muted'), ch()));
-  put('Combobox', box({ w: 200, h: ctrl, pad: [12, 0], fill: 'color/surface', stroke: 'color/primary', sw: 2, round: true, main: 'SPACE_BETWEEN' }, T('Typ', 14), ring(14)));
-  put('NumberStepper', box({ gap: 0, fill: 'color/surface', stroke: 'color/outline', round: true }, box({ w: ctrl, h: ctrl, main: 'CENTER' }, T('−')), box({ w: 56, h: ctrl, main: 'CENTER' }, T('3')), box({ w: ctrl, h: ctrl, main: 'CENTER' }, T('+'))));
+  put('Combobox', box({ w: 200, h: ctrl, pad: [12, 0], fill: 'color/surface', stroke: 'color/primary', sw: 2, round: true, main: 'SPACE_BETWEEN' }, T('Typ', 14), ico('chevron_down', 16, 'color/text-muted')));
+  put('NumberStepper', box({ gap: 0, fill: 'color/surface', stroke: 'color/outline', round: true }, box({ w: ctrl, h: ctrl, main: 'CENTER' }, ico('minus', 18)), box({ w: 56, h: ctrl, main: 'CENTER' }, T('3')), box({ w: ctrl, h: ctrl, main: 'CENTER' }, ico('plus', 18))));
   put('OtpInput', box({ gap: 8 }, ...[0, 1, 2, 3].map((i) => box({ w: 40, h: 48, main: 'CENTER', fill: 'color/surface', stroke: i === 2 ? 'color/primary' : 'color/outline', sw: i === 2 ? 2 : 1, round: true }, T(i < 2 ? String(i + 4) : '', 18)))));
-  put('Rating', box({ gap: 4 }, ...[1, 1, 1, 0, 0].map((on) => T('★', 22, on ? 'color/warning' : 'color/outline-variant'))));
-  put('SearchBar', box({ w: 280, h: ctrl + 8, pad: [16, 0], fill: 'color/surface-container-high', round: 999, gap: 12 }, ring(16), T('Search', 14, 'color/text-muted')));
+  put('Rating', box({ gap: 4 }, ...[1, 1, 1, 0, 0].map((on) => ico('star', 24, on ? 'color/warning' : 'color/outline-variant'))));
+  put('SearchBar', box({ w: 280, h: ctrl + 8, pad: [16, 0], fill: 'color/surface-container-high', round: 999, gap: 12 }, ico('search', 18, 'color/text-muted'), T('Search', 14, 'color/text-muted')));
   put('DateInput', field('dd / mm / yyyy', 180));
   put('TimeInput', field('hh : mm', 120));
-  put('TagField', box({ w: 260, pad: [8, 8], fill: 'color/surface', stroke: 'color/outline', round: true, gap: 6 }, ...['alpha', 'beta'].map((s) => box({ pad: [8, 2], fill: 'color/selection', stroke: 'color/primary', round: true, gap: 4 }, T(s, 12), T('x', 10, 'color/text-muted'))), T('add…', 13, 'color/text-muted')));
+  put('TagField', box({ w: 260, pad: [8, 8], fill: 'color/surface', stroke: 'color/outline', round: true, gap: 6 }, ...['alpha', 'beta'].map((s) => box({ pad: [8, 2], fill: 'color/selection', stroke: 'color/primary', round: true, gap: 4 }, T(s, 12), ico('close', 14, 'color/text-muted'))), T('add…', 13, 'color/text-muted')));
   put('RangeSlider', (() => { const th = sz('slider-track'), kn = sz('slider-thumb'); const g = box({ w: 200, h: kn, gap: 0 }); g.layoutMode = 'NONE'; const t = bar(200, th, 'color/surface-container-highest'); const f = bar(100, th, 'color/primary'); g.appendChild(t); g.appendChild(f); f.x = 40; const a = dot(kn, 'color/primary'); const b = dot(kn, 'color/primary'); g.appendChild(a); g.appendChild(b); a.x = 40 - kn / 2; b.x = 140 - kn / 2; t.y = f.y = (kn - th) / 2; return g; })());
-  put('FileDropZone', box({ dir: 'V', w: 280, h: 110, main: 'CENTER', fill: 'color/surface', stroke: 'color/outline-variant', round: true, gap: 6 }, T('⇪', 22, 'color/text-muted'), T('Drop files here', 14, 'color/text-muted')));
+  put('FileDropZone', box({ dir: 'V', w: 280, h: 110, main: 'CENTER', fill: 'color/surface', stroke: 'color/outline-variant', round: true, gap: 6 }, ico('upload', 24, 'color/text-muted'), T('Drop files here', 14, 'color/text-muted')));
   put('FormField', box({ dir: 'V', align: 'MIN', gap: 4 }, T('Label', 12, 'color/text-muted'), field('Value', 220, false), T('Helper text', 12, 'color/text-muted')));
   put('ColorPicker', box({ gap: 8 }, ...['primary', 'secondary', 'tertiary', 'info', 'success', 'warning', 'danger'].map((r, i) => dot(28, `color/${r}`, i === 0 ? 'color/text' : null))));
 
   // Actions
-  put('IconButton', box({ w: sz('touch-target'), h: sz('touch-target'), main: 'CENTER', round: 999, stroke: 'color/outline' }, T('♥', 16)));
-  put('Fab', box({ w: 56, h: 56, main: 'CENTER', fill: 'color/primary-container', round: 16 }, T('+', 24, 'color/on-primary-container')));
-  put('ExtendedFab', box({ h: 56, pad: [20, 0], fill: 'color/primary-container', round: 16, gap: 8 }, T('+', 20, 'color/on-primary-container'), T('Create', 15, 'color/on-primary-container')));
-  put('SplitButton', box({ gap: 1 }, box({ h: ctrl, pad: [16, 0], fill: 'color/primary', round: 8 }, T('Save', 15, 'color/on-primary')), box({ h: ctrl, pad: [10, 0], fill: 'color/primary', round: 8 }, T('v', 12, 'color/on-primary'))));
+  put('IconButton', box({ w: sz('touch-target'), h: sz('touch-target'), main: 'CENTER', round: 999, stroke: 'color/outline' }, ico('heart', 18)));
+  put('Fab', box({ w: 56, h: 56, main: 'CENTER', fill: 'color/primary-container', round: 16 }, ico('plus', 26, 'color/on-primary-container')));
+  put('ExtendedFab', box({ h: 56, pad: [20, 0], fill: 'color/primary-container', round: 16, gap: 8 }, ico('plus', 22, 'color/on-primary-container'), T('Create', 15, 'color/on-primary-container')));
+  put('SplitButton', box({ gap: 1 }, box({ h: ctrl, pad: [16, 0], fill: 'color/primary', round: 8 }, T('Save', 15, 'color/on-primary')), box({ h: ctrl, pad: [10, 0], fill: 'color/primary', round: 8 }, ico('chevron_down', 14, 'color/on-primary'))));
   put('Segmented', box({ gap: 0, stroke: 'color/outline', round: 999 }, ...['Day', 'Week', 'Month'].map((s, i) => box({ h: sz('segmented-height'), pad: [16, 0], fill: i === 1 ? 'color/secondary-container' : null }, T(s, 14, i === 1 ? 'color/on-secondary-container' : 'color/text')))));
-  put('Toolbar', box({ pad: [8, 6], fill: 'color/surface-container', round: true, gap: 4 }, ...['B', 'I', 'U', '•'].map((s) => box({ w: 32, h: 32, main: 'CENTER', round: 6 }, T(s, 14)))));
+  put('Toolbar', box({ pad: [8, 6], fill: 'color/surface-container', round: true, gap: 4 }, ...['format_bold', 'format_italic', 'format_underlined', 'list_bullets'].map((s) => box({ w: 32, h: 32, main: 'CENTER', round: 6 }, ico(s, 18)))));
 
   // Navigation
-  put('TopAppBar', box({ w: 360, h: 64, pad: [16, 0], fill: 'color/surface', main: 'SPACE_BETWEEN' }, box({ gap: 16 }, burger(), T('Title', 20)), T('•••', 14)));
-  put('BottomAppBar', box({ w: 360, h: 72, pad: [16, 0], fill: 'color/surface-container', main: 'SPACE_BETWEEN' }, box({ gap: 24 }, T('▲', 16), ring(16, 'color/text'), T('♥', 16)), box({ w: 48, h: 48, main: 'CENTER', fill: 'color/primary-container', round: 14 }, T('+', 20, 'color/on-primary-container'))));
-  put('NavigationBar', box({ w: 360, h: 80, fill: 'color/surface-container', main: 'SPACE_BETWEEN', pad: [8, 12] }, ...['Home', 'Search', 'Saved'].map((s, i) => box({ dir: 'V', gap: 4 }, box({ w: 56, h: 28, main: 'CENTER', round: 999, fill: i === 0 ? 'color/secondary-container' : null }, (i === 1 ? ring(14, 'color/text') : T(['▲', '', '♥'][i], 14))), T(s, 12, i === 0 ? 'color/text' : 'color/text-muted')))));
-  put('NavigationRail', box({ dir: 'V', w: 80, pad: [8, 16], gap: 16, fill: 'color/surface' }, ...['▲', '', '♥'].map((g, i) => box({ dir: 'V', gap: 4 }, box({ w: 56, h: 28, main: 'CENTER', round: 999, fill: i === 0 ? 'color/secondary-container' : null }, (i === 1 ? ring(14, 'color/text') : T(g, 14))), T(['Home', 'Find', 'Saved'][i], 12, i === 0 ? 'color/text' : 'color/text-muted')))));
+  put('TopAppBar', box({ w: 360, h: 64, pad: [16, 0], fill: 'color/surface', main: 'SPACE_BETWEEN' }, box({ gap: 16 }, burger(), T('Title', 20)), ico('dots', 16)));
+  put('BottomAppBar', box({ w: 360, h: 72, pad: [16, 0], fill: 'color/surface-container', main: 'SPACE_BETWEEN' }, box({ gap: 24 }, ico('home', 18), ico('search', 18), ico('heart', 18)), box({ w: 48, h: 48, main: 'CENTER', fill: 'color/primary-container', round: 14 }, ico('plus', 22, 'color/on-primary-container'))));
+  put('NavigationBar', box({ w: 360, h: 80, fill: 'color/surface-container', main: 'SPACE_BETWEEN', pad: [8, 12] }, ...['Home', 'Search', 'Saved'].map((s, i) => box({ dir: 'V', gap: 4 }, box({ w: 56, h: 28, main: 'CENTER', round: 999, fill: i === 0 ? 'color/secondary-container' : null }, ico(['home', 'search', 'heart'][i], 18, i === 0 ? 'color/on-secondary-container' : 'color/text')), T(s, 12, i === 0 ? 'color/text' : 'color/text-muted')))));
+  put('NavigationRail', box({ dir: 'V', w: 80, pad: [8, 16], gap: 16, fill: 'color/surface' }, ...['home', 'search', 'heart'].map((g, i) => box({ dir: 'V', gap: 4 }, box({ w: 56, h: 28, main: 'CENTER', round: 999, fill: i === 0 ? 'color/secondary-container' : null }, ico(['home', 'search', 'heart'][i], 18, i === 0 ? 'color/on-secondary-container' : 'color/text')), T(['Home', 'Find', 'Saved'][i], 12, i === 0 ? 'color/text' : 'color/text-muted')))));
   put('NavigationDrawer', box({ dir: 'V', align: 'MIN', w: 240, pad: [12, 16], gap: 4, fill: 'color/surface', stroke: 'color/border', round: true }, ...['Inbox', 'Sent', 'Drafts'].map((s, i) => box({ w: 216, h: 48, pad: [16, 0], round: 999, fill: i === 0 ? 'color/secondary-container' : null }, T(s, 14, i === 0 ? 'color/on-secondary-container' : 'color/text')))));
   put('Breadcrumb', box({ gap: 8 }, T('Home', 14, 'color/link'), T('/', 14, 'color/text-muted'), T('Library', 14, 'color/link'), T('/', 14, 'color/text-muted'), T('Data', 14)));
-  put('Pagination', box({ gap: 4 }, ...['‹', '1', '2', '3', '›'].map((s, i) => box({ w: 36, h: 36, main: 'CENTER', round: 8, fill: i === 2 ? 'color/primary' : null, stroke: i === 2 ? null : 'color/border' }, T(s, 14, i === 2 ? 'color/on-primary' : 'color/text')))));
+  put('Pagination', box({ gap: 4 }, ...['‹', '1', '2', '3', '›'].map((s, i) => box({ w: 36, h: 36, main: 'CENTER', round: 8, fill: i === 2 ? 'color/primary' : null, stroke: i === 2 ? null : 'color/border' }, s === '‹' ? ico('chevron_left', 18) : s === '›' ? ico('chevron_right', 18) : T(s, 14, i === 2 ? 'color/on-primary' : 'color/text')))));
   put('Stepper', box({ gap: 8 }, ...[1, 2, 3].flatMap((n, i) => [box({ w: 28, h: 28, main: 'CENTER', round: 999, fill: n <= 2 ? 'color/primary' : null, stroke: n <= 2 ? null : 'color/outline' }, T(String(n), 13, n <= 2 ? 'color/on-primary' : 'color/text-muted')), ...(i < 2 ? [bar(32, 2, n < 2 ? 'color/primary' : 'color/outline-variant')] : [])])));
   put('TreeView', box({ dir: 'V', align: 'MIN', gap: 2, w: 200 }, T('v src', 14), box({ pad: [16, 0] }, T('lib.rs', 14, 'color/text-muted')), box({ pad: [16, 0], fill: 'color/selection', round: 6 }, T('main.rs', 14)), T('> docs', 14)));
   put('Menu', box({ dir: 'V', align: 'MIN', w: 200, pad: [0, 8], fill: 'color/surface-container', stroke: 'color/border', round: true, gap: 0 }, ...['Cut', 'Copy', 'Paste'].map((s, i) => box({ w: 200, h: 40, pad: [16, 0], fill: i === 1 ? 'color/selection' : null }, T(s, 14)))));
-  put('DropdownMenu', box({ dir: 'V', align: 'MIN', gap: 4 }, field('Actions v', 140, false), box({ dir: 'V', align: 'MIN', w: 180, pad: [0, 6], fill: 'color/surface-container', stroke: 'color/border', round: true, gap: 0 }, ...['Edit', 'Share'].map((s) => box({ w: 180, h: 36, pad: [12, 0] }, T(s, 14))))));
+  put('DropdownMenu', box({ dir: 'V', align: 'MIN', gap: 4 }, box({ w: 140, h: ctrl, pad: [12, 0], fill: 'color/surface', stroke: 'color/outline', round: true, main: 'SPACE_BETWEEN' }, T('Actions', 14), ch()), box({ dir: 'V', align: 'MIN', w: 180, pad: [0, 6], fill: 'color/surface-container', stroke: 'color/border', round: true, gap: 0 }, ...['Edit', 'Share'].map((s) => box({ w: 180, h: 36, pad: [12, 0] }, T(s, 14))))));
   put('Tabs', box({ gap: 0 }, ...['One', 'Two', 'Three'].map((s, i) => box({ dir: 'V', pad: [20, 12], gap: 8 }, T(s, 15, i === 0 ? 'color/primary' : 'color/text-muted'), bar(48, 3, i === 0 ? 'color/primary' : 'color/border')))));
   put('Accordion', box({ dir: 'V', align: 'MIN', w: 280, stroke: 'color/border', round: true, gap: 0 }, box({ w: 280, h: 44, pad: [16, 0], main: 'SPACE_BETWEEN' }, T('Section', 15), ch('^')), box({ w: 280, pad: [16, 8] }, T('Expanded content', 13, 'color/text-muted'))));
 
   // Data display and feedback
-  put('Tooltip', box({ pad: [10, 6], fill: 'color/overlay', round: 6 }, T('Tooltip', 12)));
+  put('Tooltip / DodaiTooltip', box({ pad: [10, 6], fill: 'color/overlay', round: 6 }, T('Tooltip', 12)));
   put('RichTooltip', box({ dir: 'V', align: 'MIN', pad: [14, 10], fill: 'color/overlay', round: 10, gap: 4 }, T('Title', 14), T('Supporting text for the control.', 12, 'color/text-muted'), T('Learn more', 12, 'color/link')));
   put('Popover', box({ dir: 'V', align: 'MIN', pad: [16, 12], fill: 'color/surface-container', stroke: 'color/border', round: true, gap: 4 }, T('Popover', 15), T('Anchored content', 13, 'color/text-muted')));
-  put('Toast', box({ pad: [16, 12], fill: 'color/surface-container-high', stroke: 'color/success', round: true, gap: 12 }, T('✓', 16, 'color/success'), T('Saved', 14)));
-  put('Banner', box({ w: 360, h: 48, pad: [16, 0], fill: 'color/info', gap: 12 }, T('i', 15, 'color/background'), T('Update available', 14, 'color/background')));
+  put('Toast', box({ pad: [16, 12], fill: 'color/surface-container-high', stroke: 'color/success', round: true, gap: 12 }, ico('check', 18, 'color/success'), T('Saved', 14)));
+  put('Banner', box({ w: 360, h: 48, pad: [16, 0], fill: 'color/info', gap: 12 }, ico('info', 18, 'color/background'), T('Update available', 14, 'color/background')));
   put('Spinner', (() => { const e = figma.createEllipse(); e.resize(32, 32); e.fills = []; bindStroke(e, 'color/primary'); e.strokeWeight = 3; e.arcData = { startingAngle: 0, endingAngle: 4.7, innerRadius: 0.8 }; return e; })());
-  put('CircularProgress', (() => { const g = box({ w: 40, h: 40, main: 'CENTER' }, T('70', 12)); const e = figma.createEllipse(); e.resize(40, 40); e.fills = []; bindStroke(e, 'color/surface-container-highest'); e.strokeWeight = 4; g.layoutMode = 'NONE'; g.appendChild(e); return g; })());
+  put('CircularProgress', (() => { const g = box({ w: 40, h: 40, main: 'CENTER' }); g.layoutMode = 'NONE'; const e = figma.createEllipse(); e.resize(40, 40); e.fills = []; bindStroke(e, 'color/surface-container-highest'); e.strokeWeight = 4; g.appendChild(e); const a = figma.createEllipse(); a.resize(40, 40); a.fills = []; bindStroke(a, 'color/primary'); a.strokeWeight = 4; a.arcData = { startingAngle: -1.57, endingAngle: 2.9, innerRadius: 0.88 }; g.appendChild(a); const t = T('70', 12); g.appendChild(t); t.x = 20 - t.width / 2; t.y = 20 - t.height / 2; return g; })());
   put('IndeterminateBar', box({ w: 200, h: sz('bar-thickness'), round: 999, fill: 'color/surface-container-highest' }, bar(70, sz('bar-thickness'), 'color/primary')));
   put('Skeleton', box({ dir: 'V', align: 'MIN', gap: 8 }, bar(200, 14, 'color/surface-container-highest', 4), bar(140, 14, 'color/surface-container-highest', 4), bar(200, 64, 'color/surface-container-highest', 8)));
   put('Divider', bar(200, sz('hairline'), 'color/border', 0));
@@ -564,46 +596,46 @@ function buildSystem(sys, label) {
   put('Table', box({ dir: 'V', align: 'MIN', w: 320, stroke: 'color/border', round: true, gap: 0 }, box({ w: 320, h: 36, pad: [12, 0], fill: 'color/surface-container', main: 'SPACE_BETWEEN' }, T('Name', 12, 'color/text-muted'), T('Qty', 12, 'color/text-muted')), ...['Alpha|3', 'Beta|9'].map((r) => { const [a, b] = r.split('|'); return box({ w: 320, h: 40, pad: [12, 0], main: 'SPACE_BETWEEN' }, T(a, 14), T(b, 14)); })));
   put('Timeline', box({ dir: 'V', align: 'MIN', gap: 0 }, ...['Created', 'Shipped', 'Delivered'].map((s, i) => box({ gap: 12, align: 'MIN' }, box({ dir: 'V', gap: 0, align: 'CENTER' }, dot(12, i < 2 ? 'color/primary' : 'color/outline'), ...(i < 2 ? [bar(2, 24, 'color/outline-variant', 0)] : [])), T(s, 14, i < 2 ? 'color/text' : 'color/text-muted')))));
   put('Clock', (() => { const g = box({ w: 96, h: 96 }); g.layoutMode = 'NONE'; const f = dot(96, 'color/surface'); bindStroke(f, 'color/outline'); g.appendChild(f); const h1 = bar(3, 28, 'color/text', 2); const h2 = bar(2, 38, 'color/primary', 1); g.appendChild(h1); g.appendChild(h2); h1.x = 47; h1.y = 20; h2.x = 47; h2.y = 10; return g; })());
-  put('Stopwatch', box({ gap: 12, pad: [16, 10], fill: 'color/surface-container', round: true }, T('00:42.7', 22), T('▶', 14, 'color/primary')));
+  put('Stopwatch', box({ gap: 12, pad: [16, 10], fill: 'color/surface-container', round: true }, T('00:42.7', 22), ico('play', 16, 'color/primary')));
   put('CodeBlock', box({ dir: 'V', align: 'MIN', pad: [16, 12], fill: 'color/surface-container-lowest', stroke: 'color/border', round: true, gap: 2 }, T('fn main() {', 13, 'color/text'), T('    run();', 13, 'color/text-muted'), T('}', 13, 'color/text')));
   put('Stat (CountUp)', box({ dir: 'V', align: 'MIN', gap: 0 }, T('12,480', 32), T('Active users', 12, 'color/text-muted')));
   put('SideSheet', box({ dir: 'V', align: 'MIN', w: 240, h: 200, pad: [20, 16], fill: 'color/surface', stroke: 'color/border-strong', round: true, gap: 8 }, T('Side sheet', 18), T('Detail content', 13, 'color/text-muted')));
   put('BottomSheet', box({ dir: 'V', w: 320, h: 140, pad: [16, 12], fill: 'color/surface', stroke: 'color/border-strong', round: true, gap: 12 }, bar(sz('sheet-handle-w'), sz('sheet-handle-h'), 'color/outline-variant'), T('Bottom sheet', 16)));
   put('Carousel', box({ gap: 8 }, bar(120, 140, 'color/primary-container', 16), bar(80, 140, 'color/secondary-container', 16), bar(40, 140, 'color/tertiary-container', 16)));
-  put('Image', box({ w: 160, h: 100, main: 'CENTER', fill: 'color/surface-container-high', round: true }, T('▲', 24, 'color/text-muted')));
+  put('Image', box({ w: 160, h: 100, main: 'CENTER', fill: 'color/surface-container-high', round: true }, ico('image', 32, 'color/text-muted')));
   put('Markdown', box({ dir: 'V', align: 'MIN', gap: 4 }, T('Heading', 20), T('Body text with a link.', 14, 'color/text-muted'), T('• list item', 14)));
   put('SnapStack', box({ dir: 'V', gap: 6 }, bar(200, 56, 'color/primary-container', 12), bar(200, 56, 'color/secondary-container', 12)));
   // Batch two: pickers, tables, palettes, overlays, shells, selectors, effect layers, typography.
   const cal = (sel) => box({ dir: 'V', align: 'MIN', gap: 6, pad: [12, 12], fill: 'color/surface-container', stroke: 'color/border', round: true },
-    box({ w: 224, main: 'SPACE_BETWEEN' }, T('‹', 14, 'color/text-muted'), T('March 2026', 14), T('›', 14, 'color/text-muted')),
+    box({ w: 224, main: 'SPACE_BETWEEN' }, ico('chevron_left', 16, 'color/text-muted'), T('March 2026', 14), ico('chevron_right', 16, 'color/text-muted')),
     box({ gap: 0 }, ...['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d) => box({ w: 32, h: 20, main: 'CENTER' }, T(d, 11, 'color/text-muted')))),
     ...[0, 1, 2].map((r) => box({ gap: 0 }, ...[1, 2, 3, 4, 5, 6, 7].map((c) => { const n = r * 7 + c; return box({ w: 32, h: 32, main: 'CENTER', round: 999, fill: n === sel ? 'color/primary' : null, stroke: n === 9 ? 'color/primary' : null }, T(String(n), 12, n === sel ? 'color/on-primary' : 'color/text')); }))));
   put('DatePicker', cal(12));
   put('DateTimePicker', box({ dir: 'V', gap: 8 }, cal(12), box({ gap: 8 }, field('10 : 30', 100, false), box({ gap: 0, stroke: 'color/outline', round: 8 }, box({ w: 44, h: ctrl, main: 'CENTER', fill: 'color/secondary-container' }, T('AM', 13, 'color/on-secondary-container')), box({ w: 44, h: ctrl, main: 'CENTER' }, T('PM', 13))))));
-  put('DateTimeRangePicker', box({ gap: 8 }, field('12 Mar 10:00', 150, false), T('→', 14, 'color/text-muted'), field('14 Mar 18:30', 150, false)));
+  put('DateTimeRangePicker', box({ gap: 8 }, field('12 Mar 10:00', 150, false), ico('arrow_right', 16, 'color/text-muted'), field('14 Mar 18:30', 150, false)));
   put('TimePicker', box({ dir: 'V', gap: 8, pad: [16, 16], fill: 'color/surface-container', stroke: 'color/border', round: true }, box({ gap: 6 }, box({ w: 72, h: 64, main: 'CENTER', fill: 'color/primary-container', round: 10 }, T('10', 32, 'color/on-primary-container')), T(':', 32), box({ w: 72, h: 64, main: 'CENTER', fill: 'color/surface-container-highest', round: 10 }, T('30', 32)))));
   put('DataTable', box({ dir: 'V', align: 'MIN', w: 420, stroke: 'color/border', round: true, gap: 0 }, box({ w: 420, h: 40, pad: [12, 0], fill: 'color/surface-container', gap: 12 }, bar(14, 14, 'color/outline', 3), T('Name ↑', 12, 'color/text-muted'), T('Status', 12, 'color/text-muted'), T('Qty', 12, 'color/text-muted')), ...['Alpha|Active|3', 'Beta|Paused|9', 'Gamma|Active|4'].map((r, i) => { const [a, b, c] = r.split('|'); return box({ w: 420, h: 44, pad: [12, 0], gap: 12, fill: i === 1 ? 'color/selection' : null }, bar(14, 14, i === 1 ? 'color/primary' : 'color/outline', 3), T(a, 14), T(b, 14, 'color/text-muted'), T(c, 14)); })));
-  put('Command', box({ dir: 'V', align: 'MIN', w: 360, fill: 'color/surface-container', stroke: 'color/border', round: true, gap: 0 }, box({ w: 360, h: 48, pad: [16, 0], gap: 12, stroke: 'color/border' }, ring(16), T('Type a command…', 14, 'color/text-muted')), ...['Open file|⌘ O', 'Save|⌘ S', 'Settings|⌘ ,'].map((r, i) => { const [a, b] = r.split('|'); return box({ w: 360, h: 40, pad: [16, 0], main: 'SPACE_BETWEEN', fill: i === 0 ? 'color/selection' : null }, T(a, 14), T(b, 12, 'color/text-muted')); })));
-  put('CommandPalette', box({ dir: 'V', align: 'MIN', w: 420, fill: 'color/surface-container-high', stroke: 'color/border-strong', round: true, gap: 0 }, box({ w: 420, h: 52, pad: [16, 0], gap: 12 }, ring(18), T('Search commands', 16, 'color/text-muted')), box({ w: 420, pad: [16, 8], fill: 'color/surface-container' }, T('Recent', 11, 'color/text-muted')), ...['Toggle theme', 'Open charts', 'Show shaders'].map((s, i) => box({ w: 420, h: 40, pad: [16, 0], fill: i === 1 ? 'color/selection' : null }, T(s, 14)))));
+  put('Command', box({ dir: 'V', align: 'MIN', w: 360, fill: 'color/surface-container', stroke: 'color/border', round: true, gap: 0 }, box({ w: 360, h: 48, pad: [16, 0], gap: 12, stroke: 'color/border' }, ico('search', 18, 'color/text-muted'), T('Type a command…', 14, 'color/text-muted')), ...['Open file|⌘ O', 'Save|⌘ S', 'Settings|⌘ ,'].map((r, i) => { const [a, b] = r.split('|'); return box({ w: 360, h: 40, pad: [16, 0], main: 'SPACE_BETWEEN', fill: i === 0 ? 'color/selection' : null }, T(a, 14), T(b, 12, 'color/text-muted')); })));
+  put('CommandPalette', box({ dir: 'V', align: 'MIN', w: 420, fill: 'color/surface-container-high', stroke: 'color/border-strong', round: true, gap: 0 }, box({ w: 420, h: 52, pad: [16, 0], gap: 12 }, ico('search', 20, 'color/text-muted'), T('Search commands', 16, 'color/text-muted')), box({ w: 420, pad: [16, 8], fill: 'color/surface-container' }, T('Recent', 11, 'color/text-muted')), ...['Toggle theme', 'Open charts', 'Show shaders'].map((s, i) => box({ w: 420, h: 40, pad: [16, 0], fill: i === 1 ? 'color/selection' : null }, T(s, 14)))));
   put('ContextMenu', box({ dir: 'V', align: 'MIN', w: 180, pad: [0, 6], fill: 'color/surface-container-high', stroke: 'color/border', round: true, gap: 0 }, ...['Open', 'Rename', 'Delete'].map((s, i) => box({ w: 180, h: 36, pad: [12, 0], fill: i === 1 ? 'color/selection' : null }, T(s, 14, i === 2 ? 'color/danger' : 'color/text')))));
   put('HoverCard', box({ gap: 12, pad: [16, 14], fill: 'color/surface-container-high', stroke: 'color/border', round: true }, dot(40, 'color/primary-container'), box({ dir: 'V', align: 'MIN', gap: 2 }, T('@dodai', 15), T('Design system · 4 designs', 12, 'color/text-muted'))));
-  put('FullScreenDialog', box({ dir: 'V', align: 'MIN', w: 260, h: 180, fill: 'color/surface', stroke: 'color/border-strong', round: true, gap: 0 }, box({ w: 260, h: 52, pad: [16, 0], main: 'SPACE_BETWEEN' }, T('x', 14), T('Save', 14, 'color/primary')), box({ pad: [16, 8] }, T('Full-screen content', 14, 'color/text-muted'))));
+  put('FullScreenDialog', box({ dir: 'V', align: 'MIN', w: 260, h: 180, fill: 'color/surface', stroke: 'color/border-strong', round: true, gap: 0 }, box({ w: 260, h: 52, pad: [16, 0], main: 'SPACE_BETWEEN' }, ico('close', 16), T('Save', 14, 'color/primary')), box({ pad: [16, 8] }, T('Full-screen content', 14, 'color/text-muted'))));
   put('ModalDrawer', box({ dir: 'V', align: 'MIN', w: 240, h: 200, pad: [16, 16], fill: 'color/surface-container-low', stroke: 'color/border', round: true, gap: 8 }, T('Drawer', 18), ...['Inbox', 'Starred', 'Sent'].map((s) => box({ w: 208, h: 40, pad: [12, 0] }, T(s, 14, 'color/text-muted')))));
   put('ResponsiveShell', box({ gap: 0, stroke: 'color/border', round: true }, box({ dir: 'V', w: 64, h: 180, pad: [8, 16], gap: 16, fill: 'color/surface-container' }, ...[0, 1, 2].map((i) => bar(32, 8, i === 0 ? 'color/primary' : 'color/outline-variant'))), box({ dir: 'V', align: 'MIN', w: 240, h: 180, pad: [16, 12], gap: 8 }, bar(120, 14, 'color/surface-container-highest', 4), bar(200, 60, 'color/surface-container', 8), bar(200, 40, 'color/surface-container', 8))));
-  put('SearchView', box({ dir: 'V', align: 'MIN', w: 320, fill: 'color/surface-container-high', round: 24, gap: 0 }, box({ w: 320, h: 52, pad: [16, 0], gap: 12 }, ring(16), T('Search', 15, 'color/text-muted')), ...['Recent one', 'Recent two'].map((s) => box({ w: 320, h: 44, pad: [20, 0], gap: 12 }, T('↺', 14, 'color/text-muted'), T(s, 14)))));
-  put('SelectOption', box({ dir: 'V', align: 'MIN', w: 200, pad: [0, 6], fill: 'color/surface-container', stroke: 'color/border', round: true }, ...['Alpha', 'Beta', 'Gamma'].map((s, i) => box({ w: 200, h: 36, pad: [12, 0], main: 'SPACE_BETWEEN', fill: i === 1 ? 'color/selection' : null }, T(s, 14), ...(i === 1 ? [T('✓', 13, 'color/primary')] : [])))));
+  put('SearchView', box({ dir: 'V', align: 'MIN', w: 320, fill: 'color/surface-container-high', round: 24, gap: 0 }, box({ w: 320, h: 52, pad: [16, 0], gap: 12 }, ico('search', 18, 'color/text-muted'), T('Search', 15, 'color/text-muted')), ...['Recent one', 'Recent two'].map((s) => box({ w: 320, h: 44, pad: [20, 0], gap: 12 }, ico('history', 16, 'color/text-muted'), T(s, 14)))));
+  put('SelectOption', box({ dir: 'V', align: 'MIN', w: 200, pad: [0, 6], fill: 'color/surface-container', stroke: 'color/border', round: true }, ...['Alpha', 'Beta', 'Gamma'].map((s, i) => box({ w: 200, h: 36, pad: [12, 0], main: 'SPACE_BETWEEN', fill: i === 1 ? 'color/selection' : null }, T(s, 14), ...(i === 1 ? [ico('check', 15, 'color/primary')] : [])))));
   put('ThemeSelector', box({ gap: 8 }, ...['primary', 'secondary', 'tertiary', 'info'].map((r, i) => box({ w: 56, h: 56, main: 'CENTER', fill: 'color/surface', stroke: i === 0 ? 'color/primary' : 'color/border', sw: i === 0 ? 2 : 1, round: true }, dot(28, `color/${r}`)))));
   put('ThemeSwitcherBar', box({ pad: [12, 8], fill: 'color/surface-container', stroke: 'color/border', round: 999, gap: 12 }, T('Dark', 13), box({ w: 44, h: 24, pad: [2, 0], fill: 'color/primary', round: 999, main: 'MAX' }, dot(20, 'color/on-primary')), T('Light', 13, 'color/text-muted')));
   put('DesignSystemSelector', box({ gap: 0, stroke: 'color/outline', round: 999 }, ...['Cyberpunk', 'Material', 'Neo-Brutalism', 'Dodai'].map((s, i) => box({ h: sz('segmented-height'), pad: [14, 0], fill: i === 3 ? 'color/secondary-container' : null }, T(s, 13, i === 3 ? 'color/on-secondary-container' : 'color/text')))));
   put('Knob', (() => { const g = box({ w: 72, h: 72 }); g.layoutMode = 'NONE'; const t = ring(64, 'color/surface-container-highest'); t.strokeWeight = 6; g.appendChild(t); t.x = 4; t.y = 4; const a = ring(64, 'color/primary'); a.strokeWeight = 6; a.arcData = { startingAngle: 2.2, endingAngle: 4.9, innerRadius: 0.9 }; g.appendChild(a); a.x = 4; a.y = 4; const v = T('64', 16); g.appendChild(v); v.x = 26; v.y = 26; return g; })());
-  put('Timer', box({ gap: 12, pad: [16, 10], fill: 'color/surface-container', round: true }, T('05:00', 22), T('■', 14, 'color/danger')));
+  put('Timer', box({ gap: 12, pad: [16, 10], fill: 'color/surface-container', round: true }, T('05:00', 22), ico('stop', 16, 'color/danger')));
   put('TapTempo', box({ dir: 'V', gap: 4, w: 96, h: 96, main: 'CENTER', fill: 'color/primary-container', round: 999 }, T('120', 26, 'color/on-primary-container'), T('BPM', 11, 'color/on-primary-container')));
-  put('Feed', box({ dir: 'V', align: 'MIN', gap: 0, w: 300 }, ...['New release|2m', 'Build passed|1h'].map((r) => { const [a, b] = r.split('|'); return box({ w: 300, h: 52, gap: 12, stroke: 'color/border' }, dot(10, 'color/primary'), T(a, 14), T(b, 12, 'color/text-muted')); })));
+  put('Activity feed', box({ dir: 'V', align: 'MIN', gap: 0, w: 300 }, ...['New release|2m', 'Build passed|1h'].map((r) => { const [a, b] = r.split('|'); return box({ w: 300, h: 52, gap: 12, stroke: 'color/border' }, dot(10, 'color/primary'), T(a, 14), T(b, 12, 'color/text-muted')); })));
   put('Panel', box({ dir: 'V', align: 'MIN', w: 240, h: 120, pad: [16, 14], fill: 'color/surface', stroke: 'color/border', round: true, gap: 6 }, T('Panel', 16), T('Container surface', 13, 'color/text-muted')));
   put('SplitPane', box({ gap: 0, stroke: 'color/border', round: true }, box({ w: 140, h: 110, pad: [12, 12], fill: 'color/surface' }, T('Left', 14)), bar(6, 110, 'color/outline-variant', 0), box({ w: 180, h: 110, pad: [12, 12], fill: 'color/surface' }, T('Right', 14))));
   put('ScrollArea', box({ gap: 4, h: 110 }, box({ dir: 'V', align: 'MIN', w: 200, h: 110, pad: [12, 8], gap: 6, fill: 'color/surface', stroke: 'color/border', round: true }, T('Row one', 14), T('Row two', 14), T('Row three', 14)), bar(6, 50, 'color/outline')));
   put('ScrollSpy', box({ dir: 'V', align: 'MIN', gap: 4 }, ...['Intro', 'Usage', 'API'].map((s, i) => box({ gap: 8 }, bar(2, 18, i === 1 ? 'color/primary' : 'color/outline-variant', 1), T(s, 14, i === 1 ? 'color/text' : 'color/text-muted')))));
-  put('IconBadge', (() => { const g = box({ w: 40, h: 40 }); g.layoutMode = 'NONE'; const heart = T('♥', 20); g.appendChild(heart); heart.x = 10; heart.y = 8; const b = box({ w: 16, h: sz('badge-min'), main: 'CENTER', fill: 'color/danger', round: 999 }, T('3', 10, 'color/on-error')); g.appendChild(b); b.x = 24; b.y = 0; return g; })());
+  put('IconBadge', (() => { const g = box({ w: 40, h: 40 }); g.layoutMode = 'NONE'; const heart = ico('heart', 22); g.appendChild(heart); heart.x = 10; heart.y = 8; const b = box({ w: 16, h: sz('badge-min'), main: 'CENTER', fill: 'color/danger', round: 999 }, T('3', 10, 'color/on-error')); g.appendChild(b); b.x = 24; b.y = 0; return g; })());
   put('SelectionTrack/Marker', box({ gap: 0 }, bar(120, 4, 'color/primary', 2), dot(16, 'color/primary'), bar(60, 4, 'color/outline-variant', 2)));
   put('Shimmer', box({ w: 200, h: 24, round: 6, fill: 'color/surface-container-highest' }, bar(60, 24, 'color/surface-container-high', 6)));
   put('LoadingIndicator', box({ gap: 6 }, ...[0.4, 0.7, 1, 0.7, 0.4].map((a) => { const d = dot(12, 'color/primary'); d.opacity = a; return d; })));
@@ -614,13 +646,13 @@ function buildSystem(sys, label) {
   put('FrostedScene', (() => { const g = box({ w: 220, h: 110, round: true }); g.layoutMode = 'NONE'; g.clipsContent = true; const a = bar(220, 110, 'color/tertiary-container', 0); g.appendChild(a); const b = bar(220, 40, 'color/primary-container', 0); g.appendChild(b); b.y = 70; const pane = figma.createRectangle(); pane.resize(120, 60); pane.cornerRadius = 12; bindFill(pane, 'color/surface'); pane.fills = pane.fills.map((p) => ({ ...p, opacity: 0.45 })); pane.effects = [{ type: 'BACKGROUND_BLUR', radius: 20, visible: true }]; g.appendChild(pane); pane.x = 50; pane.y = 25; return g; })());
   // Typography.
   put('Heading / Text / Label', box({ dir: 'V', align: 'MIN', gap: 4 }, T('Heading', 28), T('Body text', 16), T('Label', 12, 'color/text-muted'), T('Mono 0x2A', 13, 'color/text-muted')));
-  put('Icon', box({ gap: 12 }, T('♥', 24), T('★', 24, 'color/warning'), T('✓', 24, 'color/success')));
-  put('TreeItem / TreeRow', box({ dir: 'V', align: 'MIN', gap: 0, w: 220 }, box({ w: 220, h: 32, pad: [8, 0], gap: 6 }, T('v', 12, 'color/text-muted'), T('Folder', 14)), box({ w: 220, h: 32, pad: [28, 0], fill: 'color/selection', round: 6 }, T('file.txt', 14))));
-  put('NavigationItem', box({ w: 200, h: 48, pad: [16, 0], gap: 12, fill: 'color/secondary-container', round: 999 }, T('▲', 14, 'color/on-secondary-container'), T('Home', 14, 'color/on-secondary-container')));
+  put('Icon', box({ gap: 12 }, ico('heart', 26), ico('star', 26, 'color/warning'), ico('check', 26, 'color/success')));
+  put('TreeItem / TreeRow', box({ dir: 'V', align: 'MIN', gap: 0, w: 220 }, box({ w: 220, h: 32, pad: [8, 0], gap: 6 }, ico('chevron_down', 14, 'color/text-muted'), T('Folder', 14)), box({ w: 220, h: 32, pad: [28, 0], fill: 'color/selection', round: 6 }, T('file.txt', 14))));
+  put('NavigationItem', box({ w: 200, h: 48, pad: [16, 0], gap: 12, fill: 'color/secondary-container', round: 999 }, ico('home', 16, 'color/on-secondary-container'), T('Home', 14, 'color/on-secondary-container')));
   put('MenuItem', box({ w: 200, h: 40, pad: [16, 0], main: 'SPACE_BETWEEN', fill: 'color/selection' }, T('Copy', 14), T('⌘ C', 12, 'color/text-muted')));
   put('TimelineEvent', box({ gap: 12, align: 'MIN' }, dot(12, 'color/primary'), box({ dir: 'V', align: 'MIN', gap: 0 }, T('Shipped', 14), T('2 days ago', 12, 'color/text-muted'))));
-  put('SelectionMarker', box({ gap: 8 }, box({ w: 22, h: 22, main: 'CENTER', fill: 'color/primary', round: 4 }, T('✓', 14, 'color/on-primary')), box({ w: 22, h: 22, stroke: 'color/outline', round: 4 })));
-  put('Pagination (compact)', box({ gap: 12 }, T('‹', 16), T('3 / 12', 14), T('›', 16)));
+  put('SelectionMarker', box({ gap: 8 }, box({ w: 22, h: 22, main: 'CENTER', fill: 'color/primary', round: 4 }, ico('check', 16, 'color/on-primary')), box({ w: 22, h: 22, stroke: 'color/outline', round: 4 })));
+  put('Pagination (compact)', box({ gap: 12 }, ico('chevron_left', 18), T('3 / 12', 14), ico('chevron_right', 18)));
   put('Mono / Muted', box({ dir: 'V', align: 'MIN', gap: 2 }, T('fn main()', 13), T('muted caption', 12, 'color/text-muted')));
   // States of the interactive parts: default, hover (state layer), focus (ring), error, disabled.
   const layer = (n) => { const o = figma.createRectangle(); o.resize(n.width, n.height); bindFill(o, 'color/text'); o.opacity = 0.08; n.layoutMode === 'NONE' || n.appendChild(o); o.layoutPositioning = 'ABSOLUTE'; o.x = 0; o.y = 0; return n; };
@@ -632,25 +664,61 @@ function buildSystem(sys, label) {
   stateRow('List item', (st) => { const c = box({ w: 240, h: 48, pad: [16, 0], round: 8, stroke: st === 'Focus' ? 'color/primary' : null, sw: 2, fill: st === 'Hover' ? 'color/surface-container-high' : null }, T('List item', 14)); return st === 'Disabled' ? dim(c) : c; });
   stateRow('Switch', (st) => { const on = st === 'Focus'; const w = sz('switch-track-w'), h = sz('switch-track-h'); const g = box({ w, h }); g.layoutMode = 'NONE'; const t = bar(w, h, on ? 'color/primary' : 'color/surface-container-highest'); bindStroke(t, 'color/outline'); g.appendChild(t); const d = on ? sz('switch-handle-on') : sz('switch-handle-off'); const k = dot(st === 'Hover' ? d + 4 : d, on ? 'color/on-primary' : 'color/outline'); g.appendChild(k); k.x = on ? w - d - (h - d) / 2 : (h - d) / 2; k.y = (h - k.height) / 2; return st === 'Disabled' ? dim(g) : g; });
   stateRow('Checkbox', (st) => { const n = sz('selection-box'); const g = box({ w: n, h: n, main: 'CENTER', stroke: st === 'Focus' ? 'color/primary' : 'color/outline', sw: st === 'Focus' ? 2 : 1, round: 4, fill: st === 'Hover' ? 'color/surface-container-high' : null }); return st === 'Disabled' ? dim(g) : g; });
-  stateRow('Icon button', (st) => { const c = box({ w: sz('touch-target'), h: sz('touch-target'), main: 'CENTER', round: 999, stroke: st === 'Focus' ? 'color/primary' : null, sw: 2, fill: st === 'Hover' ? 'color/surface-container-high' : null }, T('♥', 16)); return st === 'Disabled' ? dim(c) : c; });
+  stateRow('Icon button', (st) => { const c = box({ w: sz('touch-target'), h: sz('touch-target'), main: 'CENTER', round: 999, stroke: st === 'Focus' ? 'color/primary' : null, sw: 2, fill: st === 'Hover' ? 'color/surface-container-high' : null }, ico('heart', 18)); return st === 'Disabled' ? dim(c) : c; });
+  // Components added with the gizmo, dialogs and trees of the toolkits.
+  put('AxisGizmo', (() => {
+    const S = 130, c = S / 2;
+    const g = box({ w: S, h: S });
+    g.layoutMode = 'NONE';
+    const disc = dot(S, 'color/surface');
+    bindStroke(disc, 'color/border-strong');
+    disc.opacity = 0.9;
+    g.appendChild(disc);
+    const stem = (x, y, fill) => { const l = figma.createVector(); l.vectorPaths = [{ windingRule: 'NONE', data: `M ${c} ${c} L ${x} ${y}` }]; l.fills = []; bindStroke(l, fill); l.strokeWeight = 2; g.appendChild(l); };
+    const ball = (x, y, fill, label, solid) => {
+      const d = 22;
+      stem(x, y, fill);
+      const b = dot(d, fill);
+      if (!solid) { b.fills = []; bindStroke(b, fill); b.strokeWeight = 2; }
+      g.appendChild(b); b.x = x - d / 2; b.y = y - d / 2;
+      if (label) { const t = T(label, 11, solid ? 'color/background' : fill); g.appendChild(t); t.x = x - t.width / 2; t.y = y - t.height / 2; }
+    };
+    // Negative ends first so the near ones paint over them.
+    ball(c - 34, c - 12, 'color/danger', '', false);
+    ball(c, c + 36, 'color/success', '', false);
+    ball(c - 16, c - 22, 'color/info', '', false);
+    ball(c + 34, c + 12, 'color/danger', 'X', true);
+    ball(c, c - 36, 'color/success', 'Y', true);
+    ball(c + 16, c + 22, 'color/info', 'Z', true);
+    const btn = (cx, cy, d, id) => {
+      const b = dot(d, 'color/surface-raised');
+      bindStroke(b, 'color/border');
+      g.appendChild(b); b.x = cx - d / 2; b.y = cy - d / 2;
+      const i = ico(id, Math.round(d * 0.62), 'color/text');
+      g.appendChild(i); i.x = cx - i.width / 2; i.y = cy - i.height / 2;
+    };
+    const r = (S / 2) * Math.SQRT1_2;
+    btn(c - r, c - r, 30, 'home');
+    btn(c - r, c + r, 26, 'minus');
+    btn(c + r, c + r, 26, 'plus');
+    return g;
+  })());
+  put('DialogCard', box({ dir: 'V', align: 'MIN', w: 300, pad: [20, 16], gap: 12, fill: 'color/surface-container-high', stroke: 'color/border-strong', round: true }, T('Dialog title', 18), T('Message body that explains the choice.', 14, 'color/text-muted'), box({ gap: 16, main: 'MAX', w: 260 }, T('Cancel', 14, 'color/text-muted'), T('OK', 14, 'color/primary'))));
+  put('FabMenu', box({ dir: 'V', align: 'MAX', gap: 8 }, ...['Photo', 'File'].map((s) => box({ h: 36, pad: [14, 0], fill: 'color/secondary-container', round: 999, gap: 8 }, T(s, 13, 'color/on-secondary-container'))), box({ w: 56, h: 56, main: 'CENTER', fill: 'color/primary-container', round: 16 }, ico('close', 24, 'color/on-primary-container'))));
+  put('InputBox', box({ w: 260, h: ctrl, pad: [12, 0], fill: 'color/surface', stroke: 'color/outline', round: true, gap: 8 }, T('$', 14, 'color/text-muted'), T('120.00', 14), bar(8, 1, 'color/surface', 0), T('USD', 12, 'color/text-muted')));
+  put('ListItem', box({ w: 280, h: 56, pad: [16, 0], gap: 16, fill: 'color/selection', round: 8 }, ico('folder', 22, 'color/primary'), box({ dir: 'V', align: 'MIN', gap: 0 }, T('Selected row', 15), T('Supporting text', 12, 'color/text-muted'))));
+  put('ProgressBar', box({ w: 220, h: sz('bar-thickness'), round: 999, fill: 'color/surface-container-highest' }, bar(140, sz('bar-thickness'), 'color/primary')));
+  put('Tag', box({ gap: 8 }, ...[['info', 'Info'], ['success', 'Done'], ['warning', 'Wait'], ['danger', 'Error']].map(([r, s]) => box({ pad: [10, 3], fill: `color/${r}`, round: 999 }, T(s, 12, 'color/background')))));
+  put('TreeNavigation', box({ dir: 'V', align: 'MIN', gap: 0, w: 220 }, box({ w: 220, h: 32, pad: [8, 0], gap: 6 }, ico('chevron_down', 14, 'color/text-muted'), T('Designs', 14)), box({ w: 220, h: 32, pad: [28, 0], gap: 6, fill: 'color/selection', round: 6 }, T('Dodai', 14, 'color/primary')), box({ w: 220, h: 32, pad: [28, 0], gap: 6 }, T('Material', 14)), box({ w: 220, h: 32, pad: [8, 0], gap: 6 }, ico('chevron_right', 14, 'color/text-muted'), T('Settings', 14))));
+  put('Column', box({ w: 260, h: 40, pad: [12, 0], fill: 'color/surface-container', stroke: 'color/border', gap: 6, main: 'SPACE_BETWEEN' }, box({ gap: 4 }, T('Name', 12, 'color/text-muted'), ico('chevron_up', 12, 'color/text-muted')), bar(2, 18, 'color/outline-variant', 1)));
   bg0.resize(1320, ky + krow + 160);
   parts2.push(`Components×${kcount}`);
 
   // --- Icons: every IconId of this design's pack (the one gpui resolves for it), as vectors painted
   // with the text colour variable. Dodai and Material share the Material Symbols pack.
-  const packName = { cyberpunk: 'stroked', material: 'material', dodai: 'material', neobrutalism: 'bold' }[sys];
   const iconPage = figma.createPage();
   iconPage.name = `${label} / Icons`;
   figma.currentPage = iconPage;
-  const paintIcon = (n, lined) => {
-    if (n.type === 'FRAME' || n.type === 'GROUP') n.fills = [];
-    else {
-      if (lined) n.fills = [];
-      else bindFill(n, 'color/text');
-      if (n.strokes && n.strokes.length) bindStroke(n, 'color/text');
-    }
-    if (n.children) for (const c of n.children) paintIcon(c, lined);
-  };
   const drawIcons = (page, list, cols, cellW, cellH, y0) => {
     list.forEach((ic, i) => {
       const node = figma.createNodeFromSvg(ic.svg);
@@ -843,6 +911,143 @@ function buildSystem(sys, label) {
     shY += Math.ceil(list.length / shCols) * (shH + shGapY) + 12;
   }
 
+  // --- Behaviour: the components that draw nothing themselves, each with what it does (the first
+  // paragraph of its gpui doc comment) and the toolkits that have it.
+  const bePage = figma.createPage();
+  bePage.name = `${label} / Behaviour`;
+  figma.currentPage = bePage;
+  const beList = CATALOG.components.filter((c) => c.behaviour);
+  const beGround = figma.createRectangle();
+  beGround.name = 'Ground';
+  beGround.resize(960, beList.length * 112 + 120);
+  beGround.x = -20;
+  beGround.y = -20;
+  bindFill(beGround, 'color/background');
+  bePage.appendChild(beGround);
+  const beHead = text('Components with no visual of their own', 22, 'color/text');
+  bePage.appendChild(beHead);
+  let beY = 48;
+  for (const c of beList) {
+    cover(c.name);
+    const row = figma.createFrame();
+    row.name = c.name;
+    row.layoutMode = 'VERTICAL';
+    row.itemSpacing = 6;
+    row.paddingLeft = row.paddingRight = row.paddingTop = row.paddingBottom = 16;
+    row.resize(920, 96);
+    row.primaryAxisSizingMode = 'AUTO';
+    row.counterAxisSizingMode = 'FIXED';
+    row.cornerRadius = 8;
+    bindFill(row, 'color/surface');
+    bindStroke(row, 'color/border');
+    row.appendChild(text(c.name, 16, 'color/text'));
+    const doc = text(c.doc || '-', 13, 'color/text-muted');
+    doc.textAutoResize = 'HEIGHT';
+    doc.resize(880, doc.height);
+    row.appendChild(doc);
+    row.appendChild(text(`toolkits: ${c.toolkits.join(', ')}`, 11, 'color/text-muted'));
+    bePage.appendChild(row);
+    row.y = beY;
+    beY += row.height + 12;
+  }
+  beGround.resize(960, beY + 40);
+
+  // --- Motion: the duration scale, every easing curve, every entry effect and the overscroll
+  // feels, drawn from the same data every toolkit animates from (dist/design/motion.json).
+  const moPage = figma.createPage();
+  moPage.name = `${label} / Motion`;
+  figma.currentPage = moPage;
+  const moGround = figma.createRectangle();
+  moGround.name = 'Ground';
+  moGround.x = -20;
+  moGround.y = -20;
+  bindFill(moGround, 'color/background');
+  moPage.appendChild(moGround);
+  let my = 0;
+  const mhead = (str) => { const h = text(str, 20, 'color/text'); moPage.appendChild(h); h.x = 0; h.y = my; my += 40; };
+  const mrect = (w, h, fill, r = 0) => { const e = figma.createRectangle(); e.resize(w, h); e.cornerRadius = r; bindFill(e, fill); return e; };
+  const mcurve = (fr, pts, stroke) => {
+    const vec = figma.createVector();
+    vec.vectorPaths = [{ windingRule: 'NONE', data: 'M' + pts.map((q) => `${q[0].toFixed(1)} ${q[1].toFixed(1)}`).join(' L ') }];
+    vec.fills = [];
+    bindStroke(vec, stroke);
+    vec.strokeWeight = 2;
+    vec.strokeCap = 'ROUND';
+    vec.strokeJoin = 'ROUND';
+    fr.appendChild(vec);
+  };
+  mhead('Duration scale (ms)');
+  MOTION.durations.forEach((d) => {
+    const lbl = text(d.name, 12, 'color/text-muted');
+    moPage.appendChild(lbl); lbl.x = 0; lbl.y = my;
+    const b = mrect(d.ms * 0.6, 14, 'color/primary', 3);
+    moPage.appendChild(b); b.x = 110; b.y = my + 1;
+    const t = text(`${d.ms}`, 12, 'color/text');
+    moPage.appendChild(t); t.x = 110 + d.ms * 0.6 + 8; t.y = my;
+    my += 22;
+  });
+  my += 28;
+  mhead('Easing curves (progress over time; the faint lines are 0 and 1)');
+  const cw = 170, chh = 110, lo = -0.35, hi = 1.45;
+  const py = (val) => (1 - (val - lo) / (hi - lo)) * chh;
+  MOTION.easings.forEach((e, i) => {
+    const x = (i % 6) * 220, y = my + Math.floor(i / 6) * 190;
+    const fr = figma.createFrame();
+    fr.name = e.name;
+    fr.layoutMode = 'NONE';
+    fr.resize(cw, chh);
+    bindFill(fr, 'color/surface');
+    bindStroke(fr, 'color/border');
+    moPage.appendChild(fr);
+    fr.x = x; fr.y = y;
+    for (const lvl of [0, 1]) { const l = mrect(cw, 1, 'color/outline-variant'); fr.appendChild(l); l.y = py(lvl); }
+    mcurve(fr, e.points.map((val, k) => [(k / (e.points.length - 1)) * cw, py(val)]), 'color/primary');
+    const cap = text(e.name, 12, 'color/text'); moPage.appendChild(cap); cap.x = x; cap.y = y + chh + 8;
+    const grp = text(e.group, 10, 'color/text-muted'); moPage.appendChild(grp); grp.x = x; grp.y = y + chh + 26;
+  });
+  my += Math.ceil(MOTION.easings.length / 6) * 190 + 20;
+  mhead('Entry effects (progress 0, 25, 50, 75 and 100 %: opacity and offset)');
+  MOTION.entries.forEach((en) => {
+    const lbl = text(en.name, 13, 'color/text'); moPage.appendChild(lbl); lbl.x = 0; lbl.y = my + 22;
+    en.frames.forEach(([o, dx, dy], k) => {
+      const cell = figma.createFrame();
+      cell.layoutMode = 'NONE';
+      cell.resize(110, 70);
+      bindFill(cell, 'color/surface');
+      bindStroke(cell, 'color/border');
+      moPage.appendChild(cell);
+      cell.x = 170 + k * 124; cell.y = my;
+      const ghost = mrect(56, 30, 'color/surface', 6);
+      bindStroke(ghost, 'color/outline-variant');
+      cell.appendChild(ghost); ghost.x = 27; ghost.y = 20;
+      const body = mrect(56, 30, 'color/primary-container', 6);
+      body.opacity = Math.max(0, Math.min(1, o));
+      cell.appendChild(body); body.x = 27 + dx; body.y = 20 + dy;
+    });
+    my += 86;
+  });
+  my += 24;
+  mhead('Overscroll: the spring back after a pull (offset in px, 60 frames)');
+  MOTION.overscroll.forEach((f, i) => {
+    const x = i * 460;
+    const fr = figma.createFrame();
+    fr.name = f.name;
+    fr.layoutMode = 'NONE';
+    fr.resize(420, 120);
+    bindFill(fr, 'color/surface');
+    bindStroke(fr, 'color/border');
+    moPage.appendChild(fr);
+    fr.x = x; fr.y = my;
+    const top = Math.max(...f.release.map(Math.abs)) || 1;
+    const lvl = mrect(420, 1, 'color/outline-variant');
+    fr.appendChild(lvl); lvl.y = 90;
+    mcurve(fr, f.release.map((val, k) => [(k / (f.release.length - 1)) * 420, 90 - (val / top) * 80]), 'color/primary');
+    const cap = text(`${f.name}: max ${f.max} px, stiffness ${f.stiffness}, damping ${f.damping}`, 12, 'color/text-muted');
+    moPage.appendChild(cap); cap.x = x; cap.y = my + 128;
+  });
+  my += 170;
+  moGround.resize(6 * 220 + 40, my + 40);
+
   // --- Foundations: type scale, spacing, radius and the design's own shape.
   figma.currentPage = foundations;
   const scale = figma.createFrame();
@@ -956,6 +1161,13 @@ function buildSystem(sys, label) {
     drawn += 1;
   }
   charts.appendChild(board);
+  // Every catalog component has a frame or a Behaviour row; every icon the frames use exists.
+  for (const n of parts2) cover(n);
+  for (const k of kits.keys()) cover(k);
+  cover('Button');
+  const absent = CATALOG.components.map((c) => c.name).filter((n) => !covered.has(n.toLowerCase()));
+  if (absent.length) throw new Error(`${sys}: catalog components with no frame in the design: ${absent.join(', ')}`);
+  if (missingIcons.size) throw new Error(`${sys}: icons the spec uses are not in the ${packName} pack: ${[...missingIcons].join(', ')}`);
   return { roles: roles.length, buttonVariants: comps.length, kitFamilies: kits.size, controls: parts2.length, charts: drawn, icons: iconCount, symbols: ICONS.symbols.length, textures: SF.textures.length, effects: SF.effects.length, shaders: SHADERS.length };
 
 

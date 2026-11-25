@@ -133,9 +133,29 @@ export def render-parity []: nothing -> string {
     ] | str join "\n"
 }
 
-# Every reference component with the toolkits that expose it: `{ name, toolkits: [id] }`.
+# Components with no visual of their own: they wrap, time, cull or observe other components.
+# The design file lists them in a spec table instead of drawing them.
+export def behaviour-names []: nothing -> list<string> {
+    ["DodaiTheme" "EntryScope" "Feed" "Follow" "Interact" "Lazy" "Live" "Overscroll" "OverscrollFeel" "PageGrid"]
+}
+
+# First doc-comment paragraph of every `pub struct` in a source text: { name: text }.
+export def component-docs [src: string]: nothing -> record {
+    $src
+    | parse --regex '(?m)(?<doc>(?:^[ \t]*///[^\n]*\n)+)(?:[ \t]*#\[[^\n]*\n)*pub struct (?<name>[A-Z][A-Za-z0-9]*)'
+    | reduce --fold {} { |r, acc|
+        let line = ($r.doc | lines | each { |l| $l | str trim | str replace --regex '^///\s?' '' | str trim } | take while { |l| $l != "" } | str join ' ')
+        if ($acc | get -o $r.name | is-empty) and ($line != "") { $acc | insert $r.name $line } else { $acc }
+    }
+}
+
+# Every reference component with the toolkits that expose it, its summary and whether it draws
+# anything: `{ name, doc, behaviour, toolkits: [id] }`.
 export def component-matrix []: nothing -> table {
-    let comps = (component-names (crate-src dodai-gpui rust))
+    let gpui = (crate-src dodai-gpui rust)
+    let comps = (component-names $gpui)
+    let docs = (component-docs $gpui)
+    let behaviour = (behaviour-names)
     let have = (toolkits | each { |t|
         let src = (crate-src $t.crate $t.kind)
         {
@@ -144,6 +164,11 @@ export def component-matrix []: nothing -> table {
         }
     })
     $comps | each { |c|
-        { name: $c, toolkits: ($have | where { $c in $in.has } | get id) }
+        {
+            name: $c
+            doc: ($docs | get -o $c | default "")
+            behaviour: ($c in $behaviour)
+            toolkits: ($have | where { $c in $in.has } | get id)
+        }
     }
 }

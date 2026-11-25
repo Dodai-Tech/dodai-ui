@@ -71,7 +71,7 @@ def "main build" [--out: string = "dist/design/dodai.fig"] {
         $"\"($f | path parse | get stem)\": ($body)"
     } | str join ",")
     let shaders = (open --raw dist/shaders/shaders.json)
-    let js = $"const SHADERS = ($shaders);\nconst SURFACES = {($surfaces)};\nconst ICONS = {($icons)};\nconst CATALOG = (open --raw dist/design/components.json);\nconst PLOTS = {($plots)};\n(open --raw scripts/design/build.js)"
+    let js = $"const SHADERS = ($shaders);\nconst SURFACES = {($surfaces)};\nconst ICONS = {($icons)};\nconst CATALOG = (open --raw dist/design/components.json);\nconst MOTION = (open --raw dist/design/motion.json);\nconst PLOTS = {($plots)};\n(open --raw scripts/design/build.js)"
     print ($js | ^bunx @open-pencil/cli eval $fig --stdin --write)
     cp $fig $out
     print $"wrote ($out)"
@@ -125,6 +125,8 @@ def spec-md [system: string, base: record, themes: list<string>]: nothing -> str
     let comps = (open dist/design/components.json)
     let src = (gpui-sources)
     let charts = (gpui-charts)
+    let motion = (open dist/design/motion.json)
+    let behaviour = ($comps.components | where behaviour)
     let groups = [
         [color "Colour roles (default theme)"] [font Typography] [space Spacing] [shape Shape] [effect Effects]
         [motion Motion] [surface "Surface treatments"] [size "Control sizes"] [look "Look switches"] [nav Navigation]
@@ -166,11 +168,25 @@ def spec-md [system: string, base: record, themes: list<string>]: nothing -> str
         "| Symbols | the dashboard symbol groups |"
         "| Surfaces & glass | the design's frosted glass, and the textures and effects it owns |"
         "| Shaders | a thumbnail of every shader of the catalogue |"
+        "| Motion | the duration scale, every easing curve, every entry effect and the overscroll feels |"
+        "| Behaviour | the components that draw nothing themselves: what each does |"
+        ""
+        $"## Motion\n\nThe duration scale in ms: ($motion.durations | each { |d| [$d.name ' ' ($d.ms | into string)] | str join '' | $"`($in)`" } | str join ', ').\n"
+        "| easing | group | css |"
+        "| --- | --- | --- |"
+        ...($motion.easings | each { |e| $"| `($e.name)` | ($e.group) | `($e.css | str substring 0..60)` |" })
+        ""
+        $"Entry effects: ($motion.entries | get name | str join ', '). Overscroll feels: ($motion.overscroll | each { |f| [$f.name ': max ' ($f.max | into string) ' px, stiffness ' ($f.stiffness | into string) ', damping ' ($f.damping | into string)] | str join '' } | str join '; '). The design file draws all of them on the `<System> / Motion` page."
+        ""
+        $"## Behaviour \(($behaviour | length) components with no visual\)\n"
+        "| component | what it does | toolkits |"
+        "| --- | --- | --- |"
+        ...($behaviour | each { |c| $"| ($c.name) | ($c.doc) | ($c.toolkits | str join ', ') |" })
         ""
         $"## Components \(($comps.components | length)\)\n"
-        "| component | toolkits | gpui reference |"
-        "| --- | --- | --- |"
-        ...($comps.components | each { |c| let src = ($src | get -o $c.name | default "-"); $"| ($c.name) | ($c.toolkits | str join ', ') | `($src)` |" })
+        "| component | summary | toolkits | gpui reference |"
+        "| --- | --- | --- | --- |"
+        ...($comps.components | each { |c| let src = ($src | get -o $c.name | default "-"); $"| ($c.name) | ($c.doc | str replace --all '|' '/') | ($c.toolkits | str join ', ') | `($src)` |" })
     ] | str join "\n"
 }
 

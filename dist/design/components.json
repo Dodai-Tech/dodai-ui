@@ -10,34 +10,44 @@
     "slint",
     "leptos",
     "yew",
-    "ratatui",
+    "tui",
     "xilem"
   ],
   "components": [
     {
       "name": "Accordion",
+      "doc": "Collapsible sections `(title, body)`. Each toggles independently; sections listed in `expanded` start expanded.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "Alert",
+      "doc": "Inline status message with title + optional body. `banner()` = full solid strip.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
+        "iced",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "Avatar",
+      "doc": "Initials in a shaped tile, optional status dot.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "iced",
         "dioxus",
+        "bevy",
         "topcoat",
         "leptos",
         "yew"
@@ -45,6 +55,8 @@
     },
     {
       "name": "AxisGizmo",
+      "doc": "Orientation gizmo for a 3D view (Z up). Controlled: pass the camera basis.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "iced",
@@ -56,47 +68,65 @@
     },
     {
       "name": "Badge",
+      "doc": "Count / dot indicator. Round on rounded themes, shaped otherwise.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
+        "iced",
         "dioxus",
+        "bevy",
         "topcoat",
         "leptos",
         "yew",
-        "ratatui"
+        "tui"
       ]
     },
     {
       "name": "Banner",
+      "doc": "Full-width message strip with an optional action and a dismiss ✕.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
+        "iced",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "BottomAppBar",
+      "doc": "Bottom app bar: actions (children) at the start, a floating action at the end.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "BottomSheet",
+      "doc": "Sheet anchored to the bottom edge with a drag-handle affordance.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "Breadcrumb",
+      "doc": "Path trail; the last crumb is the current page. Earlier crumbs are clickable.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
+        "iced",
         "dioxus",
+        "bevy",
         "topcoat",
         "leptos",
         "yew"
@@ -104,6 +134,8 @@
     },
     {
       "name": "Button",
+      "doc": "Themed button. Construct with an id so hover/press state can be tracked.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "iced",
@@ -114,39 +146,52 @@
         "slint",
         "leptos",
         "yew",
-        "ratatui",
+        "tui",
         "xilem"
       ]
     },
     {
       "name": "Card",
+      "doc": "Container with optional headline, supporting text and children.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
+        "iced",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "Carousel",
+      "doc": "Controlled carousel; each item gets a fixed `item_width`.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "Chip",
+      "doc": "Selectable filter chip with optional ✕ remove affordance.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
+        "iced",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "CircularProgress",
+      "doc": "Ring progress. `new(0.0..=1.0)` is determinate; [`CircularProgress::indeterminate`] spins.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "iced",
@@ -159,160 +204,214 @@
     },
     {
       "name": "Clock",
+      "doc": "Live clock: analog dial, or a futuristic seven-segment face (see [`ClockFace`]).",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "CodeBlock",
+      "doc": "Monospace code with line numbers, highlighting, a copy button, scrolling in both directions (optionally with scrollbars) and selectable text (drag, then Cmd/Ctrl-C).",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "ColorPicker",
+      "doc": "Swatch grid; shows the selected colour's hex code.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "Column",
+      "doc": "One column of a [`DataTable`].",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "Combobox",
+      "doc": "Text input with a filtered option list shown while `open`.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "Command",
+      "doc": "One command in a [`CommandPalette`].",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "CommandPalette",
+      "doc": "Modal launcher: query input on top, filtered commands below. `on_run` receives the index into the original `commands`.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "ContextMenu",
+      "doc": "Right-click anywhere on the wrapped area to open a [`Menu`] at the pointer.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "CountUp",
+      "doc": "Animated numeric readout (`0 -> value`).",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "DataTable",
+      "doc": "Table with sorting (click a header), filtering, row selection, draggable column edges and windowed rendering for long lists.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "DateInput",
+      "doc": "Typed date entry (the picker's text-input mode): a labelled field that reports each valid date and shows an error line for text that is not one.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "DatePicker",
+      "doc": "Controlled month calendar.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "DateTimePicker",
+      "doc": "Controlled calendar and time of day in one panel, with the chosen moment read out below.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "DateTimeRangePicker",
+      "doc": "Controlled range calendar with a start and an end time of day in one panel, the chosen span read out below. Feed day clicks through [`range_pick`] in `on_select`.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "DesignSystemSelector",
+      "doc": "Dropdown of registered design systems (families). Choosing one switches to its first variant.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "Dialog",
+      "doc": "Modal: scrim over the whole (relatively positioned) parent with a centred [`DialogCard`]. Clicking the scrim calls `on_dismiss`. Render it last in the root element; it sits above siblings via `deferred`.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
+        "iced",
         "dioxus",
+        "bevy",
         "leptos",
         "yew",
-        "ratatui"
+        "tui"
       ]
     },
     {
       "name": "DialogCard",
+      "doc": "Dialog box: title, body children, action row (right aligned).",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "Divider",
+      "doc": "Thin separator line in the `divider` colour.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "iced",
@@ -323,11 +422,13 @@
         "slint",
         "leptos",
         "yew",
-        "ratatui"
+        "tui"
       ]
     },
     {
       "name": "DodaiTheme",
+      "doc": "Global theme state: the [`ThemeSwitcher`] plus the active theme.",
+      "behaviour": true,
       "toolkits": [
         "gpui",
         "dioxus",
@@ -338,9 +439,12 @@
     },
     {
       "name": "DodaiTooltip",
+      "doc": "Tooltip view: `.tooltip(DodaiTooltip::text(\"Hint\"))` on an id'd element.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "freya",
         "leptos",
         "yew"
@@ -348,114 +452,152 @@
     },
     {
       "name": "DropdownMenu",
+      "doc": "A button that opens a [`Menu`] below it; closes after a choice or an outside click.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "EntryScope",
+      "doc": "Wraps a subtree so every component inside uses `kind` for its entry and value-in animation instead of the default [`Motion::entry`]. Components render while their parent lays out, so the override is installed around the child's `request_layout` and restored afterwards.",
+      "behaviour": true,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "Fab",
+      "doc": "Floating action button; `extended` adds a text label.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "FabMenu",
+      "doc": "A FAB that opens a stack of labelled actions above it (Material 3 FAB menu). The main button turns into a close button while open.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "Feed",
+      "doc": "Samples waiting for a [`Live`] window, pushed from any thread (a socket reader, a sensor loop). Clones share the queue; attach it with [`Live::attach`].",
+      "behaviour": true,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "FileDropZone",
+      "doc": "Drop target look (click to browse). Wire `on_click` to your file dialog.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "Follow",
+      "doc": "Animation identity and feel of one instrument.",
+      "behaviour": true,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "FormField",
+      "doc": "Label + control + help or validation message. When an error appears (or changes) the control shakes, in the design's personality; fields are told apart by their label.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "FrostLayer",
+      "doc": "Frosted glass under a fill: a blurred copy of the app's backdrop (feature `frost`; without it only the see-through fill is drawn).",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "FrostedScene",
+      "doc": "A picture with frosted-glass panels over it.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "FullScreenDialog",
+      "doc": "Dialog covering the whole parent: close button, title, primary action.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "GlowLayer",
+      "doc": "One layer of the layered-stroke glow.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "Heading",
+      "doc": "Display-font heading in the primary text colour.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "iced",
@@ -469,15 +611,20 @@
     },
     {
       "name": "HoverCard",
+      "doc": "Card shown while the pointer is over the trigger or the card itself.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "Icon",
+      "doc": "Vector icon. Defaults: 16 px, the theme text colour; set `.color(..)` to override.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "iced",
@@ -491,69 +638,93 @@
     },
     {
       "name": "IconBadge",
+      "doc": "Pins a [`Badge`] to the top-right corner of `child` (icon, avatar, …).",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "IconButton",
+      "doc": "Square icon button. Pass any glyph string (emoji, symbol, icon-font char).",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "Image",
+      "doc": "Image in a themed frame, with an optional caption and a play badge for video posters.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "IndeterminateBar",
+      "doc": "Indeterminate progress bar: a segment sliding across the track.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "InputBox",
+      "doc": "Styled container for a text-input entity. gpui 0.2.2 ships no text input; put your own editor view/entity inside (or use `.placeholder`).",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "Interact",
+      "doc": "Pointer state of one control (kept in gpui keyed element state).",
+      "behaviour": true,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "Kbd",
+      "doc": "Keyboard key hint, e.g. `Kbd::new(\"⌘K\")`.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
+        "iced",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "Knob",
+      "doc": "Rotary knob over `min..=max` (default `0..=1`). Controlled.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "iced",
@@ -566,6 +737,8 @@
     },
     {
       "name": "Label",
+      "doc": "Small body-font label (uppercased when the theme says so).",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "iced",
@@ -575,23 +748,29 @@
         "freya",
         "leptos",
         "yew",
-        "ratatui"
+        "tui"
       ]
     },
     {
       "name": "Lazy",
+      "doc": "See [`lazy`].",
+      "behaviour": true,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "List",
+      "doc": "A column of [`ListItem`]s with one selected row and the keyboard: once the list has focus (a click inside it, or Tab), Up and Down move the selection, Home and End jump to the ends, and disabled rows are skipped. The selection works without state in the parent (`.selected(i)` only sets the start, and a changed value wins again).",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "topcoat",
         "freya",
         "leptos",
@@ -600,6 +779,8 @@
     },
     {
       "name": "ListItem",
+      "doc": "Selectable list/menu row with a left accent marker when selected.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "iced",
@@ -613,37 +794,49 @@
     },
     {
       "name": "Live",
+      "doc": "A fixed-size window of recent samples. Clones share the same data.",
+      "behaviour": true,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "LoadingIndicator",
+      "doc": "Material 3 expressive loading indicator: a 48 px container with a 38 px shape that morphs and turns. `contained` draws it on a filled pill/circle.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "Markdown",
+      "doc": "Rich text from Markdown source.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "Menu",
+      "doc": "Floating action list. `on_select` receives the index into the item list.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "iced",
         "dioxus",
+        "bevy",
         "topcoat",
         "leptos",
         "yew"
@@ -651,6 +844,8 @@
     },
     {
       "name": "MenuItem",
+      "doc": "One row of a [`Menu`].",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
@@ -661,15 +856,20 @@
     },
     {
       "name": "ModalDrawer",
+      "doc": "Modal navigation drawer: a [`crate::NavigationDrawer`] sliding over the page from the left edge with a scrim; picking an item or clicking the scrim dismisses it.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "Mono",
+      "doc": "Monospace text (never uppercased).",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
@@ -682,6 +882,8 @@
     },
     {
       "name": "Muted",
+      "doc": "Secondary body text in `text_muted`.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "iced",
@@ -691,95 +893,101 @@
         "freya",
         "leptos",
         "yew",
-        "ratatui"
+        "tui"
       ]
     },
     {
       "name": "NavigationBar",
+      "doc": "Navigation bar: the destinations side by side along the bottom of a compact screen.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "NavigationDrawer",
+      "doc": "Vertical drawer: items, section headlines and dividers.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "NavigationItem",
+      "doc": "One destination of a drawer or rail.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "NavigationRail",
+      "doc": "Narrow icon rail (width from the design's tokens): label under each icon, indicator pill behind the icon.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "NumberStepper",
+      "doc": "− value + control.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "OtpInput",
+      "doc": "Row of single-character cells for verification codes. Type or paste; Backspace deletes.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
-        "leptos",
-        "yew"
-      ]
-    },
-    {
-      "name": "Overscroll",
-      "toolkits": [
-        "gpui",
-        "dioxus",
-        "leptos",
-        "yew"
-      ]
-    },
-    {
-      "name": "OverscrollFeel",
-      "toolkits": [
-        "gpui",
-        "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "PageGrid",
+      "doc": "The design's page grid (columns, gap and outer margins at the viewport width) laid out as wrapping rows of cells that each span a number of columns.",
+      "behaviour": true,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "Pagination",
+      "doc": "Page selector: `‹ 1 … 4 [5] 6 … 20 ›`. Pages are 1-based. Controlled.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "topcoat",
         "leptos",
         "yew"
@@ -787,6 +995,8 @@
     },
     {
       "name": "Panel",
+      "doc": "Shaped card with optional title; focused border/glow; hard shadow from tokens.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "iced",
@@ -802,18 +1012,25 @@
     },
     {
       "name": "Popover",
+      "doc": "Click-to-open panel anchored to a trigger. Closes on outside click or `Esc`.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
+        "iced",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "ProgressBar",
+      "doc": "Horizontal progress bar (`0.0..=1.0`).",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "egui",
         "leptos",
         "yew"
@@ -821,6 +1038,8 @@
     },
     {
       "name": "RangeSlider",
+      "doc": "Two-thumb slider (controlled), horizontal or vertical.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "iced",
@@ -833,9 +1052,12 @@
     },
     {
       "name": "Rating",
+      "doc": "Star rating (`value` of `max`). With [`Rating::half`] it also takes half stars: the left half of a star is `n - 0.5`, the right half is `n`.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "topcoat",
         "leptos",
         "yew"
@@ -843,76 +1065,101 @@
     },
     {
       "name": "ResponsiveShell",
+      "doc": "Responsive app frame. Wide: `[sidebar | content]`. Narrow: content only, with a menu button that opens the sidebar as an overlay drawer.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "RichTooltip",
+      "doc": "Tooltip with a title, body text and optional action label: `.tooltip(RichTooltip::build(\"Title\", \"Body\", Some(\"Learn more\")))`.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
+        "iced",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "Scanlines",
+      "doc": "Absolutely-positioned overlay filling its (relative) parent. Place it as the last child of the root. It adds no hitbox, so it never blocks input.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "iced",
         "dioxus",
+        "bevy",
         "slint",
         "leptos",
         "yew",
-        "ratatui"
+        "tui"
       ]
     },
     {
       "name": "ScrollArea",
+      "doc": "Scroll container with thin themed scrollbars (drag a thumb or use the wheel). Scrolls vertically; [`horizontal`](Self::horizontal) adds the other axis.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "ScrollSpy",
+      "doc": "Scroll-spy state: just the optional pinned (clicked) key.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "SearchBar",
+      "doc": "Search field shell: leading glyph + placeholder/value text; click to focus your own input. Use [`crate::TextInput`] inside for real editing.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "SearchView",
+      "doc": "Full-text search: input, clear button and a fuzzy-filtered result list with matched characters highlighted. Owns no state: pass the [`TextInput`] entity and an `open` flag.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "Segmented",
+      "doc": "Exclusive option group in one bordered strip. Controlled.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "iced",
         "dioxus",
+        "bevy",
         "topcoat",
         "leptos",
         "yew"
@@ -920,6 +1167,8 @@
     },
     {
       "name": "Select",
+      "doc": "Dropdown list. Controlled: pass `selected` and update it in `on_select`. Keyboard (trigger focused): ↑/↓ move, Enter/Space open or choose, Esc close.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
@@ -932,33 +1181,44 @@
     },
     {
       "name": "SelectOption",
+      "doc": "One entry of a [`Select`].",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "SelectionMarker",
+      "doc": "What the indicator looks like.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "SelectionTrack",
+      "doc": "The travelling indicator of one row of choices. Cheap to clone; keyed by its id.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "Shimmer",
+      "doc": "Shimmer sweep painted by [`shaped`] over any shape.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
@@ -969,19 +1229,25 @@
     },
     {
       "name": "SideSheet",
+      "doc": "Sheet attached to the left or right edge with a header and close button.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "Skeleton",
+      "doc": "Pulsing placeholder block for loading content.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "iced",
         "dioxus",
+        "bevy",
         "topcoat",
         "leptos",
         "yew"
@@ -989,6 +1255,8 @@
     },
     {
       "name": "Slider",
+      "doc": "Draggable slider over `min..=max` (default `0..=1`). Controlled.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "iced",
@@ -1003,24 +1271,33 @@
     },
     {
       "name": "Snackbar",
+      "doc": "Message bar with an optional text action.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
+        "iced",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "SnapStack",
+      "doc": "Items stacked vertically, one shown at a time. The wheel turns one page a notch; two fingers drag the stack and snap the nearest page into place when lifted. At either end the scroll passes on, so a page around the stack still scrolls. Small dots just past the trailing edge show where.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "Spinner",
+      "doc": "Indeterminate spinner: a row of bars with a travelling highlight.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "iced",
@@ -1035,27 +1312,36 @@
     },
     {
       "name": "SplitButton",
+      "doc": "A button with a trailing menu toggle: `[ Label | ▾ ]`. `on_click` runs the main action, `on_toggle` opens or closes the menu (rendered by the caller, e.g. a `DropdownMenu`). `crop(Left)` cuts the lead's outer corner, `crop(Right)` the menu's.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "SplitPane",
+      "doc": "Two panes with a draggable divider (controlled ratio of the first pane).",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "Stepper",
+      "doc": "Multi-step progress: numbered nodes joined by lines. Done steps show ✓.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "topcoat",
         "leptos",
         "yew"
@@ -1063,18 +1349,24 @@
     },
     {
       "name": "Stopwatch",
+      "doc": "Chronometer: start/stop, lap, reset; shows the newest laps with splits.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "Table",
+      "doc": "Data table: header + rows, optional selected row. Cells are text. Column `i` gets flex weight `weights[i]` (default 1).",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "topcoat",
         "leptos",
         "yew"
@@ -1082,6 +1374,8 @@
     },
     {
       "name": "Tabs",
+      "doc": "Tab strip. Controlled: pass `selected` and update it in `on_select`.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "iced",
@@ -1092,12 +1386,14 @@
         "slint",
         "leptos",
         "yew",
-        "ratatui",
+        "tui",
         "xilem"
       ]
     },
     {
       "name": "Tag",
+      "doc": "Small status badge.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "iced",
@@ -1108,30 +1404,38 @@
         "slint",
         "leptos",
         "yew",
-        "ratatui",
+        "tui",
         "xilem"
       ]
     },
     {
       "name": "TagField",
+      "doc": "Removable chips inside an input-style box (pair with a text input to add).",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "TapTempo",
+      "doc": "Measure the tempo of music: tap along and read the BPM, then press Play to hear/see it back as a visual metronome (a bar of beat lights, beat 1 accented).",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "Text",
+      "doc": "Text in a type-scale role (Material 3: 15 roles; other designs derive them from their sizes).",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
@@ -1145,6 +1449,8 @@
     },
     {
       "name": "TextInput",
+      "doc": "Editable text entity. Create with `cx.new(|cx| TextInput::new(cx))`.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "iced",
@@ -1158,18 +1464,24 @@
     },
     {
       "name": "ThemeSelector",
+      "doc": "Dropdown of the variants (sub-themes) of the active design system; choosing one applies it live. New variants appear automatically.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "ThemeSwitcherBar",
+      "doc": "Row of buttons, one per theme in the global switcher; the active one is filled.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "egui",
         "leptos",
         "yew"
@@ -1177,27 +1489,36 @@
     },
     {
       "name": "TimeInput",
+      "doc": "Typed time entry: `HH:MM` or `H:MM AM/PM`.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "TimePicker",
+      "doc": "Controlled time picker (hour : minute with steppers, optional 12 h mode).",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "Timeline",
+      "doc": "Vertical sequence of events joined by a line.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "topcoat",
         "leptos",
         "yew"
@@ -1205,54 +1526,73 @@
     },
     {
       "name": "TimelineEvent",
+      "doc": "One timeline entry.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "Timer",
+      "doc": "Countdown timer with a progress ring, start/pause/reset and ±1 min.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "Toast",
+      "doc": "Compact floating notification: raised surface, tone bar at the left, glow from tokens.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
+        "iced",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "Toolbar",
+      "doc": "Compact bar of actions (children), optionally with a trailing floating action.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "TopAppBar",
+      "doc": "Top app bar: leading glyph, title, trailing actions (children).",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "TreeItem",
+      "doc": "Node of a [`TreeView`]. `expanded` is owned by the caller (controlled).",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "topcoat",
         "leptos",
         "yew"
@@ -1260,27 +1600,36 @@
     },
     {
       "name": "TreeNavigation",
+      "doc": "Navigation tree that keeps its own expansion and selection: a click on a branch folds or unfolds it, a click on a leaf selects it and calls `on_select`. Built on [`TreeView`]. It never touches global state, so it can show any hierarchy (design systems and their themes, files, settings) without side effects.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "TreeRow",
+      "doc": "One visible row of a flattened tree.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
     },
     {
       "name": "TreeView",
+      "doc": "Hierarchical list with expand/collapse.",
+      "behaviour": false,
       "toolkits": [
         "gpui",
         "dioxus",
+        "bevy",
         "leptos",
         "yew"
       ]
