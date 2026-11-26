@@ -559,7 +559,7 @@ function buildSystem(sys, label) {
 
   // Actions
   put('IconButton', box({ w: sz('touch-target'), h: sz('touch-target'), main: 'CENTER', round: 999, stroke: 'color/outline' }, ico('heart', 18)));
-  put('Fab', box({ w: 56, h: 56, main: 'CENTER', fill: 'kit/fab-bg', round: 16 }, ico('plus', 26, 'kit/fab-fg')));
+  put('Fab', box({ w: 56, h: 56, main: 'CENTER', fill: 'kit/fab-bg', round: true }, ico('plus', 26, 'kit/fab-fg')));
   put('ExtendedFab', box({ h: 56, pad: [20, 0], fill: 'color/primary-container', round: 16, gap: 8 }, ico('plus', 22, 'color/on-primary-container'), T('Create', 15, 'color/on-primary-container')));
   put('SplitButton', box({ gap: 1 }, box({ h: ctrl, pad: [16, 0], fill: 'color/primary', round: 8 }, T('Save', 15, 'color/on-primary')), box({ h: ctrl, pad: [10, 0], fill: 'color/primary', round: 8 }, ico('chevron_down', 14, 'color/on-primary'))));
   put('Segmented', box({ gap: 0, stroke: 'color/outline', round: 999 }, ...['Day', 'Week', 'Month'].map((s, i) => box({ h: sz('segmented-height'), pad: [16, 0], fill: i === 1 ? 'color/secondary-container' : null }, T(s, 14, i === 1 ? 'color/on-secondary-container' : 'color/text')))));
