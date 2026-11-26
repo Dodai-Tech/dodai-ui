@@ -15,6 +15,8 @@ use gpui::{div, px, size, AnyElement, App, Application, Bounds, Context, Window,
 
 /// Space between cells and around the grid, in points.
 const GAP: f32 = 24.0;
+/// Extra room in each cell beyond the design frame's size.
+const SLACK: f32 = 40.0;
 /// The grid wraps to a new row past this width.
 const MAX_WIDTH: f32 = 1600.0;
 
@@ -119,7 +121,9 @@ fn layout() -> Layout {
     let (mut x, mut y, mut row_h, mut width) = (GAP, GAP, 0.0f32, 0.0f32);
     let mut cells = Vec::new();
     for (name, make) in frames() {
+        // room beyond the design frame, so a component that comes out bigger is shown whole
         let (w, h) = sizes.get(name).copied().unwrap_or((300.0, 140.0));
+        let (w, h) = (w + SLACK, h + SLACK);
         if x > GAP && x + w > MAX_WIDTH {
             (x, y, row_h) = (GAP, y + row_h + GAP, 0.0);
         }
@@ -162,7 +166,6 @@ impl Render for Grid {
                     .top(px(y))
                     .w(px(w))
                     .h(px(h))
-                    .overflow_hidden()
                     .child(div().flex().child(make())),
             );
         }

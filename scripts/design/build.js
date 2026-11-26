@@ -584,8 +584,16 @@ function buildSystem(sys, label) {
   put('Tooltip / DodaiTooltip', box({ pad: [10, 6], fill: 'color/overlay', round: 6 }, T('Tooltip', 12)));
   put('RichTooltip', box({ dir: 'V', align: 'MIN', pad: [14, 10], fill: 'color/overlay', round: 10, gap: 4 }, T('Title', 14), T('Supporting text for the control.', 12, 'color/text-muted'), T('Learn more', 12, 'color/link')));
   put('Popover', box({ dir: 'V', align: 'MIN', pad: [16, 12], fill: 'color/surface-container', stroke: 'color/border', round: true, gap: 4 }, T('Popover', 15), T('Anchored content', 13, 'color/text-muted')));
-  put('Toast', box({ pad: [16, 12], fill: 'color/surface-container-high', stroke: 'color/success', round: true, gap: 12 }, ico('check', 18, 'color/success'), T('Saved', 14)));
-  put('Banner', box({ w: 360, h: 48, pad: [16, 0], fill: 'color/info', gap: 12 }, ico('info', 18, 'color/background'), T('Update available', 14, 'color/background')));
+  put('Toast', box({ pad: [num('space/md'), 0], h: ctrl, fill: 'color/surface-container-high', stroke: 'color/border-strong', round: true, gap: num('space/sm') }, ico('check', 18, 'color/success'), T('Saved', 14)));
+  // Material banner = tonal container: surface-container-high with the tone mixed in at 25%.
+  put('Banner', (() => {
+    const sm = num('space/sm'), md = num('space/md');
+    const g = box({ w: 360, h: 2 * (sm + 2) + 19, pad: [md, sm + 2], fill: 'color/surface-container-high', gap: md },
+      ico('info', 18, 'color/info'), T('Update available', 14, 'color/text'));
+    const o = figma.createRectangle(); o.resize(360, g.height); bindFill(o, 'color/info'); o.opacity = 0.25;
+    g.appendChild(o); o.layoutPositioning = 'ABSOLUTE'; o.x = 0; o.y = 0;
+    return g;
+  })());
   put('Spinner', (() => { const e = figma.createEllipse(); e.resize(32, 32); e.fills = []; bindStroke(e, 'color/primary'); e.strokeWeight = 3; e.arcData = { startingAngle: 0, endingAngle: 4.7, innerRadius: 0.8 }; return e; })());
   put('CircularProgress', (() => { const g = box({ w: 40, h: 40, main: 'CENTER' }); g.layoutMode = 'NONE'; const e = figma.createEllipse(); e.resize(40, 40); e.fills = []; bindStroke(e, 'color/surface-container-highest'); e.strokeWeight = 4; g.appendChild(e); const a = figma.createEllipse(); a.resize(40, 40); a.fills = []; bindStroke(a, 'color/primary'); a.strokeWeight = 4; a.arcData = { startingAngle: -1.57, endingAngle: 2.9, innerRadius: 0.88 }; g.appendChild(a); const t = T('70', 12); g.appendChild(t); t.x = 20 - t.width / 2; t.y = 20 - t.height / 2; return g; })());
   put('IndeterminateBar', box({ w: 200, h: sz('bar-thickness'), round: 999, fill: 'color/surface-container-highest' }, bar(70, sz('bar-thickness'), 'color/primary')));
