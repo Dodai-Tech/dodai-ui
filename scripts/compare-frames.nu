@@ -38,7 +38,7 @@ def main [
         let name = ($l | split row "\t" | first)
         let id = ($ids | get -o $name)
         if $id != null {
-            bunx @open-pencil/cli export dist/design/dodai.fig --node $id -f png --scale 2 -o $"($out)/design/($name).png" | ignore
+            bunx @open-pencil/cli export dist/design/dodai.fig --node $id -f png --scale 2 -o $"($out)/design/($name | str replace --all --regex '[/ ]' '_').png" | ignore
         }
     }
     cargo run -q -p dodai-diff -- grid $"($out)/shot.png" $manifest $"($out)/design" --scale 2 --top $top --out $"($out)/diff" --max-blocks ($max_blocks | into string)

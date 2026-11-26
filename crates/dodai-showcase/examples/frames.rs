@@ -6,13 +6,16 @@
 //! the name must be the design frame's name.
 
 use dodai_core::Tone;
-use dodai_gpui::{hsla, theme_of, Divider, Kbd, ProgressBar, Tag};
+use dodai_gpui::{
+    hsla, theme_of, Alert, Badge, Breadcrumb, Chip, Divider, Fab, Heading, IconButton, Kbd, Knob,
+    Label, Mono, Muted, Pagination, ProgressBar, Rating, Tag, Toast,
+};
 use gpui::prelude::*;
 use gpui::{div, px, size, AnyElement, App, Application, Bounds, Context, Window, WindowOptions};
 
-const COLS: usize = 3;
+const COLS: usize = 4;
 /// Cell side in points; the component sits `PAD` in from the corner.
-const CELL: (f32, f32) = (360.0, 140.0);
+const CELL: (f32, f32) = (300.0, 140.0);
 const PAD: f32 = 20.0;
 
 type Make = fn() -> AnyElement;
@@ -37,6 +40,46 @@ fn frames() -> Vec<(&'static str, Make)> {
                 .into_any_element()
         }),
         ("Kbd", || Kbd::new("⌘ K").into_any_element()),
+        ("Heading / Text / Label", || {
+            div()
+                .flex()
+                .flex_col()
+                .child(Heading::new("Heading").level(2))
+                .child(Label::new("Label"))
+                .into_any_element()
+        }),
+        ("Mono / Muted", || {
+            div()
+                .flex()
+                .flex_col()
+                .child(Mono::new("mono"))
+                .child(Muted::new("muted"))
+                .into_any_element()
+        }),
+        ("Fab", || Fab::new("f", "+").into_any_element()),
+        ("IconButton", || {
+            IconButton::new("ib", "+").into_any_element()
+        }),
+        ("Rating", || Rating::new("r", 3.0).into_any_element()),
+        ("Knob", || Knob::new("k", 0.5).into_any_element()),
+        ("Pagination", || {
+            Pagination::new("pg", 2, 10).into_any_element()
+        }),
+        ("Breadcrumb", || {
+            Breadcrumb::new("bc", ["Home", "Library", "Data"]).into_any_element()
+        }),
+        ("Toast", || {
+            Toast::new(Tone::Success, "Saved").into_any_element()
+        }),
+        ("Banner", || {
+            Alert::new(Tone::Info, "Heads up").into_any_element()
+        }),
+        ("Chip states", || {
+            Chip::new("c", "Assist").into_any_element()
+        }),
+        ("IconBadge", || {
+            Badge::new("3", Tone::Danger).into_any_element()
+        }),
         ("Divider", || {
             div().w(px(200.0)).child(Divider::new()).into_any_element()
         }),

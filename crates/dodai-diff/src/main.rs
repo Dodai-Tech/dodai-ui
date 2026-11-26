@@ -62,6 +62,7 @@ fn grid(rest: &[String]) -> ExitCode {
     for line in text.lines().filter(|l| !l.starts_with("window")) {
         let f: Vec<&str> = line.split('\t').collect();
         let [name, x, y] = f.as_slice() else { continue };
+        let file = name.replace(['/', ' '], "_");
         let (Ok(x), Ok(y)) = (x.parse::<f32>(), y.parse::<f32>()) else {
             continue;
         };
@@ -72,7 +73,7 @@ fn grid(rest: &[String]) -> ExitCode {
                 ((y + top - 4.0) * scale) as usize,
             )
             .unwrap_or([255, 255, 255]);
-        let design = match Picture::open_on(&Path::new(dir).join(format!("{name}.png")), bg) {
+        let design = match Picture::open_on(&Path::new(dir).join(format!("{file}.png")), bg) {
             Ok(p) => p,
             Err(_) => {
                 println!("   no design export: {name}");
@@ -88,7 +89,7 @@ fn grid(rest: &[String]) -> ExitCode {
         );
         let (r, img) = compare(&mine, &design, Options::default());
         if let Some(o) = &out {
-            let _ = img.save(&o.join(format!("{name}.png")));
+            let _ = img.save(&o.join(format!("{file}.png")));
         }
         println!("{:>6.2}% px {:>6.2}% blocks  {name}", r.pixels, r.blocks);
         failed |= max.is_some_and(|m| r.blocks > m);
