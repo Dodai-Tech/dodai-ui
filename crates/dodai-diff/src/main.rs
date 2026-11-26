@@ -95,11 +95,14 @@ fn grid(rest: &[String]) -> ExitCode {
             b.map_or("empty".into(), |(x, y, w, h)| format!("{w}x{h}@{x},{y}"))
         };
         println!(
-            "{:>6.2}% px {:>6.2}% blocks  {name}  gpui {}  design {}",
+            "{:>6.2}% px {:>6.2}% blocks  {name}  gpui {}  design {}  middle {} / {}  bg {}",
             r.pixels,
             r.blocks,
             fmt(mine.content(bg, 6)),
             fmt(design.content(bg, 6)),
+            hex(mine.at(mine.width / 2, mine.height / 2)),
+            hex(design.at(design.width / 2, design.height / 2)),
+            hex(Some(bg)),
         );
         failed |= max.is_some_and(|m| r.blocks > m);
     }
@@ -108,6 +111,10 @@ fn grid(rest: &[String]) -> ExitCode {
     } else {
         ExitCode::SUCCESS
     }
+}
+
+fn hex(c: Option<[u8; 3]>) -> String {
+    c.map_or("-".into(), |[r, g, b]| format!("#{r:02x}{g:02x}{b:02x}"))
 }
 
 /// `dodai-diff size FILE` prints `W H` in pixels.

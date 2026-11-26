@@ -559,7 +559,7 @@ function buildSystem(sys, label) {
 
   // Actions
   put('IconButton', box({ w: sz('touch-target'), h: sz('touch-target'), main: 'CENTER', round: 999, stroke: 'color/outline' }, ico('heart', 18)));
-  put('Fab', box({ w: 56, h: 56, main: 'CENTER', fill: 'color/primary-container', round: 16 }, ico('plus', 26, 'color/on-primary-container')));
+  put('Fab', box({ w: 56, h: 56, main: 'CENTER', fill: 'kit/fab-bg', round: 16 }, ico('plus', 26, 'kit/fab-fg')));
   put('ExtendedFab', box({ h: 56, pad: [20, 0], fill: 'color/primary-container', round: 16, gap: 8 }, ico('plus', 22, 'color/on-primary-container'), T('Create', 15, 'color/on-primary-container')));
   put('SplitButton', box({ gap: 1 }, box({ h: ctrl, pad: [16, 0], fill: 'color/primary', round: 8 }, T('Save', 15, 'color/on-primary')), box({ h: ctrl, pad: [10, 0], fill: 'color/primary', round: 8 }, ico('chevron_down', 14, 'color/on-primary'))));
   put('Segmented', box({ gap: 0, stroke: 'color/outline', round: 999 }, ...['Day', 'Week', 'Month'].map((s, i) => box({ h: sz('segmented-height'), pad: [16, 0], fill: i === 1 ? 'color/secondary-container' : null }, T(s, 14, i === 1 ? 'color/on-secondary-container' : 'color/text')))));
@@ -585,15 +585,9 @@ function buildSystem(sys, label) {
   put('RichTooltip', box({ dir: 'V', align: 'MIN', pad: [14, 10], fill: 'color/overlay', round: 10, gap: 4 }, T('Title', 14), T('Supporting text for the control.', 12, 'color/text-muted'), T('Learn more', 12, 'color/link')));
   put('Popover', box({ dir: 'V', align: 'MIN', pad: [16, 12], fill: 'color/surface-container', stroke: 'color/border', round: true, gap: 4 }, T('Popover', 15), T('Anchored content', 13, 'color/text-muted')));
   put('Toast', box({ pad: [num('space/md'), 0], h: ctrl, fill: 'color/surface-container-high', stroke: 'color/border-strong', round: true, gap: num('space/sm') }, ico('check', 18, 'color/success'), T('Saved', 14)));
-  // Material banner = tonal container: surface-container-high with the tone mixed in at 25%.
-  put('Banner', (() => {
-    const sm = num('space/sm'), md = num('space/md');
-    const g = box({ w: 360, h: 2 * (sm + 2) + 19, pad: [md, sm + 2], fill: 'color/surface-container-high', gap: md },
-      ico('info', 18, 'color/info'), T('Update available', 14, 'color/text'));
-    const o = figma.createRectangle(); o.resize(360, g.height); bindFill(o, 'color/info'); o.opacity = 0.25;
-    g.appendChild(o); o.layoutPositioning = 'ABSOLUTE'; o.x = 0; o.y = 0;
-    return g;
-  })());
+  // the banner's fill and text come from the design's own kit tokens
+  put('Banner', box({ w: 360, h: 2 * (num('space/sm') + 2) + 19, pad: [num('space/md'), num('space/sm') + 2], fill: 'kit/alert-info-banner-bg', gap: num('space/md') },
+    ico('info', 18, 'kit/alert-info-banner-fg'), T('Update available', 14, 'kit/alert-info-banner-fg')));
   put('Spinner', (() => { const e = figma.createEllipse(); e.resize(32, 32); e.fills = []; bindStroke(e, 'color/primary'); e.strokeWeight = 3; e.arcData = { startingAngle: 0, endingAngle: 4.7, innerRadius: 0.8 }; return e; })());
   put('CircularProgress', (() => { const g = box({ w: 40, h: 40, main: 'CENTER' }); g.layoutMode = 'NONE'; const e = figma.createEllipse(); e.resize(40, 40); e.fills = []; bindStroke(e, 'color/surface-container-highest'); e.strokeWeight = 4; g.appendChild(e); const a = figma.createEllipse(); a.resize(40, 40); a.fills = []; bindStroke(a, 'color/primary'); a.strokeWeight = 4; a.arcData = { startingAngle: -1.57, endingAngle: 2.9, innerRadius: 0.88 }; g.appendChild(a); const t = T('70', 12); g.appendChild(t); t.x = 20 - t.width / 2; t.y = 20 - t.height / 2; return g; })());
   put('IndeterminateBar', box({ w: 200, h: sz('bar-thickness'), round: 999, fill: 'color/surface-container-highest' }, bar(70, sz('bar-thickness'), 'color/primary')));
