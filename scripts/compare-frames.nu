@@ -11,6 +11,7 @@ def main [
     --design: string = "material"
     --max-blocks: float = 100.0
     --wait: duration = 5sec
+    --probe # self-test: magenta squares at the cell origins, checks the crop alignment only
 ] {
     let out = $"dist/compare/($design)"
     rm -rf $out
@@ -23,7 +24,7 @@ def main [
         | bunx @open-pencil/cli eval dist/design/dodai.fig --stdin | from json)
     $ids | items {|k, v| $"($k)\t($v.w)\t($v.h)" } | str join "\n" | save --force $"($out)/sizes.tsv"
     let theme = $design
-    let pid = (with-env { DODAI_THEME: $theme, DODAI_SIZES: $"($out)/sizes.tsv" } { job spawn { ^target/debug/examples/frames | save --force $manifest } })
+    let pid = (with-env { DODAI_THEME: $theme, DODAI_SIZES: $"($out)/sizes.tsv", DODAI_PROBE: (if $probe { "1" } else { null }) } { job spawn { ^target/debug/examples/frames | save --force $manifest } })
     sleep $wait
     # the window by its id: it is captured even when something covers it
     let wid = (^osascript -l JavaScript scripts/window-id.js | str trim)
@@ -32,10 +33,15 @@ def main [
     ^pkill -x frames | complete | ignore
     try { job kill $pid }
     let win = (open $manifest --raw | lines | first | split row "\t")
-    let shot_h = (^sips -g pixelHeight $"($out)/shot.png" | lines | last | split row ": " | last | into float)
-    let shot_w = (^sips -g pixelWidth $"($out)/shot.png" | lines | last | split row ": " | last | into float)
+    let dims = (cargo run -q -p dodai-diff -- size $"($out)/shot.png" | split row " " | each { into float })
+    let shot_w = $dims.0
+    let shot_h = $dims.1
     let scale = ($shot_w / ($win.1 | into float))
     let top = ($shot_h / $scale - ($win.2 | into float))
+    if $probe {
+        cargo run -q -p dodai-diff -- probe $"($out)/shot.png" $manifest --scale ($scale | into string) --top $top
+        return
+    }
     for l in (open $manifest --raw | lines | skip 1) {
         let name = ($l | split row "\t" | first)
         let id = ($ids | get -o $name | get -o id)

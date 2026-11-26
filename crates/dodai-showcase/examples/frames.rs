@@ -44,21 +44,26 @@ fn frames() -> Vec<(&'static str, Make)> {
             div()
                 .flex()
                 .flex_col()
-                .child(Heading::new("Heading").level(2))
-                .child(Label::new("Label"))
+                .child(Heading::new("Heading").level(1))
+                .child(Label::new("Body text"))
+                .child(Muted::new("Label"))
+                .child(Mono::new("Mono 0x2A"))
                 .into_any_element()
         }),
         ("Mono / Muted", || {
             div()
                 .flex()
                 .flex_col()
-                .child(Mono::new("mono"))
-                .child(Muted::new("muted"))
+                .child(Mono::new("fn main()"))
+                .child(Muted::new("muted caption"))
                 .into_any_element()
         }),
         ("Fab", || Fab::new("f", "+").into_any_element()),
         ("IconButton", || {
-            IconButton::new("ib", "+").into_any_element()
+            IconButton::new("ib", "+")
+                .icon(dodai_gpui::icons::IconName::Heart)
+                .variant(dodai_core::ButtonVariant::Outline)
+                .into_any_element()
         }),
         ("Rating", || Rating::new("r", 3.0).into_any_element()),
         ("Knob", || Knob::new("k", 0.5).into_any_element()),
@@ -72,7 +77,10 @@ fn frames() -> Vec<(&'static str, Make)> {
             Toast::new(Tone::Success, "Saved").into_any_element()
         }),
         ("Banner", || {
-            Alert::new(Tone::Info, "Heads up").into_any_element()
+            div()
+                .w(px(360.0))
+                .child(Alert::new(Tone::Info, "Update available").banner(true))
+                .into_any_element()
         }),
         ("Chip states", || {
             Chip::new("c", "Assist").into_any_element()
