@@ -7,9 +7,10 @@
 
 use dodai_core::Tone;
 use dodai_gpui::{
-    hsla, theme_of, Alert, Badge, Breadcrumb, Checkbox, Chip, CircularProgress, CodeBlock, Divider,
-    Fab, Heading, IconButton, IndeterminateBar, Kbd, Knob, Label, Mono, Muted, NumberStepper,
-    Pagination, ProgressBar, Rating, Skeleton, Stepper, Tag, Toast, Toggle,
+    hsla, theme_of, Accordion, Alert, Badge, Breadcrumb, Checkbox, Chip, CircularProgress,
+    CodeBlock, Divider, Fab, Heading, IconButton, IndeterminateBar, Kbd, Knob, Label, ListItem,
+    Menu, MenuItem, Mono, Muted, NumberStepper, Pagination, ProgressBar, Rating, SearchBar,
+    Segmented, Skeleton, Stepper, Tag, Toast, Toggle,
 };
 use gpui::prelude::*;
 use gpui::{div, px, size, AnyElement, App, Application, Bounds, Context, Window, WindowOptions};
@@ -66,6 +67,37 @@ fn frames() -> Vec<(&'static str, Make)> {
         }),
         ("CodeBlock", || {
             CodeBlock::new("cbk", "let x = 1;").into_any_element()
+        }),
+        ("Segmented", || {
+            Segmented::new("seg", ["Day", "Week", "Month"]).into_any_element()
+        }),
+        ("Accordion", || {
+            div()
+                .w(px(320.0))
+                .child(
+                    Accordion::new("acc")
+                        .item("First", "Body of the first")
+                        .item("Second", "Body of the second"),
+                )
+                .into_any_element()
+        }),
+        ("Menu", || {
+            div()
+                .w(px(200.0))
+                .child(Menu::new("menu").items([MenuItem::new("Open"), MenuItem::new("Save")]))
+                .into_any_element()
+        }),
+        ("ListItem", || {
+            div()
+                .w(px(300.0))
+                .child(ListItem::new("li", "List item"))
+                .into_any_element()
+        }),
+        ("SearchBar", || {
+            div()
+                .w(px(300.0))
+                .child(SearchBar::new("sb"))
+                .into_any_element()
         }),
         ("ProgressBar", || {
             div()
