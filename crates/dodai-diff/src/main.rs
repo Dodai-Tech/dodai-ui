@@ -67,10 +67,15 @@ fn grid(rest: &[String]) -> ExitCode {
             continue;
         };
         // the design's frames are transparent: lay them on the colour around the component
+        // the design's frames are transparent: lay them on the colour around the component,
+        // sampled in the cell's own free corner (a glow or bloom near the edge skews the gutter)
+        let free = Picture::open(&Path::new(dir).join(format!("{file}.png")))
+            .map(|p| (p.width, p.height))
+            .unwrap_or((0, 0));
         let bg = shot
             .at(
-                ((x - 4.0) * scale) as usize,
-                ((y + top - 4.0) * scale) as usize,
+                ((x * scale) as usize) + free.0 + (8.0 * scale) as usize,
+                (((y + top) * scale) as usize) + free.1 + (8.0 * scale) as usize,
             )
             .unwrap_or([255, 255, 255]);
         let design = match Picture::open_on(&Path::new(dir).join(format!("{file}.png")), bg) {
