@@ -133,7 +133,20 @@ impl Render for Grid {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let bg = hsla(theme_of(cx).palette.background);
         let mut root = div().size_full().bg(bg).relative();
+        let probe = std::env::var("DODAI_PROBE").is_ok_and(|v| v == "1");
         for (_, make, x, y, w, h) in layout().cells {
+            if probe {
+                // alignment self-test: a magenta square at each cell origin, read by `dodai-diff probe`
+                root = root.child(
+                    div()
+                        .absolute()
+                        .left(px(x))
+                        .top(px(y))
+                        .size(px(16.0))
+                        .bg(gpui::rgb(0xff00ff)),
+                );
+                continue;
+            }
             root = root.child(
                 div()
                     .absolute()

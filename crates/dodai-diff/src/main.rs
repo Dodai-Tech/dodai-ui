@@ -98,8 +98,8 @@ fn grid(rest: &[String]) -> ExitCode {
             "{:>6.2}% px {:>6.2}% blocks  {name}  gpui {}  design {}",
             r.pixels,
             r.blocks,
-            fmt(mine.content(bg, 24)),
-            fmt(design.content(bg, 24)),
+            fmt(mine.content(bg, 6)),
+            fmt(design.content(bg, 6)),
         );
         failed |= max.is_some_and(|m| r.blocks > m);
     }
@@ -110,8 +110,91 @@ fn grid(rest: &[String]) -> ExitCode {
     }
 }
 
+/// `dodai-diff size FILE` prints `W H` in pixels.
+fn size(rest: &[String]) -> ExitCode {
+    match rest.first().map(|p| Picture::open(Path::new(p))) {
+        Some(Ok(p)) => {
+            println!("{} {}", p.width, p.height);
+            ExitCode::SUCCESS
+        }
+        Some(Err(e)) => {
+            eprintln!("{e}");
+            ExitCode::from(2)
+        }
+        None => {
+            eprintln!("usage: dodai-diff size FILE");
+            ExitCode::from(2)
+        }
+    }
+}
+
+/// Magenta, loosely: the display's colour profile shifts what the screenshot holds.
+fn is_probe(p: Option<[u8; 3]>) -> bool {
+    p.is_some_and(|[r, g, b]| r > 200 && b > 200 && g < 130)
+}
+
+/// `dodai-diff probe SHOT MANIFEST --scale S --top T`: the screenshot was taken with
+/// `DODAI_PROBE=1`, so each cell holds a 16pt magenta square at its origin. Checks that every
+/// square sits exactly where the manifest says (so the crop offsets of `grid` are right).
+fn probe(rest: &[String]) -> ExitCode {
+    let (mut pos, mut scale, mut top) = (Vec::new(), 1.0f32, 0.0f32);
+    let mut it = rest.iter();
+    while let Some(a) = it.next() {
+        match a.as_str() {
+            "--scale" => scale = it.next().and_then(|v| v.parse().ok()).unwrap_or(scale),
+            "--top" => top = it.next().and_then(|v| v.parse().ok()).unwrap_or(top),
+            _ => pos.push(a.clone()),
+        }
+    }
+    let [shot, manifest] = pos.as_slice() else {
+        eprintln!("usage: dodai-diff probe SHOT MANIFEST --scale S --top T");
+        return ExitCode::from(2);
+    };
+    let Ok(shot) = Picture::open(Path::new(shot)) else {
+        eprintln!("cannot read {shot}");
+        return ExitCode::from(2);
+    };
+    let text = std::fs::read_to_string(manifest).unwrap_or_default();
+    let (mut bad, mut n) = (0, 0);
+    for line in text.lines().filter(|l| !l.starts_with("window")) {
+        let f: Vec<&str> = line.split('\t').collect();
+        let [name, x, y] = f.as_slice() else { continue };
+        let (Ok(x), Ok(y)) = (x.parse::<f32>(), y.parse::<f32>()) else {
+            continue;
+        };
+        let (px, py) = ((x * scale) as usize, ((y + top) * scale) as usize);
+        let side = (16.0 * scale) as usize;
+        let inside = is_probe(shot.at(px, py)) && is_probe(shot.at(px + side - 1, py + side - 1));
+        let outside = !is_probe(shot.at(px.wrapping_sub(2), py))
+            && !is_probe(shot.at(px, py.wrapping_sub(2)))
+            && !is_probe(shot.at(px + side + 1, py + side + 1));
+        n += 1;
+        if !(inside && outside) {
+            bad += 1;
+            println!("probe off: {name} at {x},{y}");
+        }
+    }
+    let first = (0..shot.height)
+        .flat_map(|y| (0..shot.width).map(move |x| (x, y)))
+        .find(|&(x, y)| is_probe(shot.at(x, y)));
+    if let Some((x, y)) = first {
+        println!("first square at pixel {x},{y}");
+    }
+    println!("probe: {} of {n} squares in place", n - bad);
+    if bad > 0 || n == 0 {
+        ExitCode::FAILURE
+    } else {
+        ExitCode::SUCCESS
+    }
+}
+
 fn main() -> ExitCode {
     let all: Vec<String> = std::env::args().skip(1).collect();
+    match all.first().map(String::as_str) {
+        Some("size") => return size(&all[1..]),
+        Some("probe") => return probe(&all[1..]),
+        _ => {}
+    }
     if all.first().map(String::as_str) == Some("grid") {
         return grid(&all[1..]);
     }
