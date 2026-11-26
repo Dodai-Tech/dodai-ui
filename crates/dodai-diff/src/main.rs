@@ -27,7 +27,84 @@ fn run(a: &Path, b: &Path, opt: Options, out: Option<&Path>) -> Result<Report, d
     Ok(r)
 }
 
+/// `dodai-diff grid SHOT MANIFEST DESIGN_DIR --scale S --top T [--out DIR] [--max-blocks P]`:
+/// the screenshot holds a grid of components (`MANIFEST`: `window W H`, then `name X Y` in points,
+/// tab separated); each is cropped to the size of the design export of the same name and compared.
+fn grid(rest: &[String]) -> ExitCode {
+    let (mut pos, mut scale, mut top, mut out, mut max) =
+        (Vec::new(), 1.0f32, 0.0f32, None::<PathBuf>, None::<f32>);
+    let mut it = rest.iter();
+    while let Some(a) = it.next() {
+        match a.as_str() {
+            "--scale" => scale = it.next().and_then(|v| v.parse().ok()).unwrap_or(scale),
+            "--top" => top = it.next().and_then(|v| v.parse().ok()).unwrap_or(top),
+            "--out" => out = it.next().map(PathBuf::from),
+            "--max-blocks" => max = it.next().and_then(|v| v.parse().ok()),
+            _ => pos.push(a.clone()),
+        }
+    }
+    let [shot, manifest, dir] = pos.as_slice() else {
+        eprintln!("usage: dodai-diff grid SHOT MANIFEST DESIGN_DIR --scale S --top T [--out DIR] [--max-blocks P]");
+        return ExitCode::from(2);
+    };
+    let shot = match Picture::open(Path::new(shot)) {
+        Ok(p) => p,
+        Err(e) => {
+            eprintln!("{e}");
+            return ExitCode::from(2);
+        }
+    };
+    if let Some(o) = &out {
+        let _ = std::fs::create_dir_all(o);
+    }
+    let text = std::fs::read_to_string(manifest).unwrap_or_default();
+    let mut failed = false;
+    for line in text.lines().filter(|l| !l.starts_with("window")) {
+        let f: Vec<&str> = line.split('\t').collect();
+        let [name, x, y] = f.as_slice() else { continue };
+        let (Ok(x), Ok(y)) = (x.parse::<f32>(), y.parse::<f32>()) else {
+            continue;
+        };
+        // the design's frames are transparent: lay them on the colour around the component
+        let bg = shot
+            .at(
+                ((x - 4.0) * scale) as usize,
+                ((y + top - 4.0) * scale) as usize,
+            )
+            .unwrap_or([255, 255, 255]);
+        let design = match Picture::open_on(&Path::new(dir).join(format!("{name}.png")), bg) {
+            Ok(p) => p,
+            Err(_) => {
+                println!("   no design export: {name}");
+                failed = true;
+                continue;
+            }
+        };
+        let mine = shot.crop(
+            (x * scale) as usize,
+            ((y + top) * scale) as usize,
+            design.width,
+            design.height,
+        );
+        let (r, img) = compare(&mine, &design, Options::default());
+        if let Some(o) = &out {
+            let _ = img.save(&o.join(format!("{name}.png")));
+        }
+        println!("{:>6.2}% px {:>6.2}% blocks  {name}", r.pixels, r.blocks);
+        failed |= max.is_some_and(|m| r.blocks > m);
+    }
+    if failed {
+        ExitCode::FAILURE
+    } else {
+        ExitCode::SUCCESS
+    }
+}
+
 fn main() -> ExitCode {
+    let all: Vec<String> = std::env::args().skip(1).collect();
+    if all.first().map(String::as_str) == Some("grid") {
+        return grid(&all[1..]);
+    }
     let mut args = std::env::args().skip(1);
     let (mut pos, mut opt, mut out, mut json, mut max) = (
         Vec::<PathBuf>::new(),

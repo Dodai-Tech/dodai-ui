@@ -58,6 +58,11 @@ impl Picture {
 
     /// Decodes a PNG (any colour type of 8 bits) and flattens it on white.
     pub fn open(path: &Path) -> Result<Self, Error> {
+        Self::open_on(path, [255, 255, 255])
+    }
+
+    /// Like [`Picture::open`], with transparency flattened on `bg`.
+    pub fn open_on(path: &Path, bg: [u8; 3]) -> Result<Self, Error> {
         let file = std::fs::File::open(path)
             .map_err(|e| Error::Read(format!("{}: {e}", path.display())))?;
         let mut dec = png::Decoder::new(std::io::BufReader::new(file));
@@ -75,14 +80,19 @@ impl Picture {
             .next_frame(&mut buf)
             .map_err(|e| Error::Read(format!("{}: {e}", path.display())))?;
         let n = info.color_type.samples();
-        let flat = |c: u8, a: u8| ((c as u32 * a as u32 + 255 * (255 - a as u32)) / 255) as u8;
+        let flat =
+            |c: u8, a: u8, b: u8| ((c as u32 * a as u32 + b as u32 * (255 - a as u32)) / 255) as u8;
         let rgb = buf[..info.buffer_size()]
             .chunks_exact(n)
             .map(|p| match n {
                 1 => [p[0]; 3],
-                2 => [flat(p[0], p[1]); 3],
+                2 => [flat(p[0], p[1], bg[0]); 3],
                 3 => [p[0], p[1], p[2]],
-                _ => [flat(p[0], p[3]), flat(p[1], p[3]), flat(p[2], p[3])],
+                _ => [
+                    flat(p[0], p[3], bg[0]),
+                    flat(p[1], p[3], bg[1]),
+                    flat(p[2], p[3], bg[2]),
+                ],
             })
             .collect();
         Ok(Self {
@@ -92,8 +102,22 @@ impl Picture {
         })
     }
 
-    fn at(&self, x: usize, y: usize) -> Option<[u8; 3]> {
+    /// The colour at `(x, y)`, if inside.
+    pub fn at(&self, x: usize, y: usize) -> Option<[u8; 3]> {
         (x < self.width && y < self.height).then(|| self.rgb[y * self.width + x])
+    }
+
+    /// The `w` x `h` part at `(x, y)`; what lies outside the picture is white.
+    pub fn crop(&self, x: usize, y: usize, w: usize, h: usize) -> Self {
+        let mut out = Self::solid(w, h, [255, 255, 255]);
+        for j in 0..h {
+            for i in 0..w {
+                if let Some(c) = self.at(x + i, y + j) {
+                    out.rgb[j * w + i] = c;
+                }
+            }
+        }
+        out
     }
 
     /// Writes this picture as a PNG.
@@ -262,6 +286,16 @@ mod tests {
         assert_eq!(r.pixels, 25.0);
         assert_eq!(r.blocks, 25.0);
         assert_eq!(d.rgb[0], [230, 30, 30]);
+    }
+
+    #[test]
+    fn crop_takes_the_part_and_pads_with_white() {
+        let mut a = Picture::solid(4, 4, [0, 0, 0]);
+        a.rgb[5] = [9, 9, 9];
+        let c = a.crop(1, 1, 5, 2);
+        assert_eq!(c.rgb[0], [9, 9, 9]);
+        assert_eq!(c.rgb[4], [255, 255, 255]);
+        assert_eq!((c.width, c.height), (5, 2));
     }
 
     #[test]
