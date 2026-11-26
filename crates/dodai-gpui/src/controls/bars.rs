@@ -184,17 +184,7 @@ impl ProgressBar {
         if self.wavy && t.look().tonal {
             return wavy_bar(&t, value * g, self.tone).into_any_element();
         }
-        bar(
-            &t,
-            value * g,
-            self.tone,
-            if t.look().tonal {
-                4.0
-            } else {
-                t.spacing.sm + 2.0
-            },
-        )
-        .into_any_element()
+        bar(&t, value * g, self.tone, t.sizes().bar_thickness).into_any_element()
     }
 }
 

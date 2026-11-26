@@ -91,7 +91,16 @@ fn grid(rest: &[String]) -> ExitCode {
         if let Some(o) = &out {
             let _ = img.save(&o.join(format!("{file}.png")));
         }
-        println!("{:>6.2}% px {:>6.2}% blocks  {name}", r.pixels, r.blocks);
+        let fmt = |b: Option<(usize, usize, usize, usize)>| {
+            b.map_or("empty".into(), |(x, y, w, h)| format!("{w}x{h}@{x},{y}"))
+        };
+        println!(
+            "{:>6.2}% px {:>6.2}% blocks  {name}  gpui {}  design {}",
+            r.pixels,
+            r.blocks,
+            fmt(mine.content(bg, 24)),
+            fmt(design.content(bg, 24)),
+        );
         failed |= max.is_some_and(|m| r.blocks > m);
     }
     if failed {

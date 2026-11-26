@@ -120,6 +120,20 @@ impl Picture {
         out
     }
 
+    /// The box `(x, y, w, h)` holding every pixel that is not `bg` (within `tol`), if any.
+    pub fn content(&self, bg: [u8; 3], tol: u8) -> Option<(usize, usize, usize, usize)> {
+        let far = |c: [u8; 3]| c.iter().zip(bg).any(|(a, b)| a.abs_diff(b) > tol);
+        let (mut x0, mut y0, mut x1, mut y1) = (usize::MAX, usize::MAX, 0, 0);
+        for y in 0..self.height {
+            for x in 0..self.width {
+                if far(self.rgb[y * self.width + x]) {
+                    (x0, y0, x1, y1) = (x0.min(x), y0.min(y), x1.max(x), y1.max(y));
+                }
+            }
+        }
+        (x1 >= x0 && y1 >= y0).then(|| (x0, y0, x1 - x0 + 1, y1 - y0 + 1))
+    }
+
     /// Writes this picture as a PNG.
     pub fn save(&self, path: &Path) -> Result<(), Error> {
         let werr = |e: &dyn std::fmt::Display| Error::Write(format!("{}: {e}", path.display()));

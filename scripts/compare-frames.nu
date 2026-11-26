@@ -24,16 +24,15 @@ def main [
     let theme = $design
     let pid = (with-env { DODAI_THEME: $theme } { job spawn { ^target/debug/examples/frames | save --force $manifest } })
     sleep $wait
-    ^osascript -e 'tell application "System Events" to set frontmost of process "frames" to true' | complete | ignore
-    sleep 1sec
-    let r = (^osascript -e 'tell application "System Events" to tell process "frames" to get {position, size} of window 1' | complete)
-    if $r.exit_code != 0 { error make { msg: "no window (Screen Recording / Accessibility permission?)" } }
-    let n = ($r.stdout | str trim | split row ", " | each { into int })
-    ^screencapture -x -R $"($n.0),($n.1),($n.2),($n.3)" $"($out)/shot.png"
+    # the window by its id: it is captured even when something covers it
+    let wid = (^osascript -l JavaScript scripts/window-id.js | str trim)
+    if $wid == "" { error make { msg: "no window (Screen Recording permission?)" } }
+    ^screencapture -x -o -l $wid $"($out)/shot.png"
     ^pkill -x frames | complete | ignore
     try { job kill $pid }
     let win = (open $manifest --raw | lines | first | split row "\t")
-    let top = ($n.3 - ($win.2 | into float | math round))
+    let shot_h = (^sips -g pixelHeight $"($out)/shot.png" | lines | last | split row ": " | last | into float)
+    let top = ($shot_h / 2 - ($win.2 | into float))
     for l in (open $manifest --raw | lines | skip 1) {
         let name = ($l | split row "\t" | first)
         let id = ($ids | get -o $name)
