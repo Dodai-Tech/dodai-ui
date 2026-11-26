@@ -7,8 +7,9 @@
 
 use dodai_core::Tone;
 use dodai_gpui::{
-    hsla, theme_of, Alert, Badge, Breadcrumb, Chip, Divider, Fab, Heading, IconButton, Kbd, Knob,
-    Label, Mono, Muted, Pagination, ProgressBar, Rating, Tag, Toast,
+    hsla, theme_of, Alert, Badge, Breadcrumb, Checkbox, Chip, CircularProgress, CodeBlock, Divider,
+    Fab, Heading, IconButton, IndeterminateBar, Kbd, Knob, Label, Mono, Muted, NumberStepper,
+    Pagination, ProgressBar, Rating, Skeleton, Stepper, Tag, Toast, Toggle,
 };
 use gpui::prelude::*;
 use gpui::{div, px, size, AnyElement, App, Application, Bounds, Context, Window, WindowOptions};
@@ -25,6 +26,47 @@ type Make = fn() -> AnyElement;
 /// Every component of the grid, by design-frame name.
 fn frames() -> Vec<(&'static str, Make)> {
     vec![
+        ("Switch states", || {
+            div()
+                .flex()
+                .gap(px(16.0))
+                .child(Toggle::new("sw-on", true))
+                .child(Toggle::new("sw-off", false))
+                .into_any_element()
+        }),
+        ("Checkbox states", || {
+            div()
+                .flex()
+                .gap(px(16.0))
+                .child(Checkbox::new("cb-on", true))
+                .child(Checkbox::new("cb-off", false))
+                .child(Checkbox::new("cb-mix", false).indeterminate(true))
+                .into_any_element()
+        }),
+        ("Stepper", || {
+            Stepper::new(["Cart", "Ship", "Pay"], 1).into_any_element()
+        }),
+        ("Skeleton", || {
+            div()
+                .w(px(200.0))
+                .child(Skeleton::new("sk"))
+                .into_any_element()
+        }),
+        ("IndeterminateBar", || {
+            div()
+                .w(px(220.0))
+                .child(IndeterminateBar::new("ib-bar"))
+                .into_any_element()
+        }),
+        ("CircularProgress", || {
+            CircularProgress::new(0.6).into_any_element()
+        }),
+        ("NumberStepper", || {
+            NumberStepper::new("ns", 3).into_any_element()
+        }),
+        ("CodeBlock", || {
+            CodeBlock::new("cbk", "let x = 1;").into_any_element()
+        }),
         ("ProgressBar", || {
             div()
                 .w(px(220.0))
