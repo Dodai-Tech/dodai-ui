@@ -13,10 +13,10 @@ use dodai_gpui::{
 use gpui::prelude::*;
 use gpui::{div, px, size, AnyElement, App, Application, Bounds, Context, Window, WindowOptions};
 
-const COLS: usize = 4;
-/// Cell side in points; the component sits `PAD` in from the corner.
-const CELL: (f32, f32) = (300.0, 140.0);
-const PAD: f32 = 20.0;
+/// Space between cells and around the grid, in points.
+const GAP: f32 = 24.0;
+/// The grid wraps to a new row past this width.
+const MAX_WIDTH: f32 = 1600.0;
 
 type Make = fn() -> AnyElement;
 
@@ -86,19 +86,62 @@ fn frames() -> Vec<(&'static str, Make)> {
     ]
 }
 
+/// Where each component sits: a shelf layout of cells the size of the design frame (read from the
+/// tab-separated `name w h` file in `DODAI_SIZES`), `GAP` apart, so nothing overlaps.
+struct Layout {
+    cells: Vec<(&'static str, Make, f32, f32, f32, f32)>,
+    width: f32,
+    height: f32,
+}
+
+fn layout() -> Layout {
+    let sizes: std::collections::HashMap<String, (f32, f32)> = std::env::var("DODAI_SIZES")
+        .ok()
+        .and_then(|p| std::fs::read_to_string(p).ok())
+        .unwrap_or_default()
+        .lines()
+        .filter_map(|l| {
+            let f: Vec<&str> = l.split('\t').collect();
+            Some((
+                f.first()?.to_string(),
+                (f.get(1)?.parse().ok()?, f.get(2)?.parse().ok()?),
+            ))
+        })
+        .collect();
+    let (mut x, mut y, mut row_h, mut width) = (GAP, GAP, 0.0f32, 0.0f32);
+    let mut cells = Vec::new();
+    for (name, make) in frames() {
+        let (w, h) = sizes.get(name).copied().unwrap_or((300.0, 140.0));
+        if x > GAP && x + w > MAX_WIDTH {
+            (x, y, row_h) = (GAP, y + row_h + GAP, 0.0);
+        }
+        cells.push((name, make, x, y, w, h));
+        width = width.max(x + w + GAP);
+        row_h = row_h.max(h);
+        x += w + GAP;
+    }
+    Layout {
+        cells,
+        width,
+        height: y + row_h + GAP,
+    }
+}
+
 struct Grid;
 
 impl Render for Grid {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let bg = hsla(theme_of(cx).palette.background);
-        let mut root = div().size_full().bg(bg).flex().flex_wrap().content_start();
-        for (_, make) in frames() {
+        let mut root = div().size_full().bg(bg).relative();
+        for (_, make, x, y, w, h) in layout().cells {
             root = root.child(
                 div()
-                    .w(px(CELL.0))
-                    .h(px(CELL.1))
-                    .flex_none()
-                    .p(px(PAD))
+                    .absolute()
+                    .left(px(x))
+                    .top(px(y))
+                    .w(px(w))
+                    .h(px(h))
+                    .overflow_hidden()
                     .child(div().flex().child(make())),
             );
         }
@@ -107,18 +150,11 @@ impl Render for Grid {
 }
 
 fn main() {
-    let (w, h) = (
-        COLS as f32 * CELL.0,
-        frames().len().div_ceil(COLS) as f32 * CELL.1,
-    );
+    let lay = layout();
+    let (w, h) = (lay.width, lay.height);
     println!("window\t{w}\t{h}");
-    for (i, (name, _)) in frames().iter().enumerate() {
-        let (c, r) = (i % COLS, i / COLS);
-        println!(
-            "{name}\t{}\t{}",
-            c as f32 * CELL.0 + PAD,
-            r as f32 * CELL.1 + PAD
-        );
+    for (name, _, x, y, _, _) in &lay.cells {
+        println!("{name}\t{x}\t{y}");
     }
     Application::new().run(move |cx: &mut App| {
         let mut sw = dodai_core::switcher();
@@ -127,10 +163,20 @@ fn main() {
         }
         dodai_gpui::install_switcher(cx, sw);
         dodai_gpui::motion::set_enabled(cx, false);
-        let bounds = Bounds::centered(None, size(px(w), px(h)), cx);
+        // the biggest display: the frames sit well there and a lock or covering window is rare
+        let big = cx
+            .displays()
+            .into_iter()
+            .max_by_key(|d| {
+                let b = d.bounds();
+                (f32::from(b.size.width) * f32::from(b.size.height)) as i64
+            })
+            .map(|d| d.id());
+        let bounds = Bounds::centered(big, size(px(w), px(h)), cx);
         cx.open_window(
             WindowOptions {
                 window_bounds: Some(gpui::WindowBounds::Windowed(bounds)),
+                display_id: big,
                 ..Default::default()
             },
             |_, cx| cx.new(|_| Grid),

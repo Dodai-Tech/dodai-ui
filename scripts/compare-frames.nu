@@ -21,8 +21,9 @@ def main [
     # the frames of the design's Components page, by name
     let ids = (open --raw scripts/design/frame-ids.js | str replace "PAGE" $"($page) / Components"
         | bunx @open-pencil/cli eval dist/design/dodai.fig --stdin | from json)
+    $ids | items {|k, v| $"($k)\t($v.w)\t($v.h)" } | str join "\n" | save --force $"($out)/sizes.tsv"
     let theme = $design
-    let pid = (with-env { DODAI_THEME: $theme } { job spawn { ^target/debug/examples/frames | save --force $manifest } })
+    let pid = (with-env { DODAI_THEME: $theme, DODAI_SIZES: $"($out)/sizes.tsv" } { job spawn { ^target/debug/examples/frames | save --force $manifest } })
     sleep $wait
     # the window by its id: it is captured even when something covers it
     let wid = (^osascript -l JavaScript scripts/window-id.js | str trim)
@@ -32,13 +33,15 @@ def main [
     try { job kill $pid }
     let win = (open $manifest --raw | lines | first | split row "\t")
     let shot_h = (^sips -g pixelHeight $"($out)/shot.png" | lines | last | split row ": " | last | into float)
-    let top = ($shot_h / 2 - ($win.2 | into float))
+    let shot_w = (^sips -g pixelWidth $"($out)/shot.png" | lines | last | split row ": " | last | into float)
+    let scale = ($shot_w / ($win.1 | into float))
+    let top = ($shot_h / $scale - ($win.2 | into float))
     for l in (open $manifest --raw | lines | skip 1) {
         let name = ($l | split row "\t" | first)
-        let id = ($ids | get -o $name)
+        let id = ($ids | get -o $name | get -o id)
         if $id != null {
-            bunx @open-pencil/cli export dist/design/dodai.fig --node $id -f png --scale 2 -o $"($out)/design/($name | str replace --all --regex '[/ ]' '_').png" | ignore
+            bunx @open-pencil/cli export dist/design/dodai.fig --node $id -f png --scale ($scale | into string) -o $"($out)/design/($name | str replace --all --regex '[/ ]' '_').png" | ignore
         }
     }
-    cargo run -q -p dodai-diff -- grid $"($out)/shot.png" $manifest $"($out)/design" --scale 2 --top $top --out $"($out)/diff" --max-blocks ($max_blocks | into string)
+    cargo run -q -p dodai-diff -- grid $"($out)/shot.png" $manifest $"($out)/design" --scale ($scale | into string) --top $top --out $"($out)/diff" --max-blocks ($max_blocks | into string)
 }
