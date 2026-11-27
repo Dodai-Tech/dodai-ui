@@ -80,6 +80,8 @@ struct Cfg {
     gradient: Option<Gradient>,
     probe: Option<(f32, f32)>,
     ring: bool,
+    axes: bool,
+    neighbours: bool,
 }
 
 impl Default for Cfg {
@@ -101,6 +103,8 @@ impl Default for Cfg {
             gradient: None,
             probe: None,
             ring: false,
+            axes: false,
+            neighbours: true,
         }
     }
 }
@@ -186,6 +190,14 @@ impl VoronoiChart {
         c.cfg.borders = false;
         c
     }
+    setter!(
+        /// Tick labels along the bottom and left edges, in data units (default: off).
+        axes, axes: bool
+    );
+    setter!(
+        /// Hovering a point links it to the points whose cells touch its own (default: on).
+        neighbours, neighbours: bool
+    );
     setter!(
         /// Draw the Delaunay links between neighbouring points (default: off).
         links, links: bool
@@ -455,6 +467,29 @@ impl VoronoiChart {
                 }
                 (at, links)
             };
+            if cfg.axes {
+                let (x0, y0, sx, sy) = frame(&paint_points);
+                let tone = scale_alpha(ink, 0.6 * a);
+                for q in 0..=4 {
+                    let f = q as f32 / 4.0;
+                    let xv = fmt_with(&None, x0 + sx * f);
+                    name.centred(w, cx, &xv, (b.origin, (f * bw, bh - size)), 60.0, tone);
+                    let yv = fmt_with(&None, y0 + sy * f);
+                    name.centred(w, cx, &yv, (b.origin, (14.0, (1.0 - f) * bh)), 40.0, tone);
+                }
+            }
+            for k in (0..n).filter(|k| cfg.neighbours && looks[*k].lift > 0.01) {
+                for &(i, j) in link_at.iter().filter(|(i, j)| *i == k || *j == k) {
+                    stroke(
+                        w,
+                        b.origin,
+                        &[dot_at[i], dot_at[j]],
+                        2.0,
+                        scale_alpha(ink, 0.9 * a),
+                        false,
+                    );
+                }
+            }
             if cfg.links {
                 for &(i, j) in &link_at {
                     stroke(

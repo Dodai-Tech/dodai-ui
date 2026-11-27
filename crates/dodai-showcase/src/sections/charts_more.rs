@@ -346,6 +346,7 @@ impl Showcase {
                         VoronoiPoint::new("Airport", 50.0, 4.0),
                     ])
                     .links(true)
+                    .axes(true)
                     .height(440.0)
                     .format(|v| format!("{v:.0}"))
                     .into_any_element(),
