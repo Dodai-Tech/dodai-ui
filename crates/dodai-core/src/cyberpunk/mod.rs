@@ -137,7 +137,7 @@ fn build(
         effects: Effects {
             glow: primary_c.with_alpha(0.55),
             glow_blur: 14.0,
-            glow_intensity: 1.0,
+            glow_intensity: 0.15,
             scanlines: scan,
             hard_shadow: 4.0,
             shadow: fx.0,
@@ -217,7 +217,7 @@ fn build_light(meta: ThemeMeta, l: Light) -> Theme {
         effects: Effects {
             glow: primary_c.with_alpha(0.3),
             glow_blur: 8.0,
-            glow_intensity: 0.4,
+            glow_intensity: 0.15,
             scanlines: false,
             hard_shadow: 4.0,
             shadow: fx.0,

@@ -977,8 +977,8 @@ pub fn run() {
             dodai_gpui::set_chart_monochrome(cx, true);
         }
         window_shortcuts(cx);
-        // Textures and animated effects start off; glow starts at a subtle 0.25 (hover feedback).
-        set_glow_intensity(cx, 0.25);
+        // Textures and animated effects start off; glow starts at a faint 0.15 (hover feedback).
+        set_glow_intensity(cx, 0.15);
         // The old per-component scanline body stays off; scanlines are a texture now.
         set_scanlines(cx, false);
         // Debug: DODAI_TUNE=round=0.0,width=3,fill=accent,all starts with that tuning.

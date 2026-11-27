@@ -122,7 +122,7 @@ Themes (modes): `cyberpunk-acid-light`, `cyberpunk-acid`, `cyberpunk-cyan-light`
 | --- | --- |
 | `glow` | `#fcee0a8c` |
 | `glow-blur` | `14px` |
-| `glow-intensity` | `1` |
+| `glow-intensity` | `0.15` |
 | `hard-shadow` | `4px` |
 | `scanlines` | `on` |
 
