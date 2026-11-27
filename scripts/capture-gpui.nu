@@ -21,12 +21,12 @@ def main [
         let name = ($t | str replace --all --regex '[^A-Za-z0-9]+' '_' | str trim --char '_')
         let pid = (with-env { DODAI_ONLY: $t, DODAI_SIZE: $size } { job spawn { ^$bin | ignore } })
         sleep $wait
-        let r = (^osascript -e 'tell application "System Events" to tell process "gpui_showcase" to get {position, size} of window 1' | complete)
-        if $r.exit_code == 0 {
-            let n = ($r.stdout | str trim | split row ", " | each { into int })
-            ^screencapture -x -R $"($n.0),($n.1),($n.2),($n.3)" ($out | path join $"($name).png")
-        } else {
+        # by window id, so a window on top of it cannot end up in the picture
+        let wid = (with-env { WINDOW_OWNER: "gpui_showcase" } { ^osascript -l JavaScript scripts/window-id.js } | str trim)
+        if $wid == "" {
             print $"skip ($t): no window"
+        } else {
+            ^screencapture -x -o -l $wid ($out | path join $"($name).png")
         }
         ^pkill gpui_showcase | complete | ignore
         try { job kill $pid }

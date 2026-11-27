@@ -9,7 +9,7 @@ use dodai_charts::hierarchy::{partition, Node};
 use dodai_charts::layers::{stack_layers, StackOffset};
 use dodai_charts::{
     cascade, chord, fan, force, hexbin, horizon, milestones, pack, peaks, rank, sankey, shards,
-    share, swarm,
+    share, swarm, voronoi,
 };
 use dodai_core::Theme;
 
@@ -367,6 +367,50 @@ pub fn hex_bins(t: &Theme, w: f32, h: f32, now: f32) -> Plot {
         })
         .collect();
     plot(w, h, fills, Vec::new())
+}
+
+/// A Voronoi diagram: a point set drifting slowly, each cell tinted by its point's group, the
+/// Delaunay links drawn over it.
+pub fn voronoi_map(t: &Theme, w: f32, h: f32, now: f32) -> Plot {
+    let sites: Vec<(f32, f32)> = (0..11)
+        .map(|i| {
+            let (fx, fy) = (gauss(i, 3.0) * 0.5 + 0.5, gauss(i, 9.0) * 0.5 + 0.5);
+            (
+                w * (0.08 + 0.84 * fx.clamp(0.0, 1.0)) + 5.0 * (now * 0.4 + i as f32).sin(),
+                h * (0.08 + 0.84 * fy.clamp(0.0, 1.0)) + 5.0 * (now * 0.3 + i as f32 * 1.7).cos(),
+            )
+        })
+        .collect();
+    let d = voronoi::diagram(&sites, w, h);
+    let fills: Vec<crate::plot::Poly> = d
+        .cells
+        .iter()
+        .enumerate()
+        .filter(|(_, c)| c.len() > 2)
+        .map(|(i, c)| poly(fade(pick(t, i % 3), 0.3), c.clone()))
+        .collect();
+    let mut lines: Vec<crate::plot::Line> = d
+        .cells
+        .iter()
+        .filter(|c| c.len() > 2)
+        .map(|c| {
+            let mut ring = c.clone();
+            ring.push(c[0]);
+            stroke(fade(t.palette.text, 0.5), 1.5, ring)
+        })
+        .collect();
+    lines.extend(
+        d.links
+            .iter()
+            .map(|&(i, j)| stroke(fade(t.palette.text, 0.35), 1.0, vec![sites[i], sites[j]])),
+    );
+    lines.extend(
+        sites
+            .iter()
+            .enumerate()
+            .map(|(i, s)| dot(pick(t, i % 3), *s, 9.0)),
+    );
+    plot(w, h, fills, lines)
 }
 
 /// A bump chart: each series' rank over time.

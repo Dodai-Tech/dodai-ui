@@ -113,6 +113,7 @@ fn fields(c: &Ctx) -> Node {
         card("Scatter and bubble", ch::scatter(t, W, H, now())),
         card("Heatmap", ch::heat(t, W, H, now())),
         card("Hexbin", flow::hex_bins(t, W, H, now())),
+        card("Voronoi diagram", flow::voronoi_map(t, W, H, now())),
         card(
             "Time scatter and frontier",
             flow::time_scatter(t, W, H, now()),

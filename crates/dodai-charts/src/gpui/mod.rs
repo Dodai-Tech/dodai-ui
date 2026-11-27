@@ -45,6 +45,7 @@ pub mod spread;
 pub mod status;
 pub mod survey;
 pub mod trend;
+pub mod voronoi;
 
 pub use crate::fan::FanOrder;
 pub use crate::gantt::Task as GanttTask;
@@ -84,3 +85,4 @@ pub use trend::{
     overlay_lines, Candle, CandleOverlay, CandlePane, CandleStyle, Candlestick, StackOffset,
     StackedAreaChart, TradeMarker,
 };
+pub use voronoi::{VoronoiChart, VoronoiPoint};

@@ -17,6 +17,7 @@
 //! | [`gantt`] | task timeline layout |
 //! | [`fan`] | span fan: lifespans as spokes round an arc |
 //! | [`shards`] | shard map: an outline cut into value-sized convex cells |
+//! | [`voronoi`] | Voronoi diagram: nearest-site cells and Delaunay links |
 //! | [`cascade`] | split flow: a quantity splitting down through levels |
 //! | [`peaks`] | peak range: overlapping series as mountains |
 //! | [`milestones`] | time scatter: record frontier, trails, nearest point |
@@ -64,6 +65,7 @@ pub mod stack;
 pub use dodai_core::stream;
 pub mod swarm;
 pub mod timeaxis;
+pub mod voronoi;
 
 pub use candles::{heikin_ashi, price_range, Candle};
 pub use gradient::Gradient;

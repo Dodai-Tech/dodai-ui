@@ -72,6 +72,7 @@ pub(crate) const CHART_FAMILIES: [(&str, &[&str]); 11] = [
             "Scatter",
             "Heatmap",
             "Hexbin",
+            "Voronoi diagram",
             "Parallel coordinates",
             "Network graph",
             "Time scatter",
@@ -126,7 +127,7 @@ const CHART_FAMILY_NAMES: [&str; CHART_FAMILIES.len()] = {
 
 /// Extra words the component filter matches for a section, beyond its category and title: what
 /// its demo shows and what the chart is often called elsewhere.
-const KEYWORDS: [(&str, &str); 7] = [
+const KEYWORDS: [(&str, &str); 8] = [
     (
         "Span fan",
         "empires history lifespan durations radial reigns",
@@ -144,6 +145,10 @@ const KEYWORDS: [(&str, &str); 7] = [
         "plastic waste where it goes cascade tree flow",
     ),
     ("Shard map", "voronoi treemap population languages"),
+    (
+        "Voronoi diagram",
+        "voronoi delaunay nearest neighbour cells territories",
+    ),
     ("Peak range", "mountains molehills peaks pollen seasons"),
     ("Ridgeline", "joyplot distributions"),
 ];

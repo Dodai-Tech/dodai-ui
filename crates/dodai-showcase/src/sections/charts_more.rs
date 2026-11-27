@@ -7,7 +7,7 @@ use dodai_charts::gpui::{
     ControlChart, DivergingBars, Ecdf, ErrorBars, EventTimeline, FanOrder, FanSpan, FlowStep,
     Hexbin, Icicle, KpiTile, Marimekko, Milestone, NetworkGraph, Outline, ParallelCoordinates,
     ParetoChart, PeakRange, ProportionalSquares, ShardGroup, ShardMap, SpanFan, SplitFlow,
-    StateSpan, Sunburst, TimeScatter, Waffle,
+    StateSpan, Sunburst, TimeScatter, VoronoiChart, VoronoiPoint, Waffle,
 };
 
 /// A repeatable pseudo-random number in `0..1` for sample `i` of stream `seed`.
@@ -288,6 +288,29 @@ impl Showcase {
                         let x = bell(11, i, 50.0, 60.0);
                         (x, 0.6 * x + bell(12, i, 10.0, 40.0))
                     }))
+                    .format(|v| format!("{v:.0}"))
+                    .into_any_element(),
+                ),
+            ),
+            (
+                "Voronoi diagram",
+                noted(
+                    "Which depot is nearest, anywhere on the map (illustrative sites); the lines join depots whose areas touch.",
+                    VoronoiChart::new([
+                        VoronoiPoint::new("North", 42.0, 88.0),
+                        VoronoiPoint::new("Harbour", 12.0, 70.0).group(1),
+                        VoronoiPoint::new("Old town", 35.0, 60.0),
+                        VoronoiPoint::new("Mill", 70.0, 74.0).group(2),
+                        VoronoiPoint::new("Central", 48.0, 45.0),
+                        VoronoiPoint::new("Docks", 10.0, 32.0).group(1),
+                        VoronoiPoint::new("Park", 82.0, 48.0).group(2),
+                        VoronoiPoint::new("Station", 30.0, 22.0),
+                        VoronoiPoint::new("Campus", 62.0, 20.0).group(2),
+                        VoronoiPoint::new("South", 88.0, 12.0).group(2),
+                        VoronoiPoint::new("Airport", 50.0, 4.0),
+                    ])
+                    .links(true)
+                    .height(440.0)
                     .format(|v| format!("{v:.0}"))
                     .into_any_element(),
                 ),

@@ -244,7 +244,7 @@ Themes (modes): `neobrutalism-dark`, `neobrutalism-green-dark`, `neobrutalism-gr
 
 `card`, `snackbar`, `avatar`, `code`, `tooltip`, `step`, `dot`, `skeleton`, `popup`, `select`, `table`, `fab`, `elevated`, `segmented`, `toolbar`, `chip`, `row`, `page`, `segment`, `alert`, `count`
 
-## Charts (62 in the gpui chart set)
+## Charts (63 in the gpui chart set)
 
 Series colours are the `color/series/*` roles; plot sizes come from the `size/chart-*` tokens. The design file draws every chart of the showcase on the `<system> / Charts` page from the showcase model's plots (`just design`).
 
@@ -312,6 +312,7 @@ Series colours are the `color/series/*` roles; plot sizes come from the `size/ch
 | DivergingBars | Diverging stacked bars: each row's parts stacked out from a centre line, the first ones | `crates/dodai-charts/src/gpui/survey.rs` |
 | StackedAreaChart | Stacked area chart: layers add up to the total. | `crates/dodai-charts/src/gpui/trend.rs` |
 | Candlestick | Candlestick chart: candles, Heikin-Ashi or OHLC bars, optional volume, | `crates/dodai-charts/src/gpui/trend.rs` |
+| VoronoiChart | Voronoi diagram: the plot is split into one cell per point, holding every place nearer to | `crates/dodai-charts/src/gpui/voronoi.rs` |
 
 ## Design file pages
 

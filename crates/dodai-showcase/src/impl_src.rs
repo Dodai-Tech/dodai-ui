@@ -331,6 +331,10 @@ const FILES: &[(&str, &str)] = &[
         include_str!("../../dodai-charts/src/gpui/shards.rs"),
     ),
     (
+        "dodai-charts/src/gpui/voronoi.rs",
+        include_str!("../../dodai-charts/src/gpui/voronoi.rs"),
+    ),
+    (
         "dodai-charts/src/gpui/spark.rs",
         include_str!("../../dodai-charts/src/gpui/spark.rs"),
     ),
