@@ -254,6 +254,25 @@ pub fn side_sheet(title: impl Into<String>) -> impl Bundle {
     )
 }
 
+/// The drag handle of a [`bottom_sheet`]; its size is the design's `sheet_handle` token.
+#[derive(Component, Debug, Clone, Copy)]
+pub(crate) struct SheetHandle;
+
+pub(crate) fn style_sheet_handle(
+    theme: Res<crate::theme::DodaiTheme>,
+    mut q: Query<&mut Node, With<SheetHandle>>,
+) {
+    let (w, h) = theme.sizes().sheet_handle;
+    for mut n in &mut q {
+        if n.width != Val::Px(w) {
+            n.width = Val::Px(w);
+        }
+        if n.height != Val::Px(h) {
+            n.height = Val::Px(h);
+        }
+    }
+}
+
 /// A bottom sheet: a card across the bottom with a drag handle; add content with `.with_children`.
 pub fn bottom_sheet() -> impl Bundle {
     (
@@ -268,9 +287,8 @@ pub fn bottom_sheet() -> impl Bundle {
         Children::spawn(SpawnWith(|c: &mut Spawner| {
             c.spawn((
                 kit(Kit::Skeleton),
+                SheetHandle,
                 Node {
-                    width: Val::Px(32.0),
-                    height: Val::Px(4.0),
                     align_self: AlignSelf::Center,
                     ..default()
                 },
@@ -539,13 +557,56 @@ pub(crate) fn tree_selection(
     }
 }
 
+/// Right opens and Left closes the branch row under the pointer (bevy has no focus ring to move).
+pub(crate) fn tree_keys(
+    mut keys: MessageReader<bevy::input::keyboard::KeyboardInput>,
+    mut rows: Query<(
+        Entity,
+        &mut crate::interact::UiDisclosure,
+        &crate::widgets::ControlPointer,
+        &ChildOf,
+    )>,
+    kids: Query<&Children>,
+    mut bodies: Query<&mut Node, With<crate::interact::DisclosureBody>>,
+    mut out: MessageWriter<crate::widgets::ControlEvent>,
+) {
+    use bevy::input::keyboard::Key;
+    for k in keys.read() {
+        if !k.state.is_pressed() {
+            continue;
+        }
+        let want = match k.logical_key {
+            Key::ArrowRight => true,
+            Key::ArrowLeft => false,
+            _ => continue,
+        };
+        for (entity, mut d, p, parent) in &mut rows {
+            if *p == crate::widgets::ControlPointer::None || d.open == want {
+                continue;
+            }
+            d.open = want;
+            if let Ok(siblings) = kids.get(parent.parent()) {
+                for s in siblings.iter() {
+                    if let Ok(mut n) = bodies.get_mut(s) {
+                        n.display = if want { Display::Flex } else { Display::None };
+                    }
+                }
+            }
+            out.write(crate::widgets::ControlEvent {
+                entity,
+                kind: crate::widgets::ControlKind::Toggled(want),
+            });
+        }
+    }
+}
+
 /// Registers the systems above.
 pub(crate) fn add(app: &mut App) {
     app.add_systems(
         Update,
-        (responsive_shells, tree_selection).after(crate::kit::press_input),
+        (responsive_shells, tree_selection, tree_keys).after(crate::kit::press_input),
     )
-    .add_systems(Update, style_navigation);
+    .add_systems(Update, (style_navigation, style_sheet_handle));
 }
 
 #[cfg(test)]
@@ -701,6 +762,49 @@ mod tests {
         app.update();
         assert_eq!(
             app.world().get::<Node>(body).unwrap().display,
+            Display::None
+        );
+    }
+
+    #[test]
+    fn tree_arrows_open_and_close_the_branch_under_the_pointer() {
+        use bevy::input::keyboard::{Key, KeyboardInput};
+        let mut app = app();
+        let tree = app
+            .world_mut()
+            .spawn(tree_view(vec![TreeItem::branch(
+                "r",
+                vec![TreeItem::new("a")],
+            )]))
+            .id();
+        app.update();
+        let section = app.world().get::<Children>(tree).unwrap()[0];
+        let parts: Vec<Entity> = app
+            .world()
+            .get::<Children>(section)
+            .unwrap()
+            .iter()
+            .collect();
+        *app.world_mut().get_mut::<ControlPointer>(parts[0]).unwrap() = ControlPointer::Hovered;
+        let key = |app: &mut App, k: Key| {
+            app.world_mut().write_message(KeyboardInput {
+                key_code: KeyCode::Unidentified(bevy::input::keyboard::NativeKeyCode::Unidentified),
+                logical_key: k,
+                state: bevy::input::ButtonState::Pressed,
+                text: None,
+                repeat: false,
+                window: Entity::PLACEHOLDER,
+            });
+            app.update();
+        };
+        key(&mut app, Key::ArrowRight);
+        assert_eq!(
+            app.world().get::<Node>(parts[1]).unwrap().display,
+            Display::Flex
+        );
+        key(&mut app, Key::ArrowLeft);
+        assert_eq!(
+            app.world().get::<Node>(parts[1]).unwrap().display,
             Display::None
         );
     }

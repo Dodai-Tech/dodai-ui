@@ -620,10 +620,11 @@ pub(crate) fn style_toggles(
         let dash = mixed && !t.on;
         let k = theme.toggle(t.on || mixed, cs(i, t.disabled, false));
         let (w, h) = toggle_size(&theme, t.kind);
-        let inset = 3.0;
+        // The same handle as gpui: 64 % of the track, centred, inside the border.
+        let d = (h * 0.64).round();
+        let inset = (h - d) / 2.0 - 1.0;
         match t.kind {
             ToggleKind::Switch => {
-                let d = h - 2.0 * bw - 2.0 * inset;
                 upd(&mut n.width, Val::Px(d));
                 upd(&mut n.height, Val::Px(d));
                 let left = if t.on {
@@ -644,7 +645,7 @@ pub(crate) fn style_toggles(
                 );
             }
             _ => {
-                let d = h - 2.0 * bw - 2.0 * (inset + 2.0);
+                let d = h - 2.0 * bw - 2.0 * (inset + 3.0);
                 upd(&mut n.width, Val::Px(d.max(2.0)));
                 upd(&mut n.height, Val::Px(if dash { 2.0 } else { d.max(2.0) }));
                 upd(
@@ -732,7 +733,11 @@ pub(crate) fn style_sliders(
     let p = &theme.palette;
     let sizes = theme.sizes();
     let track_h = sizes.slider_track.max(theme.spacing.sm + 2.0);
-    let thumb_w = 10.0;
+    let thumb_w = if theme.look().tonal {
+        20.0
+    } else {
+        sizes.slider_thumb
+    };
     for (sl, mut s, mut n) in &mut q {
         upd(
             &mut *s,
@@ -800,7 +805,7 @@ pub(crate) fn style_sliders(
         } else if let Some(b) = bubble {
             const W: f32 = 52.0;
             const H: f32 = 22.0;
-            let long = theme.shape.control_height * 0.5;
+            let long = thumb_w;
             upd(&mut n.width, Val::Px(W));
             upd(&mut n.height, Val::Px(H));
             upd(&mut n.left, Val::Percent(sl.fraction() * 100.0));
@@ -851,7 +856,7 @@ pub(crate) fn style_sliders(
                 fill: Some(p.primary_hover),
                 border: Some(p.on_primary),
                 glow: true,
-                pill: false,
+                pill: true,
             },
         );
     }

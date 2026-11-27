@@ -7,7 +7,8 @@ use bevy::ecs::spawn::SpawnWith;
 use bevy::prelude::*;
 use dodai_core::{ButtonVariant, CardVariant};
 
-use crate::interact::{DisclosureBody, UiDisclosure, UiSelectGroup, UiSelectable};
+use crate::interact::{with_selected, DisclosureBody, UiDisclosure, UiSelectGroup, UiSelectable};
+use crate::kit::UiKit;
 use crate::kit::{kit, kit_pressable, Kit};
 use crate::nav::navigation_item;
 use crate::parts::{column, glyph, glyph_slot, row, wide, Glyph};
@@ -16,6 +17,7 @@ use crate::widgets::{
     button, heading, text, text_input_with, ControlEvent, ControlKind, ControlPointer, TextRole,
     UiTextInput, UiTooltip,
 };
+use bevy::input::keyboard::{Key, KeyboardInput};
 
 type Spawner<'a> = ChildSpawner<'a>;
 
@@ -312,6 +314,8 @@ pub struct UiCombobox {
     pub always_open: bool,
     /// Whether the list is shown now.
     pub open: bool,
+    /// The option the arrow keys are on, if any.
+    pub highlight: Option<Entity>,
 }
 
 /// An option of a [`UiCombobox`].
@@ -329,6 +333,7 @@ fn combo(options: Vec<String>, placeholder: String, always_open: bool) -> impl B
         UiCombobox {
             always_open,
             open: always_open,
+            highlight: None,
         },
         Node {
             align_self: AlignSelf::Stretch,
@@ -444,6 +449,90 @@ pub(crate) fn combobox_filter(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+/// Arrow keys move a highlight over the options the typed text leaves; Enter picks it, Escape
+/// closes the list. Acts on the combobox whose field has focus (or whose list is open).
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn combobox_keys(
+    mut keys: MessageReader<KeyboardInput>,
+    focus: Res<FocusedInput>,
+    mut roots: Query<(&mut UiCombobox, &Children)>,
+    inputs: Query<(), With<ComboInput>>,
+    lists: Query<&Children, With<ComboList>>,
+    nodes: Query<&Node>,
+    options: Query<&ComboOption>,
+    mut kits: Query<&mut UiKit>,
+    mut fields: Query<&mut UiTextInput, With<ComboInput>>,
+    mut out: MessageWriter<ControlEvent>,
+) {
+    for k in keys.read() {
+        if !k.state.is_pressed() {
+            continue;
+        }
+        for (mut root, kids) in &mut roots {
+            let field = kids.iter().find(|c| inputs.contains(*c));
+            let active =
+                field.is_some_and(|f| focus.0 == Some(f)) || (root.open && !root.always_open);
+            if !active {
+                continue;
+            }
+            let shown: Vec<Entity> = kids
+                .iter()
+                .filter_map(|c| lists.get(c).ok())
+                .flat_map(|l| l.iter())
+                .filter(|o| {
+                    options.contains(*o) && nodes.get(*o).is_ok_and(|n| n.display != Display::None)
+                })
+                .collect();
+            let at = root
+                .highlight
+                .and_then(|h| shown.iter().position(|o| *o == h));
+            match &k.logical_key {
+                Key::ArrowDown | Key::ArrowUp if !shown.is_empty() => {
+                    let to = match (&k.logical_key, at) {
+                        (Key::ArrowDown, Some(i)) => (i + 1).min(shown.len() - 1),
+                        (Key::ArrowDown, None) => 0,
+                        (_, Some(i)) => i.saturating_sub(1),
+                        (_, None) => shown.len() - 1,
+                    };
+                    root.open = true;
+                    root.highlight = Some(shown[to]);
+                    for (i, o) in shown.iter().enumerate() {
+                        if let Ok(mut kit) = kits.get_mut(*o) {
+                            let next = with_selected(kit.0, i == to);
+                            if kit.0 != next {
+                                kit.0 = next;
+                            }
+                        }
+                    }
+                }
+                Key::Enter => {
+                    let Some(o) = at.map(|i| shown[i]) else {
+                        continue;
+                    };
+                    if let (Some(f), Ok(opt)) = (field, options.get(o)) {
+                        if let Ok(mut input) = fields.get_mut(f) {
+                            input.value = opt.0.clone();
+                        }
+                    }
+                    if !root.always_open {
+                        root.open = false;
+                    }
+                    root.highlight = None;
+                    if let Ok(mut kit) = kits.get_mut(o) {
+                        kit.0 = with_selected(kit.0, false);
+                    }
+                    out.write(ControlEvent {
+                        entity: o,
+                        kind: ControlKind::Selected,
+                    });
+                }
+                Key::Escape if !root.always_open => root.open = false,
+                _ => {}
             }
         }
     }
@@ -644,6 +733,7 @@ pub(crate) fn add(app: &mut App) {
             context_menus,
             hover_reveal,
             combobox_filter,
+            combobox_keys,
             combobox_pick,
         )
             .chain()
@@ -742,6 +832,47 @@ mod tests {
         );
         press(&mut app, opts[2]);
         app.update();
+        assert_eq!(
+            app.world().get::<UiTextInput>(input).unwrap().value,
+            "Apricot"
+        );
+        assert!(!app.world().get::<UiCombobox>(c).unwrap().open);
+    }
+
+    #[test]
+    fn combobox_arrows_move_and_enter_picks() {
+        use bevy::input::keyboard::KeyboardInput;
+        use bevy::input::ButtonState;
+        let mut app = app();
+        let c = app
+            .world_mut()
+            .spawn(combobox(&["Apple", "Banana", "Apricot"], "Fruit"))
+            .id();
+        app.update();
+        let parts: Vec<Entity> = app.world().get::<Children>(c).unwrap().iter().collect();
+        let (input, list) = (parts[0], parts[1]);
+        app.world_mut().resource_mut::<FocusedInput>().0 = Some(input);
+        app.world_mut().get_mut::<UiTextInput>(input).unwrap().value = "ap".into();
+        app.update();
+        let key = |app: &mut App, k: Key| {
+            app.world_mut().write_message(KeyboardInput {
+                key_code: KeyCode::Unidentified(bevy::input::keyboard::NativeKeyCode::Unidentified),
+                logical_key: k,
+                state: ButtonState::Pressed,
+                text: None,
+                repeat: false,
+                window: Entity::PLACEHOLDER,
+            });
+            app.update();
+        };
+        key(&mut app, Key::ArrowDown);
+        key(&mut app, Key::ArrowDown);
+        let opts: Vec<Entity> = app.world().get::<Children>(list).unwrap().iter().collect();
+        assert_eq!(
+            app.world().get::<UiCombobox>(c).unwrap().highlight,
+            Some(opts[2])
+        );
+        key(&mut app, Key::Enter);
         assert_eq!(
             app.world().get::<UiTextInput>(input).unwrap().value,
             "Apricot"
