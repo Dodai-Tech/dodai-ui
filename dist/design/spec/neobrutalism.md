@@ -312,7 +312,7 @@ Series colours are the `color/series/*` roles; plot sizes come from the `size/ch
 | DivergingBars | Diverging stacked bars: each row's parts stacked out from a centre line, the first ones | `crates/dodai-charts/src/gpui/survey.rs` |
 | StackedAreaChart | Stacked area chart: layers add up to the total. | `crates/dodai-charts/src/gpui/trend.rs` |
 | Candlestick | Candlestick chart: candles, Heikin-Ashi or OHLC bars, optional volume, | `crates/dodai-charts/src/gpui/trend.rs` |
-| VoronoiChart | Voronoi diagram: the plot is split into one cell per point, holding every place nearer to | `crates/dodai-charts/src/gpui/voronoi.rs` |
+| VoronoiChart | A plain diagram draws exact polygons. The variants below are computed as a pixel field: | `crates/dodai-charts/src/gpui/voronoi.rs` |
 
 ## Design file pages
 

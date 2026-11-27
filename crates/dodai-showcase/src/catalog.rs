@@ -73,6 +73,11 @@ pub(crate) const CHART_FAMILIES: [(&str, &[&str]); 11] = [
             "Heatmap",
             "Hexbin",
             "Voronoi diagram",
+            "Voronoi heatmap",
+            "Voronoi territories",
+            "Voronoi power diagram",
+            "Voronoi pie",
+            "Voronoi mosaic",
             "Parallel coordinates",
             "Network graph",
             "Time scatter",
@@ -127,7 +132,7 @@ const CHART_FAMILY_NAMES: [&str; CHART_FAMILIES.len()] = {
 
 /// Extra words the component filter matches for a section, beyond its category and title: what
 /// its demo shows and what the chart is often called elsewhere.
-const KEYWORDS: [(&str, &str); 8] = [
+const KEYWORDS: [(&str, &str); 13] = [
     (
         "Span fan",
         "empires history lifespan durations radial reigns",
@@ -148,6 +153,23 @@ const KEYWORDS: [(&str, &str); 8] = [
     (
         "Voronoi diagram",
         "voronoi delaunay nearest neighbour cells territories",
+    ),
+    (
+        "Voronoi heatmap",
+        "voronoi heat gradient value cells load distance fade",
+    ),
+    (
+        "Voronoi territories",
+        "voronoi categories regions merged borders manhattan chebyshev metric",
+    ),
+    (
+        "Voronoi power diagram",
+        "voronoi weighted power relax lloyd centroid",
+    ),
+    ("Voronoi pie", "voronoi pie ring disc wedges proportion"),
+    (
+        "Voronoi mosaic",
+        "voronoi stipple mosaic density image points",
     ),
     ("Peak range", "mountains molehills peaks pollen seasons"),
     ("Ridgeline", "joyplot distributions"),

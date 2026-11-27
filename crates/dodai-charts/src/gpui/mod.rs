@@ -85,4 +85,4 @@ pub use trend::{
     overlay_lines, Candle, CandleOverlay, CandlePane, CandleStyle, Candlestick, StackOffset,
     StackedAreaChart, TradeMarker,
 };
-pub use voronoi::{VoronoiChart, VoronoiPoint};
+pub use voronoi::{VoronoiChart, VoronoiMetric, VoronoiPoint};

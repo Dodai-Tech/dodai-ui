@@ -5,9 +5,10 @@ use super::super::*;
 use dodai_charts::gpui::{
     ArcDiagram, Beeswarm, Bubble, BubbleTimeline, ChartNode, ChordDiagram, CirclePack,
     ControlChart, DivergingBars, Ecdf, ErrorBars, EventTimeline, FanOrder, FanSpan, FlowStep,
-    Hexbin, Icicle, KpiTile, Marimekko, Milestone, NetworkGraph, Outline, ParallelCoordinates,
-    ParetoChart, PeakRange, ProportionalSquares, ShardGroup, ShardMap, SpanFan, SplitFlow,
-    StateSpan, Sunburst, TimeScatter, VoronoiChart, VoronoiPoint, Waffle,
+    Gradient, Hexbin, Icicle, KpiTile, Marimekko, Milestone, NetworkGraph, Outline,
+    ParallelCoordinates, ParetoChart, PeakRange, ProportionalSquares, ShardGroup, ShardMap,
+    SpanFan, SplitFlow, StateSpan, Sunburst, TimeScatter, VoronoiChart, VoronoiMetric,
+    VoronoiPoint, Waffle,
 };
 
 /// A repeatable pseudo-random number in `0..1` for sample `i` of stream `seed`.
@@ -26,6 +27,41 @@ fn bell(seed: u32, i: u32, mean: f32, spread: f32) -> f32 {
 }
 
 /// A note above a demo chart.
+/// The demo depots (illustrative sites), each passed through `f(point, index, region)`.
+fn depots(f: impl Fn(VoronoiPoint, usize, usize) -> VoronoiPoint) -> Vec<VoronoiPoint> {
+    [
+        ("North", 42.0, 88.0, 0),
+        ("Harbour", 12.0, 70.0, 1),
+        ("Old town", 35.0, 60.0, 0),
+        ("Mill", 70.0, 74.0, 2),
+        ("Central", 48.0, 45.0, 0),
+        ("Docks", 10.0, 32.0, 1),
+        ("Park", 82.0, 48.0, 2),
+        ("Station", 30.0, 22.0, 0),
+        ("Campus", 62.0, 20.0, 2),
+        ("South", 88.0, 12.0, 2),
+        ("Airport", 50.0, 4.0, 0),
+    ]
+    .into_iter()
+    .enumerate()
+    .map(|(i, (n, x, y, g))| f(VoronoiPoint::new(n, x, y).group(g), i, g))
+    .collect()
+}
+
+/// A bright blob on a dark ground, `cols`×`rows`, row 0 on top.
+fn blob(cols: usize, rows: usize) -> Vec<Vec<f32>> {
+    (0..rows)
+        .map(|r| {
+            (0..cols)
+                .map(|c| {
+                    let (dx, dy) = (c as f32 / cols as f32 - 0.4, r as f32 / rows as f32 - 0.5);
+                    (-(dx * dx + dy * dy) * 14.0).exp()
+                })
+                .collect()
+        })
+        .collect()
+}
+
 fn noted(n: &'static str, el: gpui::AnyElement) -> gpui::AnyElement {
     div()
         .flex()
@@ -313,6 +349,58 @@ impl Showcase {
                     .height(440.0)
                     .format(|v| format!("{v:.0}"))
                     .into_any_element(),
+                ),
+            ),
+            (
+                "Voronoi heatmap",
+                noted(
+                    "Each depot's cell coloured by its load (illustrative), fading with distance from the depot.",
+                    VoronoiChart::new(depots(|p, i, _| p.value(20.0 + (i * 37 % 70) as f32)))
+                    .gradient(Gradient::Viridis)
+                    .shade_by_distance(true)
+                    .borders(false)
+                    .labels(false)
+                    .height(380.0)
+                    .into_any_element(),
+                ),
+            ),
+            (
+                "Voronoi territories",
+                noted(
+                    "Depots of one region merge into a territory; the Manhattan distance gives boxy borders.",
+                    VoronoiChart::new(depots(|p, _, g| p.category(g)))
+                    .metric(VoronoiMetric::Manhattan)
+                    .height(380.0)
+                    .into_any_element(),
+                ),
+            ),
+            (
+                "Voronoi power diagram",
+                noted(
+                    "Heavier depots own larger cells; relaxing 4 steps evens the layout out.",
+                    VoronoiChart::new(depots(|p, i, _| p.weight(1.0 + (i * 5 % 7) as f32)))
+                    .weighted(true)
+                    .relax(4)
+                    .height(380.0)
+                    .into_any_element(),
+                ),
+            ),
+            (
+                "Voronoi pie",
+                noted(
+                    "A pie made of weighted Voronoi cells inside a disc.",
+                    VoronoiChart::ring([("Rent", 45.0), ("Food", 25.0), ("Fuel", 18.0), ("Fun", 12.0)])
+                        .height(340.0)
+                        .into_any_element(),
+                ),
+            ),
+            (
+                "Voronoi mosaic",
+                noted(
+                    "900 points sampled from a bright blob, relaxed so they crowd where it is bright.",
+                    VoronoiChart::stipple(&blob(24, 16), 900, 3, 7)
+                        .height(340.0)
+                        .into_any_element(),
                 ),
             ),
         ]
