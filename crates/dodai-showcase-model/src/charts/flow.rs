@@ -389,16 +389,34 @@ pub fn voronoi_map(t: &Theme, w: f32, h: f32, now: f32) -> Plot {
         .filter(|(_, c)| c.len() > 2)
         .map(|(i, c)| poly(fade(pick(t, i % 3), 0.3), c.clone()))
         .collect();
-    let mut lines: Vec<crate::plot::Line> = d
-        .cells
-        .iter()
-        .filter(|c| c.len() > 2)
-        .map(|c| {
-            let mut ring = c.clone();
-            ring.push(c[0]);
-            stroke(fade(t.palette.text, 0.5), 1.5, ring)
-        })
-        .collect();
+    // Cells of one region (colour) merge into a territory: only edges between regions are
+    // strong, an edge inside a region is faint.
+    let near = |p: (f32, f32), q: (f32, f32)| (p.0 - q.0).abs() < 0.01 && (p.1 - q.1).abs() < 0.01;
+    let mut lines: Vec<crate::plot::Line> = Vec::new();
+    for (i, c) in d.cells.iter().enumerate().filter(|(_, c)| c.len() > 2) {
+        for k in 0..c.len() {
+            let (p, q) = (c[k], c[(k + 1) % c.len()]);
+            let other = d.links.iter().find_map(|&(a, b)| {
+                let j = if a == i {
+                    b
+                } else if b == i {
+                    a
+                } else {
+                    return None;
+                };
+                let cj = &d.cells[j];
+                (0..cj.len())
+                    .any(|m| {
+                        let (r, u) = (cj[m], cj[(m + 1) % cj.len()]);
+                        (near(r, q) && near(u, p)) || (near(r, p) && near(u, q))
+                    })
+                    .then_some(j)
+            });
+            let inside = other.is_some_and(|j| j % 3 == i % 3);
+            let (a, w) = if inside { (0.12, 1.0) } else { (0.6, 2.0) };
+            lines.push(stroke(fade(t.palette.text, a), w, vec![p, q]));
+        }
+    }
     lines.extend(
         d.links
             .iter()
