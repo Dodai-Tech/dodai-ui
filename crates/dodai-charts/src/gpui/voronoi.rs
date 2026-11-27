@@ -82,6 +82,8 @@ struct Cfg {
     ring: bool,
     axes: bool,
     neighbours: bool,
+    bounds: Option<(f32, f32, f32, f32)>,
+    square: bool,
 }
 
 impl Default for Cfg {
@@ -105,6 +107,8 @@ impl Default for Cfg {
             ring: false,
             axes: false,
             neighbours: true,
+            bounds: None,
+            square: false,
         }
     }
 }
@@ -250,6 +254,16 @@ impl VoronoiChart {
         /// Drift the points around their places; 0 leaves them (default: 0).
         phase, phase: f32
     );
+    /// Fix the visible data window `x0..x1`, `y0..y1` instead of fitting it to the points.
+    /// Invalid bounds (not finite, or empty) fall back to fitting.
+    pub fn bounds(mut self, x0: f32, x1: f32, y0: f32, y1: f32) -> Self {
+        self.cfg.bounds = Some((x0, x1, y0, y1));
+        self
+    }
+    setter!(
+        /// Equal x and y scale, so distances are true (for maps; default: off).
+        square, square: bool
+    );
     /// Colour each cell by its point's value along `g`.
     pub fn gradient(mut self, g: Gradient) -> Self {
         self.cfg.gradient = Some(g);
@@ -262,22 +276,40 @@ impl VoronoiChart {
     }
 }
 
-/// The data's own range, padded, as `(min_x, min_y, span_x, span_y)`.
-fn frame(points: &[VoronoiPoint]) -> (f32, f32, f32, f32) {
-    let xs = crate::extent(points.iter().map(|p| p.x).filter(|v| v.is_finite()));
-    let ys = crate::extent(points.iter().map(|p| p.y).filter(|v| v.is_finite()));
-    let pad = |(lo, hi): (f32, f32)| {
-        let span = (hi - lo).max(1e-6);
-        (lo - span * 0.08, span * 1.16)
+/// The visible data window as `(min_x, min_y, span_x, span_y)`: the fixed `bounds` if valid,
+/// else the data's range padded; with `square`, widened on one axis so a unit is as long on x
+/// as on y in a `w`×`h` plot.
+fn frame(points: &[VoronoiPoint], cfg: &Cfg, w: f32, h: f32) -> (f32, f32, f32, f32) {
+    let fixed = cfg.bounds.filter(|(x0, x1, y0, y1)| {
+        [x0, x1, y0, y1].iter().all(|v| v.is_finite()) && x1 > x0 && y1 > y0
+    });
+    let (mut x0, mut y0, mut sx, mut sy) = match fixed {
+        Some((x0, x1, y0, y1)) => (x0, y0, x1 - x0, y1 - y0),
+        None => {
+            let xs = crate::extent(points.iter().map(|p| p.x).filter(|v| v.is_finite()));
+            let ys = crate::extent(points.iter().map(|p| p.y).filter(|v| v.is_finite()));
+            let pad = |(lo, hi): (f32, f32)| {
+                let span = (hi - lo).max(1e-6);
+                (lo - span * 0.08, span * 1.16)
+            };
+            let (x0, sx) = pad(xs.unwrap_or((0.0, 1.0)));
+            let (y0, sy) = pad(ys.unwrap_or((0.0, 1.0)));
+            (x0, y0, sx, sy)
+        }
     };
-    let (x0, sx) = pad(xs.unwrap_or((0.0, 1.0)));
-    let (y0, sy) = pad(ys.unwrap_or((0.0, 1.0)));
+    if cfg.square && w > 0.0 && h > 0.0 {
+        let u = (sx / w).max(sy / h);
+        let (nx, ny) = (u * w, u * h);
+        x0 -= (nx - sx) / 2.0;
+        y0 -= (ny - sy) / 2.0;
+        (sx, sy) = (nx, ny);
+    }
     (x0, y0, sx, sy)
 }
 
 /// The points in canvas pixels for a `w`×`h` box; data `y` grows upward.
-fn sites(points: &[VoronoiPoint], w: f32, h: f32) -> Vec<(f32, f32)> {
-    let (x0, y0, sx, sy) = frame(points);
+fn sites(points: &[VoronoiPoint], cfg: &Cfg, w: f32, h: f32) -> Vec<(f32, f32)> {
+    let (x0, y0, sx, sy) = frame(points, cfg, w, h);
     points
         .iter()
         .map(|p| ((p.x - x0) / sx * w, h - (p.y - y0) / sy * h))
@@ -290,7 +322,7 @@ fn site_list(points: &[VoronoiPoint], cfg: &Cfg, w: f32, h: f32) -> Vec<Site> {
         let v: Vec<f32> = points.iter().map(|p| p.weight.unwrap_or(0.0)).collect();
         return voronoi::ring_sites(&v, w, h);
     }
-    sites(points, w, h)
+    sites(points, cfg, w, h)
         .into_iter()
         .zip(points)
         .map(|((x, y), p)| Site {
@@ -304,7 +336,7 @@ fn site_list(points: &[VoronoiPoint], cfg: &Cfg, w: f32, h: f32) -> Vec<Site> {
 
 /// What the pure layer is asked for. Positions are in raster pixels: canvas pixels over `cell`.
 fn spec_of(points: &[VoronoiPoint], cfg: &Cfg, w: f32, h: f32, cell: f32) -> Spec {
-    let (x0, y0, sx, sy) = frame(points);
+    let (x0, y0, sx, sy) = frame(points, cfg, w, h);
     Spec {
         metric: cfg.metric,
         weighted: cfg.weighted,
@@ -411,7 +443,7 @@ impl VoronoiChart {
             let name = CanvasText::display(&display, size);
             // where each dot sits, and the edges between neighbours
             let (dot_at, link_at): Drawn = if plain {
-                let s = sites(&paint_points, bw, bh);
+                let s = sites(&paint_points, &cfg, bw, bh);
                 let d = voronoi::diagram(&s, bw, bh);
                 for (k, cell) in d.cells.iter().enumerate().filter(|(_, c)| c.len() > 2) {
                     let c = if looks[k].lift > 0.01 {
@@ -468,7 +500,7 @@ impl VoronoiChart {
                 (at, links)
             };
             if cfg.axes {
-                let (x0, y0, sx, sy) = frame(&paint_points);
+                let (x0, y0, sx, sy) = frame(&paint_points, &cfg, bw, bh);
                 let tone = scale_alpha(ink, 0.6 * a);
                 for q in 0..=4 {
                     let f = q as f32 / 4.0;
@@ -531,7 +563,7 @@ impl VoronoiChart {
         let plot = focus.pointer(plot, &bounds, move |x, y, w, h| {
             if plain {
                 // every spot belongs to its nearest point
-                voronoi::nearest(&sites(&hit_points, w, h), (x, y))
+                voronoi::nearest(&sites(&hit_points, &cfg, w, h), (x, y))
             } else {
                 let (r, cell) = field(&hit_points, &cfg, w, h);
                 r.owner_at(x / cell, y / cell)
@@ -679,7 +711,7 @@ mod tests {
             VoronoiPoint::new("a", 0.0, 0.0),
             VoronoiPoint::new("b", 10.0, 10.0),
         ];
-        let s = sites(&pts, 200.0, 100.0);
+        let s = sites(&pts, &Cfg::default(), 200.0, 100.0);
         assert!(s
             .iter()
             .all(|p| (0.0..=200.0).contains(&p.0) && (0.0..=100.0).contains(&p.1)));
@@ -689,8 +721,38 @@ mod tests {
 
     #[test]
     fn one_point_or_none_do_not_break_the_frame() {
-        assert_eq!(sites(&[], 10.0, 10.0).len(), 0);
-        let s = sites(&[VoronoiPoint::new("a", 5.0, 5.0)], 10.0, 10.0);
+        assert_eq!(sites(&[], &Cfg::default(), 10.0, 10.0).len(), 0);
+        let s = sites(
+            &[VoronoiPoint::new("a", 5.0, 5.0)],
+            &Cfg::default(),
+            10.0,
+            10.0,
+        );
         assert!(s[0].0.is_finite() && s[0].1.is_finite());
+    }
+
+    #[test]
+    fn square_keeps_aspect_and_bounds_are_honoured() {
+        let pts = [
+            VoronoiPoint::new("a", 0.0, 0.0),
+            VoronoiPoint::new("b", 10.0, 2.0),
+        ];
+        let cfg = Cfg {
+            square: true,
+            bounds: Some((-5.0, 15.0, -5.0, 5.0)),
+            ..Cfg::default()
+        };
+        let (_, _, sx, sy) = frame(&pts, &cfg, 200.0, 100.0);
+        assert!((sx / 200.0 - sy / 100.0).abs() < 1e-4);
+        let fixed = Cfg {
+            bounds: Some((-5.0, 15.0, -5.0, 5.0)),
+            ..Cfg::default()
+        };
+        assert_eq!(frame(&pts, &fixed, 200.0, 100.0), (-5.0, -5.0, 20.0, 10.0));
+        let bad = Cfg {
+            bounds: Some((3.0, 1.0, 0.0, 1.0)),
+            ..Cfg::default()
+        };
+        assert!(frame(&pts, &bad, 200.0, 100.0).2 < 20.0);
     }
 }
