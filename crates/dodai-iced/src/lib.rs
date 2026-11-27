@@ -61,6 +61,7 @@ mod inputs;
 mod kit;
 mod knob;
 mod list;
+mod more;
 mod panel;
 mod range_slider;
 mod scanlines;
