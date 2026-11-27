@@ -114,6 +114,14 @@ fn fields(c: &Ctx) -> Node {
         card("Heatmap", ch::heat(t, W, H, now())),
         card("Hexbin", flow::hex_bins(t, W, H, now())),
         card("Voronoi diagram", flow::voronoi_map(t, W, H, now())),
+        card("Voronoi heatmap", flow::voronoi_heat(t, W, H, now())),
+        card(
+            "Voronoi territories",
+            flow::voronoi_territories(t, W, H, now()),
+        ),
+        card("Voronoi power diagram", flow::voronoi_power(t, W, H, now())),
+        card("Voronoi pie", flow::voronoi_pie(t, W, H, now())),
+        card("Voronoi mosaic", flow::voronoi_mosaic(t, W, H, now())),
         card(
             "Time scatter and frontier",
             flow::time_scatter(t, W, H, now()),

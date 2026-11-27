@@ -868,3 +868,203 @@ pub fn beeswarm(t: &Theme, w: f32, h: f32, now: f32) -> Plot {
     }
     plot(w, h, Vec::new(), lines)
 }
+
+/// The eleven demo depots in `w`×`h`, as `(x, y, region)`.
+fn depots(w: f32, h: f32) -> Vec<(f32, f32, usize)> {
+    (0..11)
+        .map(|i| {
+            let (fx, fy) = (gauss(i, 3.0) * 0.5 + 0.5, gauss(i, 9.0) * 0.5 + 0.5);
+            (
+                w * (0.08 + 0.84 * fx.clamp(0.0, 1.0)),
+                h * (0.08 + 0.84 * fy.clamp(0.0, 1.0)),
+                i % 3,
+            )
+        })
+        .collect()
+}
+
+/// A field as runs of squares: `colour(owner, category)` paints each, `None` leaves it empty.
+fn field_plot(
+    t: &Theme,
+    w: f32,
+    h: f32,
+    sites: &[voronoi::Site],
+    spec: &voronoi::Spec,
+    colour: impl Fn(usize, u32) -> Option<dodai_core::Color>,
+) -> Plot {
+    let cell = 6.0;
+    let (rw, rh) = ((w / cell).ceil() as usize, (h / cell).ceil() as usize);
+    let scaled: Vec<voronoi::Site> = sites
+        .iter()
+        .map(|s| voronoi::Site {
+            x: s.x / cell,
+            y: s.y / cell,
+            ..*s
+        })
+        .collect();
+    let r = voronoi::raster(&scaled, rw, rh, spec);
+    let mut fills = Vec::new();
+    for y in 0..rh {
+        let mut x = 0;
+        while x < rw {
+            let i = y * rw + x;
+            let (own, cat) = (r.own[i], r.cat[i]);
+            let Some(c) = (own != voronoi::NONE)
+                .then(|| colour(own as usize, cat))
+                .flatten()
+            else {
+                x += 1;
+                continue;
+            };
+            let mut e = x + 1;
+            while e < rw && r.own[y * rw + e] == own && r.cat[y * rw + e] == cat {
+                e += 1;
+            }
+            fills.push(rect(
+                c,
+                x as f32 * cell,
+                y as f32 * cell,
+                (e - x) as f32 * cell,
+                cell,
+            ));
+            x = e;
+        }
+    }
+    let ink = fade(t.palette.text, 0.6);
+    let mut lines = Vec::new();
+    for y in 0..rh {
+        for x in 0..rw {
+            let i = y * rw + x;
+            if r.own[i] == voronoi::NONE {
+                continue;
+            }
+            if x + 1 < rw && r.own[i + 1] != voronoi::NONE && r.group[i + 1] != r.group[i] {
+                let px = (x + 1) as f32 * cell;
+                lines.push(stroke(
+                    ink,
+                    1.5,
+                    vec![(px, y as f32 * cell), (px, (y + 1) as f32 * cell)],
+                ));
+            }
+            if y + 1 < rh && r.own[i + rw] != voronoi::NONE && r.group[i + rw] != r.group[i] {
+                let py = (y + 1) as f32 * cell;
+                lines.push(stroke(
+                    ink,
+                    1.5,
+                    vec![(x as f32 * cell, py), ((x + 1) as f32 * cell, py)],
+                ));
+            }
+        }
+    }
+    lines.extend(
+        r.sites
+            .iter()
+            .enumerate()
+            .map(|(i, p)| dot(pick(t, i % 3), (p.0 * cell, p.1 * cell), 9.0)),
+    );
+    plot(w, h, fills, lines)
+}
+
+/// Voronoi heatmap: each cell coloured by its depot's load.
+pub fn voronoi_heat(t: &Theme, w: f32, h: f32, _now: f32) -> Plot {
+    let sites: Vec<(f32, f32)> = depots(w, h).iter().map(|d| (d.0, d.1)).collect();
+    let d = voronoi::diagram(&sites, w, h);
+    let fills = d
+        .cells
+        .iter()
+        .enumerate()
+        .filter(|(_, c)| c.len() > 2)
+        .map(|(i, c)| {
+            poly(
+                fade(pick(t, 0), 0.15 + 0.8 * ((i * 37 % 70) as f32 / 70.0)),
+                c.clone(),
+            )
+        })
+        .collect();
+    let lines = sites.iter().map(|s| dot(pick(t, 1), *s, 9.0)).collect();
+    plot(w, h, fills, lines)
+}
+
+/// Voronoi territories: Manhattan distance, same-region cells merged.
+pub fn voronoi_territories(t: &Theme, w: f32, h: f32, _now: f32) -> Plot {
+    let sites: Vec<voronoi::Site> = depots(w, h)
+        .iter()
+        .map(|d| voronoi::Site {
+            x: d.0,
+            y: d.1,
+            weight: None,
+            category: Some(d.2),
+        })
+        .collect();
+    let spec = voronoi::Spec {
+        metric: voronoi::Metric::Manhattan,
+        ..Default::default()
+    };
+    field_plot(t, w, h, &sites, &spec, |_, c| {
+        Some(fade(pick(t, c as usize % 3), 0.35))
+    })
+}
+
+/// Voronoi power diagram: heavier depots own more, relaxed four steps.
+pub fn voronoi_power(t: &Theme, w: f32, h: f32, _now: f32) -> Plot {
+    let sites: Vec<voronoi::Site> = depots(w, h)
+        .iter()
+        .enumerate()
+        .map(|(i, d)| voronoi::Site {
+            x: d.0,
+            y: d.1,
+            weight: Some(1.0 + (i * 5 % 7) as f32),
+            category: None,
+        })
+        .collect();
+    let spec = voronoi::Spec {
+        weighted: true,
+        relax: 4,
+        merge: false,
+        ..Default::default()
+    };
+    field_plot(t, w, h, &sites, &spec, |o, _| {
+        Some(fade(pick(t, o % 8), 0.35))
+    })
+}
+
+/// Voronoi pie: weighted cells on a ring inside a disc.
+pub fn voronoi_pie(t: &Theme, w: f32, h: f32, _now: f32) -> Plot {
+    let sites = voronoi::ring_sites(&[45.0, 25.0, 18.0, 12.0], w, h);
+    let spec = voronoi::Spec {
+        weighted: true,
+        clip_circle: true,
+        merge: false,
+        ..Default::default()
+    };
+    field_plot(t, w, h, &sites, &spec, |o, _| Some(fade(pick(t, o), 0.5)))
+}
+
+/// Voronoi mosaic: points sampled from a bright blob, relaxed, coloured by density.
+pub fn voronoi_mosaic(t: &Theme, w: f32, h: f32, _now: f32) -> Plot {
+    let density: Vec<Vec<f32>> = (0..16)
+        .map(|r| {
+            (0..24)
+                .map(|c| {
+                    let (dx, dy) = (c as f32 / 24.0 - 0.4, r as f32 / 16.0 - 0.5);
+                    (-(dx * dx + dy * dy) * 14.0).exp()
+                })
+                .collect()
+        })
+        .collect();
+    let pts = voronoi::stipple(&density, 300, 3, 7);
+    // grid units (24×16), y upward, to pixels
+    let sites: Vec<(f32, f32)> = pts
+        .iter()
+        .map(|p| (p.0 / 24.0 * w, h - p.1 / 16.0 * h))
+        .collect();
+    let d = voronoi::diagram(&sites, w, h);
+    let fills = d
+        .cells
+        .iter()
+        .enumerate()
+        .filter(|(_, c)| c.len() > 2)
+        .map(|(i, c)| poly(fade(pick(t, 0), 0.1 + 0.9 * pts[i].2), c.clone()))
+        .collect();
+    plot(w, h, fills, Vec::new())
+}
