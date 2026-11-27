@@ -113,8 +113,9 @@ impl Default for Cfg {
     }
 }
 
-/// Voronoi diagram: the plot is split into one cell per point, holding every place nearer to
-/// that point than to any other. Hover anywhere to snap to the nearest point and read it.
+/// Voronoi diagram: one cell per point, holding every place nearer to it than to any other.
+///
+/// Hover anywhere to snap to the nearest point and read it.
 ///
 /// A plain diagram draws exact polygons. The variants below are computed as a pixel field:
 /// [`gradient`](Self::gradient) (a heatmap by point value), [`category`](VoronoiPoint::category)

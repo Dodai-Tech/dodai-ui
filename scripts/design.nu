@@ -112,7 +112,7 @@ def gpui-sources []: nothing -> record {
 def gpui-charts []: nothing -> list<record> {
     glob crates/dodai-charts/src/gpui/*.rs | sort | each { |f|
         let rel = ($f | path relative-to (pwd))
-        open --raw $f | parse --regex '(?<doc>(?:/// [^\n]*\n)+)#\[derive\([^)]*IntoElement[^)]*\)\]\npub struct (?<name>\w+)'
+        open --raw $f | parse --regex '(?<doc>(?:///[^\n]*\n)+)#\[derive\([^)]*IntoElement[^)]*\)\]\npub struct (?<name>\w+)'
             | each { |m| { name: $m.name, file: $rel, doc: ($m.doc | lines | first | str replace '/// ' '') } }
     } | flatten
 }
