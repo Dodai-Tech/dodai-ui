@@ -320,7 +320,7 @@ pub struct DodaiTooltip {
 }
 
 impl DodaiTooltip {
-    /// Builder for gpui's `.tooltip(...)`.
+    /// Builds the tooltip shown on hover.
     pub fn text(
         text: impl Into<SharedString>,
     ) -> impl Fn(&mut Window, &mut App) -> AnyView + 'static {

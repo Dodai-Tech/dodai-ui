@@ -380,8 +380,6 @@ Content is what a component is built from; a property sets how it looks or behav
 
 ### Accordion
 
-Content: `id`.
-
 | property | kind | value | description |
 | --- | --- | --- | --- |
 | `motion` | property | m | Pace, easing and travel of opening and closing (a spring overshoots a little). Defaults |
@@ -410,7 +408,7 @@ Content: `initials`.
 
 ### AxisGizmo
 
-Content: `id`, `basis`.
+Content: `basis`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -430,7 +428,7 @@ Content: `text`, `tone`.
 
 ### Banner
 
-Content: `id`, `tone`, `message`.
+Content: `tone`, `message`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -440,13 +438,13 @@ Content: `id`, `tone`, `message`.
 
 ### BottomAppBar
 
+Content: ``.
+
 | property | kind | value | description |
 | --- | --- | --- | --- |
 | `trailing` | property | e | Element pinned to the end (e.g. a crate::Fab). |
 
 ### BottomSheet
-
-Content: `id`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -456,7 +454,7 @@ Content: `id`.
 
 ### Breadcrumb
 
-Content: `id`, `items`.
+Content: `items`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -464,7 +462,7 @@ Content: `id`, `items`.
 
 ### Button
 
-Content: `id`, `label`.
+Content: `label`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -495,8 +493,6 @@ Content: `variant`.
 
 ### Carousel
 
-Content: `id`.
-
 | property | kind | value | description |
 | --- | --- | --- | --- |
 | `disabled` | property | d | Disable paging: dimmed arrows, no drag, wheel or keys. |
@@ -513,7 +509,7 @@ Content: `id`.
 
 ### Chip
 
-Content: `id`, `label`.
+Content: `label`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -540,6 +536,8 @@ Content: `value`.
 
 ### Clock
 
+Content: ``.
+
 | property | kind | value | description |
 | --- | --- | --- | --- |
 | `size` | property | s | Size in px. |
@@ -551,7 +549,7 @@ Content: `value`.
 
 ### CodeBlock
 
-Content: `id`, `code`.
+Content: `code`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -563,7 +561,7 @@ Content: `id`, `code`.
 
 ### ColorPicker
 
-Content: `id`, `colors`.
+Content: `colors`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -583,7 +581,7 @@ Content: `title`.
 
 ### Combobox
 
-Content: `id`, `input`.
+Content: `input`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -601,7 +599,7 @@ Content: `label`.
 
 ### CommandPalette
 
-Content: `id`, `input`.
+Content: `input`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -612,8 +610,6 @@ Content: `id`, `input`.
 
 ### ContextMenu
 
-Content: `id`.
-
 | property | kind | value | description |
 | --- | --- | --- | --- |
 | `child` | property | c | The area that reacts to right-clicks. |
@@ -623,7 +619,7 @@ Content: `id`.
 
 ### CountUp
 
-Content: `id`, `value`.
+Content: `value`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -633,8 +629,6 @@ Content: `id`, `value`.
 | `size` | property | s | Font size in px (default: the theme's large size). |
 
 ### DataTable
-
-Content: `id`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -649,8 +643,6 @@ Content: `id`.
 
 ### DateInput
 
-Content: `id`.
-
 | property | kind | value | description |
 | --- | --- | --- | --- |
 | `value` | property | d | The current (controlled) date; changing it rewrites the field. |
@@ -659,7 +651,7 @@ Content: `id`.
 
 ### DatePicker
 
-Content: `id`, `year`, `month`.
+Content: `year`, `month`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -670,7 +662,7 @@ Content: `id`, `year`, `month`.
 
 ### DateTimePicker
 
-Content: `id`, `year`, `month`.
+Content: `year`, `month`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -684,7 +676,7 @@ Content: `id`, `year`, `month`.
 
 ### DateTimeRangePicker
 
-Content: `id`, `year`, `month`.
+Content: `year`, `month`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -700,15 +692,13 @@ Content: `id`, `year`, `month`.
 
 ### DesignSystemSelector
 
-Content: `id`.
-
 | property | kind | value | description |
 | --- | --- | --- | --- |
 | `popup_surface` | property | s | Frost and opacity of the open list, see Select::popup_surface. |
 
 ### Dialog
 
-Content: `id`, `card`.
+Content: `card`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -727,6 +717,8 @@ Content: `title`.
 
 ### Divider
 
+Content: ``.
+
 | property | kind | value | description |
 | --- | --- | --- | --- |
 | `vertical` | property | flag | Vertical divider (needs a parent with a height). |
@@ -743,12 +735,12 @@ Content: `title`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
-| `text` | property | text | Builder for gpui's `.tooltip(...)`. |
+| `text` | property | text | Builds the tooltip shown on hover. |
 | `view` | property | text, cx | The tooltip as an ordinary view (static previews, docs). |
 
 ### DropdownMenu
 
-Content: `id`, `label`.
+Content: `label`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -767,7 +759,7 @@ Content: `kind`, `child`.
 
 ### Fab
 
-Content: `id`, `glyph`.
+Content: `glyph`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -779,7 +771,7 @@ Content: `id`, `glyph`.
 
 ### FabMenu
 
-Content: `id`, `icon`.
+Content: `icon`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -788,14 +780,14 @@ Content: `id`, `icon`.
 
 ### Feed
 
+Content: ``.
+
 | property | kind | value | description |
 | --- | --- | --- | --- |
 | `push` | property | v | Queues a sample. Cheap and callable from any thread. |
 | `push_all` | property | vs | Queues several samples, oldest first. |
 
 ### FileDropZone
-
-Content: `id`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -846,7 +838,7 @@ Content: `label`.
 
 ### FullScreenDialog
 
-Content: `id`, `title`.
+Content: `title`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -863,8 +855,6 @@ Content: `text`.
 
 ### HoverCard
 
-Content: `id`.
-
 | property | kind | value | description |
 | --- | --- | --- | --- |
 | `trigger` | property | t | The element that opens the popup. |
@@ -873,8 +863,6 @@ Content: `id`.
 | `width` | property | w | Width in px. |
 
 ### Icon
-
-Content: `id`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -897,7 +885,7 @@ Content: `child`.
 
 ### IconButton
 
-Content: `id`, `glyph`.
+Content: `glyph`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -924,8 +912,6 @@ Content: `id`, `glyph`.
 
 ### IndeterminateBar
 
-Content: `id`.
-
 | property | kind | value | description |
 | --- | --- | --- | --- |
 | `style` | property | s | Draw the bar the way a design does (see dodai_core::ProgressStyle). |
@@ -934,6 +920,8 @@ Content: `id`.
 | `playback` | property | p | Play once, loop (default) or hold still. |
 
 ### InputBox
+
+Content: ``.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -956,7 +944,7 @@ Content: `key`.
 
 ### Knob
 
-Content: `id`, `value`.
+Content: `value`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -978,7 +966,7 @@ Content: `text`.
 
 ### List
 
-Content: `id`, `items`.
+Content: `items`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -987,7 +975,7 @@ Content: `id`, `items`.
 
 ### ListItem
 
-Content: `id`, `label`.
+Content: `label`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -1019,8 +1007,6 @@ Content: `capacity`.
 
 ### LoadingIndicator
 
-Content: `id`.
-
 | property | kind | value | description |
 | --- | --- | --- | --- |
 | `contained` | property | c | Draw inside a filled container. |
@@ -1028,11 +1014,9 @@ Content: `id`.
 
 ### Markdown
 
-Content: `id`, `src`.
+Content: `src`.
 
 ### Menu
-
-Content: `id`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -1058,8 +1042,6 @@ Content: `label`.
 
 ### ModalDrawer
 
-Content: `id`.
-
 | property | kind | value | description |
 | --- | --- | --- | --- |
 | `items` | property | items | The items. |
@@ -1075,11 +1057,15 @@ Content: `text`.
 
 ### NavigationBar
 
+Content: ``.
+
 | property | kind | value | description |
 | --- | --- | --- | --- |
 | `item` | property | i | Add an item. |
 
 ### NavigationDrawer
+
+Content: ``.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -1091,7 +1077,7 @@ Content: `text`.
 
 ### NavigationItem
 
-Content: `id`, `label`.
+Content: `label`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -1104,6 +1090,8 @@ Content: `id`, `label`.
 
 ### NavigationRail
 
+Content: ``.
+
 | property | kind | value | description |
 | --- | --- | --- | --- |
 | `item` | property | i | Add an item. |
@@ -1111,7 +1099,7 @@ Content: `id`, `label`.
 
 ### NumberStepper
 
-Content: `id`, `value`.
+Content: `value`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -1121,7 +1109,7 @@ Content: `id`, `value`.
 
 ### OtpInput
 
-Content: `id`, `len`.
+Content: `len`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -1134,6 +1122,8 @@ Content: `id`, `len`.
 
 ### PageGrid
 
+Content: ``.
+
 | property | kind | value | description |
 | --- | --- | --- | --- |
 | `width` | property | w | The width the grid lays out in, instead of the window's. |
@@ -1141,13 +1131,15 @@ Content: `id`, `len`.
 
 ### Pagination
 
-Content: `id`, `page`, `total`.
+Content: `page`, `total`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
 | `change` | event | v | Called with the requested 1-based page. |
 
 ### Panel
+
+Content: ``.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -1162,8 +1154,6 @@ Content: `id`, `page`, `total`.
 | `refine` | property | f | Extra layout styling on the root div (width, margin…). |
 
 ### Popover
-
-Content: `id`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -1186,7 +1176,7 @@ Content: `value`.
 
 ### RangeSlider
 
-Content: `id`, `lo`, `hi`.
+Content: `lo`, `hi`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -1200,7 +1190,7 @@ Content: `id`, `lo`, `hi`.
 
 ### Rating
 
-Content: `id`, `value`.
+Content: `value`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -1209,8 +1199,6 @@ Content: `id`, `value`.
 | `change` | event | v | Called when the value changes, with the new value. |
 
 ### ResponsiveShell
-
-Content: `id`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -1228,14 +1216,14 @@ Content: `id`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
-| `build` | property | title, body, action | Builder for gpui's `.tooltip(...)`. |
+| `build` | property | title, body, action | Builds the tooltip shown on hover. |
 | `view` | property | title, body, action, cx | The tooltip as an ordinary view (static previews, docs). |
 
 ### Scanlines
 
-### ScrollArea
+Content: ``.
 
-Content: `id`.
+### ScrollArea
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -1247,6 +1235,8 @@ Content: `id`.
 
 ### ScrollSpy
 
+Content: ``.
+
 | property | kind | value | description |
 | --- | --- | --- | --- |
 | `pin` | property | key | Force `key` current (call on click) until release(Self::release). |
@@ -1254,8 +1244,6 @@ Content: `id`.
 | `current` | property | handle, items, slack | The current key. `items` is `(key, child index)` in document order; |
 
 ### SearchBar
-
-Content: `id`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -1265,7 +1253,7 @@ Content: `id`.
 
 ### SearchView
 
-Content: `id`, `input`.
+Content: `input`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -1279,7 +1267,7 @@ Content: `id`, `input`.
 
 ### Segmented
 
-Content: `id`, `options`.
+Content: `options`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -1290,8 +1278,6 @@ Content: `id`, `options`.
 | `select` | event | v | Called when an item is chosen, with the index. |
 
 ### Select
-
-Content: `id`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -1320,7 +1306,7 @@ Content: `label`.
 
 ### SelectionTrack
 
-Content: `id`, `window`, `cx`.
+Content: `window`, `cx`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -1330,7 +1316,7 @@ Content: `id`, `window`, `cx`.
 
 ### SideSheet
 
-Content: `id`, `title`.
+Content: `title`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -1340,8 +1326,6 @@ Content: `id`, `title`.
 | `dismiss` | event | flag | Called when the surface is dismissed. |
 
 ### Skeleton
-
-Content: `id`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -1353,7 +1337,7 @@ Content: `id`.
 
 ### Slider
 
-Content: `id`, `value`.
+Content: `value`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -1372,15 +1356,13 @@ Content: `id`, `value`.
 
 ### Snackbar
 
-Content: `id`, `message`.
+Content: `message`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
 | `action` | property | label, f | Action label and handler. |
 
 ### SnapStack
-
-Content: `id`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -1396,8 +1378,6 @@ Content: `id`.
 
 ### Spinner
 
-Content: `id`.
-
 | property | kind | value | description |
 | --- | --- | --- | --- |
 | `style` | property | s | Draw this spinner instead of the design's own (to show them side by side). |
@@ -1407,7 +1387,7 @@ Content: `id`.
 
 ### SplitButton
 
-Content: `id`, `label`.
+Content: `label`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -1419,7 +1399,7 @@ Content: `id`, `label`.
 
 ### SplitPane
 
-Content: `id`, `ratio`.
+Content: `ratio`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -1434,15 +1414,11 @@ Content: `steps`, `current`.
 
 ### Stopwatch
 
-Content: `id`.
-
 | property | kind | value | description |
 | --- | --- | --- | --- |
 | `max_laps` | property | n | How many of the newest laps to list (default 5). |
 
 ### Table
-
-Content: `id`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -1455,8 +1431,6 @@ Content: `id`.
 | `sort` | event | v | Make headers clickable; called with the column index. |
 
 ### Tabs
-
-Content: `id`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -1483,7 +1457,7 @@ Content: `text`, `tone`.
 
 ### TagField
 
-Content: `id`, `tags`.
+Content: `tags`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -1491,8 +1465,6 @@ Content: `id`, `tags`.
 | `remove` | event | v | Called when it is removed, with the index. |
 
 ### TapTempo
-
-Content: `id`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -1531,8 +1503,6 @@ Content: `cx`.
 
 ### ThemeSelector
 
-Content: `id`.
-
 | property | kind | value | description |
 | --- | --- | --- | --- |
 | `popup_surface` | property | s | Frost and opacity of the open list, see Select::popup_surface. |
@@ -1540,11 +1510,7 @@ Content: `id`.
 
 ### ThemeSwitcherBar
 
-Content: `id`.
-
 ### TimeInput
-
-Content: `id`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -1554,7 +1520,7 @@ Content: `id`.
 
 ### TimePicker
 
-Content: `id`, `hour`, `minute`.
+Content: `hour`, `minute`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -1578,8 +1544,6 @@ Content: `title`.
 
 ### Timer
 
-Content: `id`.
-
 | property | kind | value | description |
 | --- | --- | --- | --- |
 | `seconds` | property | s | Duration in seconds. |
@@ -1592,6 +1556,8 @@ Content: `id`.
 Content: `tone`, `message`.
 
 ### Toolbar
+
+Content: ``.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -1623,7 +1589,7 @@ Content: `label`.
 
 ### TreeNavigation
 
-Content: `id`, `items`.
+Content: `items`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -1632,7 +1598,7 @@ Content: `id`, `items`.
 
 ### TreeView
 
-Content: `id`, `items`.
+Content: `items`.
 
 | property | kind | value | description |
 | --- | --- | --- | --- |
@@ -2028,6 +1994,8 @@ Content: `tasks`.
 
 ### ChartStack
 
+Content: ``.
+
 | property | kind | value | description |
 | --- | --- | --- | --- |
 | `pane` | property | weight, build | Add a pane of relative `weight`; `build` receives its height in px. |
@@ -2271,7 +2239,7 @@ Content: `values`.
 | `style` | property | s | Drawing style (default SparkStyle::Line). |
 | `guide` | property | g | Faint dashed reference line at the mean, the peak or a fixed value. |
 | `fluid` | property | f | Stretch to the available width instead of the fixed `w`. |
-| `live` | property | window | Draws a dodai_gpui::Live window instead of fixed values, sliding left between samples. |
+| `live` | property | window | Draws a live window of samples instead of fixed values, sliding left between samples. |
 | `marker` | property | m | Shape at the line's tip (default `Dot`; `Marker::None` to hide). |
 | `all_points` | property | a | Draw the marker on every point instead of only the last. |
 | `size` | property | w, h | Width and height in px. |

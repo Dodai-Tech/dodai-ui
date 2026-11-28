@@ -157,7 +157,7 @@ def api-md [names: list<string>, api: record]: nothing -> list<string> {
             let props = ($fns | where name != "new")
             let clean = { |d| $d | str replace --all --regex '\[`([^`]*)`\]' '$1' | str replace --all '|' '/' }
             [$"### ($n)" ""]
-            | append (if ($ctor == null or ($ctor.args | is-empty)) { [] } else { [$"Content: ($ctor.args | split row ', ' | each { |a| $'`($a)`' } | str join ', ')." ""] })
+            | append (if ($ctor == null or ($ctor.args | split row ', ' | where { $in != 'id' } | is-empty)) { [] } else { [$"Content: ($ctor.args | split row ', ' | where { $in != 'id' } | each { |a| $'`($a)`' } | str join ', ')." ""] })
             | append (if ($props | is-empty) { [] } else {
                 ["| property | kind | value | description |" "| --- | --- | --- | --- |"]
                 | append ($props | each { |f|
@@ -258,6 +258,31 @@ def spec-md [system: string, base: record, themes: list<string>]: nothing -> str
         ...($comps.components | each { |c| $"| ($c.name) | `($src | get -o $c.name | default '-')` |" })
         ...($charts | each { |c| $"| ($c.name) | `($c.file)` |" })
     ] | str join "\n"
+}
+
+# Canonical property and event names of a component (the spec's vocabulary): gpui's builder
+# methods with `on_` stripped for events, `new` excluded.
+def canon-names [fns: list<record>]: nothing -> list<string> {
+    $fns | where name != "new" | get name | each { |n| if ($n | str starts-with "on_") { $n | str replace "on_" "" } else { $n } } | uniq
+}
+
+# How well a toolkit follows the spec's names: per component, the canonical properties it does
+# not expose under the same name. `nu scripts/design.nu conform bevy`
+def "main conform" [toolkit: string, --list] {
+    let ref = (gpui-api)
+    let src = (glob $"crates/dodai-($toolkit)/src/**/*.rs" | sort | each { |f| open --raw $f } | str join "\n")
+    let have = (api-of $src)
+    let comps = (open dist/design/components.json | get components | where { |c| $toolkit in $c.toolkits })
+    let rows = ($comps | each { |c|
+        let want = (canon-names ($ref | get -o $c.name | default []))
+        let got = (canon-names ($have | get -o $c.name | default []))
+        let missing = ($want | where { |w| $w not-in $got })
+        { component: $c.name, spec: ($want | length), matched: (($want | length) - ($missing | length)), missing: $missing }
+    } | where spec > 0)
+    let total = ($rows | get spec | math sum)
+    let ok = ($rows | get matched | math sum)
+    if $list { $rows | where { $in.missing | is-not-empty } | each { |r| print $"($r.component): ($r.missing | str join ', ')" } }
+    print $"($toolkit): ($ok)/($total) canonical properties match by name across ($rows | length) components"
 }
 
 def spec-files []: nothing -> list<record> {

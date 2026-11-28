@@ -370,7 +370,7 @@ pub struct RichTooltip {
 }
 
 impl RichTooltip {
-    /// Builder for gpui's `.tooltip(...)`.
+    /// Builds the tooltip shown on hover.
     pub fn build(
         title: impl Into<SharedString>,
         body: impl Into<SharedString>,

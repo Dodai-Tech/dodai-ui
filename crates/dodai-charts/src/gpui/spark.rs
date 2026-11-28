@@ -134,7 +134,7 @@ impl Sparkline {
 
 impl Sparkline {
     dodai_gpui::follow_api!();
-    /// Draws a [`dodai_gpui::Live`] window instead of fixed values, sliding left between samples.
+    /// Draws a live window of samples instead of fixed values, sliding left between samples.
     pub fn live(mut self, window: &dodai_gpui::live::Live) -> Self {
         self.values = window.values();
         self.live = Some(window.clone());
