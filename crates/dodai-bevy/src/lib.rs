@@ -22,6 +22,7 @@
 //! [`widgets`] (components + spawn helpers), [`gizmo`] (orientation axis gizmo), [`style`] (pure token mapping),
 //! [`material`] (shader materials), [`plugin`].
 
+pub mod builders;
 pub mod components;
 pub mod data;
 pub mod effects;
@@ -58,6 +59,7 @@ pub use theme::{color, DodaiTheme};
 
 /// Everything needed to build a themed UI.
 pub mod prelude {
+    pub use crate::builders::{Accordion, Alert, Avatar, Badge, Breadcrumb};
     pub use crate::components::*;
     pub use crate::data::*;
     pub use crate::effects::*;
