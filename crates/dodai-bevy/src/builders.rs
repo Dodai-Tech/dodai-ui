@@ -5,8 +5,10 @@
 use bevy::prelude::*;
 use dodai_core::Tone;
 
-use crate::components::{alert, avatar, badge, breadcrumb};
+use crate::components::{alert, avatar, badge, breadcrumb, chip};
 use crate::overlay::accordion;
+use crate::widgets::{self, ButtonSpec, TextRole};
+use dodai_core::{ButtonVariant, ControlSize, Crop};
 
 /// A count or short label in a tone.
 pub struct Badge {
@@ -129,6 +131,237 @@ impl Alert {
     }
 }
 
+/// A button. Not in the prelude: bevy has its own `Button`; use `builders::Button`.
+pub struct Button {
+    spec: ButtonSpec,
+}
+
+impl Button {
+    /// A button labelled `label` (empty for an icon-only button).
+    pub fn new(label: impl Into<String>) -> Self {
+        Self {
+            spec: ButtonSpec::new(label, ButtonVariant::Primary),
+        }
+    }
+    /// The emphasis variant (default `Primary`).
+    #[must_use]
+    pub fn variant(mut self, v: ButtonVariant) -> Self {
+        self.spec = ButtonSpec::from_parts(self.spec, v);
+        self
+    }
+    /// Ignore input and use the disabled tokens.
+    #[must_use]
+    pub fn disabled(mut self, d: bool) -> Self {
+        self.spec = self.spec.disabled(d);
+        self
+    }
+    /// Size step.
+    #[must_use]
+    pub fn size(mut self, s: ControlSize) -> Self {
+        self.spec = self.spec.size(s);
+        self
+    }
+    /// Square corners instead of the pill, on rounded designs.
+    #[must_use]
+    pub fn square(mut self, on: bool) -> Self {
+        self.spec = self.spec.square(on);
+        self
+    }
+    /// Crop one end the way the design crops buttons.
+    #[must_use]
+    pub fn crop(mut self, c: Crop) -> Self {
+        self.spec = self.spec.crop(c);
+        self
+    }
+    /// The bundle to spawn.
+    pub fn bundle(self) -> impl Bundle {
+        self.spec.bundle()
+    }
+}
+
+/// A rule between content.
+#[derive(Default)]
+pub struct Divider {
+    vertical: bool,
+}
+
+impl Divider {
+    /// A horizontal divider.
+    pub fn new() -> Self {
+        Self::default()
+    }
+    /// Vertical (needs a parent with a height).
+    #[must_use]
+    pub fn vertical(mut self, on: bool) -> Self {
+        self.vertical = on;
+        self
+    }
+    /// The bundle to spawn.
+    pub fn bundle(self) -> impl Bundle {
+        let node = if self.vertical {
+            Node {
+                width: Val::Px(1.0),
+                align_self: AlignSelf::Stretch,
+                ..default()
+            }
+        } else {
+            Node {
+                width: Val::Percent(100.0),
+                height: Val::Px(1.0),
+                ..default()
+            }
+        };
+        (
+            widgets::UiDivider {
+                vertical: self.vertical,
+            },
+            node,
+            BackgroundColor::default(),
+        )
+    }
+}
+
+/// Section title text.
+pub struct Heading(String);
+
+impl Heading {
+    /// A heading reading `text`.
+    pub fn new(text: impl Into<String>) -> Self {
+        Self(text.into())
+    }
+    /// The bundle to spawn.
+    pub fn bundle(self) -> impl Bundle {
+        widgets::heading(self.0)
+    }
+}
+
+/// Themed text in a role. Not in the prelude: bevy has its own `Text`; use `builders::Text`.
+pub struct Text {
+    role: TextRole,
+    text: String,
+    muted: bool,
+}
+
+impl Text {
+    /// `text` in `role`.
+    pub fn new(role: TextRole, text: impl Into<String>) -> Self {
+        Self {
+            role,
+            text: text.into(),
+            muted: false,
+        }
+    }
+    /// The secondary text colour.
+    #[must_use]
+    pub fn muted(mut self, on: bool) -> Self {
+        self.muted = on;
+        self
+    }
+    /// The bundle to spawn.
+    pub fn bundle(self) -> impl Bundle {
+        widgets::text(
+            self.text,
+            if self.muted {
+                TextRole::Muted
+            } else {
+                self.role
+            },
+        )
+    }
+}
+
+/// A small tinted label.
+pub struct Tag {
+    text: String,
+    tone: Tone,
+    solid: bool,
+}
+
+impl Tag {
+    /// A tag reading `text` in `tone`.
+    pub fn new(text: impl Into<String>, tone: Tone) -> Self {
+        Self {
+            text: text.into(),
+            tone,
+            solid: false,
+        }
+    }
+    /// Solid fill (default is a tinted background).
+    #[must_use]
+    pub fn solid(mut self, on: bool) -> Self {
+        self.solid = on;
+        self
+    }
+    /// The bundle to spawn.
+    pub fn bundle(self) -> impl Bundle {
+        widgets::tag(self.text, self.tone, self.solid)
+    }
+}
+
+/// A spinning ring.
+pub struct Spinner {
+    size: f32,
+    style: Option<dodai_core::SpinnerStyle>,
+}
+
+impl Default for Spinner {
+    fn default() -> Self {
+        Self {
+            size: 24.0,
+            style: None,
+        }
+    }
+}
+
+impl Spinner {
+    /// A 24 px spinner in the design's own style.
+    pub fn new() -> Self {
+        Self::default()
+    }
+    /// Side in px.
+    #[must_use]
+    pub fn size(mut self, px: f32) -> Self {
+        self.size = px;
+        self
+    }
+    /// Draw this style instead of the design's own.
+    #[must_use]
+    pub fn style(mut self, s: dodai_core::SpinnerStyle) -> Self {
+        self.style = Some(s);
+        self
+    }
+    /// The bundle to spawn.
+    pub fn bundle(self) -> impl Bundle {
+        crate::spinner::spinner_with(self.size, self.style)
+    }
+}
+
+/// A selectable pill.
+pub struct Chip {
+    label: String,
+    selected: bool,
+}
+
+impl Chip {
+    /// A chip labelled `label`.
+    pub fn new(label: impl Into<String>) -> Self {
+        Self {
+            label: label.into(),
+            selected: false,
+        }
+    }
+    /// Shown selected.
+    #[must_use]
+    pub fn selected(mut self, on: bool) -> Self {
+        self.selected = on;
+        self
+    }
+    /// The bundle to spawn.
+    pub fn bundle(self) -> impl Bundle {
+        chip(self.label, self.selected)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -141,5 +374,17 @@ mod tests {
         is_bundle(Breadcrumb::new(["Home", "Docs"]).bundle());
         is_bundle(Accordion::new().item("a", "b").expanded(0).bundle());
         is_bundle(Alert::new(Tone::Warning).message("Low").bundle());
+        is_bundle(
+            Button::new("Go")
+                .variant(ButtonVariant::Ghost)
+                .disabled(true)
+                .bundle(),
+        );
+        is_bundle(Divider::new().vertical(true).bundle());
+        is_bundle(Heading::new("T").bundle());
+        is_bundle(Text::new(TextRole::Content, "t").muted(true).bundle());
+        is_bundle(Tag::new("x", Tone::Info).solid(true).bundle());
+        is_bundle(Spinner::new().size(16.0).bundle());
+        is_bundle(Chip::new("c").selected(true).bundle());
     }
 }

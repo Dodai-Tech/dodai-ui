@@ -49,7 +49,7 @@ pub fn spinner_of(size: f32, style: SpinnerStyle) -> impl Bundle {
     spinner_with(size, Some(style))
 }
 
-fn spinner_with(size: f32, style: Option<SpinnerStyle>) -> impl Bundle {
+pub(crate) fn spinner_with(size: f32, style: Option<SpinnerStyle>) -> impl Bundle {
     (
         UiSpinner { size, style },
         SpinnerBuilt::default(),

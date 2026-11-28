@@ -576,6 +576,12 @@ impl ButtonSpec {
         }
     }
 
+    /// Replace the variant of `spec`.
+    pub fn from_parts(mut spec: Self, variant: ButtonVariant) -> Self {
+        spec.variant = variant;
+        spec
+    }
+
     /// Crop this end the way the design crops buttons.
     pub fn crop(mut self, end: dodai_core::Crop) -> Self {
         self.crop = Some(end);
