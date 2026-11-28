@@ -117,6 +117,45 @@ def gpui-charts []: nothing -> list<record> {
     } | flatten
 }
 
+# The public options of every type in a source text: `pub fn` of each inherent `impl`, with its
+# first doc line and its parameters (`self` dropped). Record name -> list of { name, args, doc }.
+def api-of [text: string]: nothing -> record {
+    $text | parse --regex '(?s)\nimpl(?:<[^>]*>)? (?<name>[A-Z]\w*)(?:<[^>]*>)? \{\n(?<body>.*?)\n\}\n'
+    | each { |blk|
+        let real = ($blk.body | parse --regex '(?ms)^((?:    ///[^\n]*\n)*)    pub fn (?<fname>[a-z]\w*)[^(]*\((?<args>.*?)\)\s*(?:->[^{;]*)?\s*(?:where[^{]*)?\{' | each { |m|
+            let doc = if ($m.capture0 | is-empty) { "" } else { $m.capture0 | lines | first | str replace --regex '^\s*/// ?' '' }
+            let args = ($m.args | str replace --all --regex '\([^)]*\)' '' | split row ',' | each { |a| $a | str trim } | where { |a| ($a | is-not-empty) and ($a !~ '^&?(mut )?self') } | each { |a| $a | split row ':' | first | str trim } | str join ', ')
+            { name: $m.fname, args: $args, doc: $doc, at: ($blk.body | str index-of $m.fname) }
+        })
+        let macros = ($blk.body | parse --regex '(?m)^\s*(?:\w+::)*(?:setter|callback)!\(\n((?:\s*///[^\n]*\n)+)\s*(?<fname>[a-z]\w*)(?:,\s*(?:\w+:\s*)?(?<ty>[^\n)]*))?' | each { |m|
+            { name: $m.fname, args: (if ($m.ty | is-empty) { "" } else { "v" }), doc: ($m.capture0 | lines | first | str replace --regex '^\s*/// ?' ''), at: 0 }
+        })
+        let fns = ($real | append $macros | select name args doc)
+        { name: $blk.name, fns: $fns }
+    }
+    | where { $in.fns | is-not-empty }
+    | reduce --fold {} { |r, acc| $acc | upsert $r.name (($acc | get -o $r.name | default []) | append $r.fns) }
+}
+
+# Options of every gpui component and chart, keyed by type name.
+def gpui-api []: nothing -> record {
+    (glob crates/dodai-gpui/src/**/*.rs) | append (glob crates/dodai-charts/src/gpui/*.rs) | sort | each { |f| api-of (open --raw $f) }
+    | reduce --fold {} { |r, acc| $acc | merge $r }
+}
+
+# "### Name" blocks listing the options of the given names.
+def api-md [names: list<string>, api: record]: nothing -> list<string> {
+    $names | each { |n|
+        let fns = ($api | get -o $n | default [])
+        if ($fns | is-empty) { [] } else {
+            [$"### ($n)" ""] | append ($fns | each { |f|
+                let sig = if ($f.args | is-empty) { $"`($f.name)`" } else { $"`($f.name)\(($f.args)\)`" }
+                if ($f.doc | is-empty) { $"- ($sig)" } else { $"- ($sig): ($f.doc | str replace --all '|' '/')" }
+            }) | append ""
+        }
+    } | flatten
+}
+
 # The icon pack a design draws (what `dodai-icons` resolves for its `Look::icons`).
 def icon-pack [system: string]: nothing -> string {
     match $system {
@@ -188,6 +227,10 @@ def spec-md [system: string, base: record, themes: list<string>]: nothing -> str
         "| --- | --- | --- |"
         ...($behaviour | each { |c| $"| ($c.name) | ($c.doc) | ($c.toolkits | str join ', ') |" })
         ""
+        $"## Component options \(what each gpui component and chart accepts\)\n"
+        "Every public builder method of a component (or chart), with its parameters and first doc line. A toolkit matches gpui when it accepts the same options."
+        ""
+        ...(api-md ($comps.components | get name | append ($charts | get name)) (gpui-api))
         $"## Components \(($comps.components | length)\)\n"
         "| component | summary | toolkits | gpui reference |"
         "| --- | --- | --- | --- |"

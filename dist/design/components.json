@@ -20,6 +20,7 @@
       "behaviour": false,
       "toolkits": [
         "gpui",
+        "iced",
         "dioxus",
         "bevy",
         "leptos",
@@ -220,6 +221,7 @@
       "behaviour": false,
       "toolkits": [
         "gpui",
+        "iced",
         "dioxus",
         "bevy",
         "leptos",
@@ -480,6 +482,7 @@
       "behaviour": false,
       "toolkits": [
         "gpui",
+        "iced",
         "dioxus",
         "bevy",
         "leptos",
@@ -654,6 +657,7 @@
       "behaviour": false,
       "toolkits": [
         "gpui",
+        "iced",
         "dioxus",
         "bevy",
         "leptos",
@@ -872,6 +876,7 @@
       "behaviour": false,
       "toolkits": [
         "gpui",
+        "iced",
         "dioxus",
         "bevy",
         "topcoat",
@@ -902,6 +907,7 @@
       "behaviour": false,
       "toolkits": [
         "gpui",
+        "iced",
         "dioxus",
         "bevy",
         "leptos",
@@ -986,6 +992,7 @@
       "behaviour": false,
       "toolkits": [
         "gpui",
+        "iced",
         "dioxus",
         "bevy",
         "topcoat",
@@ -1029,6 +1036,7 @@
       "behaviour": false,
       "toolkits": [
         "gpui",
+        "iced",
         "dioxus",
         "bevy",
         "egui",
@@ -1056,6 +1064,7 @@
       "behaviour": false,
       "toolkits": [
         "gpui",
+        "iced",
         "dioxus",
         "bevy",
         "topcoat",
@@ -1133,6 +1142,7 @@
       "behaviour": false,
       "toolkits": [
         "gpui",
+        "iced",
         "dioxus",
         "bevy",
         "leptos",
@@ -1340,6 +1350,7 @@
       "behaviour": false,
       "toolkits": [
         "gpui",
+        "iced",
         "dioxus",
         "bevy",
         "topcoat",
@@ -1438,6 +1449,7 @@
       "behaviour": false,
       "toolkits": [
         "gpui",
+        "iced",
         "dioxus",
         "bevy",
         "freya",
@@ -1567,6 +1579,7 @@
       "behaviour": false,
       "toolkits": [
         "gpui",
+        "iced",
         "dioxus",
         "bevy",
         "leptos",
@@ -1579,6 +1592,7 @@
       "behaviour": false,
       "toolkits": [
         "gpui",
+        "iced",
         "dioxus",
         "bevy",
         "leptos",
@@ -1616,6 +1630,7 @@
       "behaviour": false,
       "toolkits": [
         "gpui",
+        "iced",
         "dioxus",
         "bevy",
         "leptos",

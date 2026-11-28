@@ -374,11 +374,1456 @@ Entry effects: Fade, Rise, Drop, Slide from left, Slide from right. Overscroll f
 | Live | A fixed-size window of recent samples. Clones share the same data. | gpui, dioxus, bevy, leptos, yew |
 | PageGrid | The design's page grid (columns, gap and outer margins at the viewport width) laid out as wrapping rows of cells that each span a number of columns. | gpui, dioxus, bevy, leptos, yew |
 
+## Component options (what each gpui component and chart accepts)
+
+Every public builder method of a component (or chart), with its parameters and first doc line. A toolkit matches gpui when it accepts the same options.
+
+### Accordion
+
+- `new(id)`: Create a new [`Accordion`].
+- `motion(m)`: Pace, easing and travel of opening and closing (a spring overshoots a little). Defaults
+- `item(title, body)`: Add an item.
+- `expanded(open)`: Indices expanded initially.
+
+### Alert
+
+- `new(tone, title)`: Create a new [`Alert`].
+- `message(m)`: Message text.
+- `banner(b)`: Solid, borderless banner style.
+
+### Avatar
+
+- `new(initials)`: Create a new [`Avatar`].
+- `size(s)`: Size in px.
+- `status(t)`: Small presence dot at the bottom-right.
+- `solid(on)`: Opaque tile (tint pre-mixed with the surface), so overlapping avatars
+- `tone(t)`: Tint the tile with a tone instead of the brand colour.
+
+### AxisGizmo
+
+- `new(id, basis)`: Create a new [`AxisGizmo`] for a camera `basis` (see [`Basis::from_orbit`]).
+- `size(px)`: Side of the round gizmo in px (default 130).
+- `axes(axes)`: Which axes to show (default: +X, +Y, +Z, -X, -Y).
+- `on_home(f)`: Called when the home button is clicked.
+- `on_select(v)`: Called when an axis ball is clicked: show the view from that side
+- `on_drag(v)`: Called with the pointer movement in px while dragging inside the gizmo
+
+### Badge
+
+- `new(text, tone)`: Badge with a short label (e.g. a count).
+- `dot(tone)`: Label-less status dot.
+
+### Banner
+
+- `new(id, tone, message)`: Create a new [`Banner`].
+- `action(label, f)`: Text button on the right, e.g. "Undo".
+- `dismissible(on)`: Show a dismiss button.
+- `on_dismiss`: Called when the surface is dismissed.
+
+### BottomAppBar
+
+- `new`: Create a new [`BottomAppBar`].
+- `trailing(e)`: Element pinned to the end (e.g. a [`crate::Fab`]).
+
+### BottomSheet
+
+- `new(id)`: Create a new [`BottomSheet`].
+- `title(t)`: Title text.
+- `height(h)`: Height in px.
+- `on_dismiss`: Called when the surface is dismissed.
+
+### Breadcrumb
+
+- `new(id, items)`: Create a new [`Breadcrumb`].
+- `on_select(v)`: Called when an item is chosen, with the index.
+
+### Button
+
+- `new(id, label)`: Create a new [`Button`].
+- `variant(v)`: Choose the emphasis variant (default `Primary`).
+- `disabled(d)`: Disable interaction and use disabled tokens.
+- `on_click(f)`: Click callback (not called when disabled).
+- `refine(f)`: Escape hatch for extra layout styling (width, margin…) on the root div.
+- `corners(c)`: Cut these corners instead of the theme's (e.g. `Corners::TOP_LEFT`,
+- `radii(r)`: Per-corner radii `[top-left, top-right, bottom-right, bottom-left]` in px on rounded
+- `elevated(on)`: Material elevated button: tonal surface lifted by a shadow (1 dp, 2 dp on hover).
+- `size(s)`: One of the five sizes (XS 32 … XL 136 under Material); default is the theme's own
+- `square(on)`: Square (rounded-rectangle) shape instead of the pill, on rounded designs.
+- `crop(c)`: Crop one end, drawn the way the current design crops it (a cut corner with a tick, a
+- `cut_gap(px)`: Space in px between the two bars of a cropped button's edge tick, left open in the border
+- `shimmer(on)`: Sweep a shimmer highlight over the button (e.g. while busy), clipped to its shape.
+
+### Card
+
+- `new(variant)`: Create a new [`Card`].
+- `accent(on)`: Fills the card with the accent colour (primary) and switches text to the on-accent colour.
+- `headline(t)`: Headline text.
+- `width(w)`: Fixed width in px (default: fill the parent).
+- `corners(c)`: Cut these corners instead of the theme's.
+- `supporting(t)`: Supporting text.
+
+### Carousel
+
+- `new(id)`: Create a new [`Carousel`].
+- `disabled(d)`: Disable paging: dimmed arrows, no drag, wheel or keys.
+- `item(e)`: Add an item.
+- `selected(i)`: The selected item (controlled).
+- `visible(n)`: Items shown at once (default 3).
+- `item_width(w)`: Width of each item in px.
+- `layout(l)`: Item arrangement; the contained layouts ignore `visible` / `item_width`.
+- `width(w)`: Total width of the item row for the contained layouts.
+- `fill(on)`: Fill the parent's width: items (uncontained) or the item row (contained layouts) are
+- `motion(m)`: Pace, easing and travel of paging and of a throw landing (a spring keeps the throw's
+- `item_height(h)`: Item height for the contained layouts.
+- `on_select(v)`: Called when an item is chosen, with the index.
+
+### Chip
+
+- `new(id, label)`: Create a new [`Chip`].
+- `selected(s)`: The selected item (controlled).
+- `leading(icon)`: Leading icon (assist and input chips).
+- `filter(on)`: Filter chip: a check mark replaces the leading icon while selected.
+- `elevated(on)`: Elevated chip: a tonal container with a shadow instead of an outline (where the design
+- `disabled(d)`: Disable the control.
+- `on_remove(f)`: Show ✕ and call `f` when it is clicked.
+- `on_click(v)`: Called when it is clicked, with the click event.
+
+### CircularProgress
+
+- `new(value)`: Create a new [`CircularProgress`].
+- `indeterminate`: Show the indeterminate state.
+- `size(s)`: Size in px.
+- `thickness(t)`: Stroke thickness in px.
+- `tone(t)`: Semantic tone (colour).
+- `wavy(on)`: Material 3 Expressive wavy ring. Ignored by other design systems.
+- `label(on)`: Show the percentage in the middle (determinate only; default on).
+
+### Clock
+
+- `new`: Create a new [`Clock`].
+- `size(s)`: Size in px.
+- `face(f)`: Pick the face (default [`ClockFace::Auto`]: follows the theme).
+- `seconds(on)`: Show the second hand (default on).
+- `digital(on)`: Show `HH:MM:SS` under the face (default on).
+- `utc_offset_minutes(m)`: Offset from UTC in minutes (default 0 = UTC).
+- `local`: Use this machine's time zone.
+
+### CodeBlock
+
+- `new(id, code)`: Create a new [`CodeBlock`].
+- `language(l)`: `rust`, `js`, `ts`, `python`, `bash`, `toml`, `json`, … (others stay plain).
+- `line_numbers(on)`: Show line numbers.
+- `copy_button(on)`: Show a copy button.
+- `max_height(h)`: Scroll vertically past `h` px instead of growing with the code.
+- `scrollbar(on)`: Draw scrollbars (off by default; wheel and trackpad scrolling always work).
+
+### ColorPicker
+
+- `new(id, colors)`: Create a new [`ColorPicker`].
+- `selected(i)`: The selected item (controlled).
+- `columns(n)`: Number of columns.
+- `on_select(v)`: Called when an item is chosen, with the index.
+
+### Column
+
+- `new(title)`: Create a new [`Column`].
+- `width(w)`: Initial width in px (the last column also stretches to fill).
+- `sortable(on)`: Allow sorting by this column.
+- `numeric(on)`: Right-align (numbers).
+
+### Combobox
+
+- `new(id, input)`: Create a new [`Combobox`].
+- `options(o)`: The options to offer.
+- `open(o)`: Whether the popup is open (controlled).
+- `on_select(v)`: Called with the index into the original `options`.
+
+### Command
+
+- `new(label)`: Create a new [`Command`].
+- `hint(h)`: Secondary hint text.
+
+### CommandPalette
+
+- `new(id, input)`: Create a new [`CommandPalette`].
+- `commands(c)`: The commands to offer.
+- `max_rows(n)`: Most rows shown before scrolling.
+- `on_run(v)`: Called when a command is run, with the index.
+- `on_dismiss`: Called when the surface is dismissed.
+
+### ContextMenu
+
+- `new(id)`: Create a new [`ContextMenu`].
+- `child(c)`: The area that reacts to right-clicks.
+- `items(i)`: The items.
+- `width(w)`: Width in px.
+- `on_select(v)`: Called when an item is chosen, with the index.
+
+### CountUp
+
+- `new(id, value)`: `id` must be unique among siblings (it keys the animation state).
+- `prefix(p)`: Text before the number.
+- `suffix(s)`: Text after the number.
+- `decimals(d)`: Digits after the decimal point.
+- `size(s)`: Font size in px (default: the theme's large size).
+
+### DataTable
+
+- `new(id)`: Create a new [`DataTable`].
+- `columns(c)`: The column headers.
+- `rows(rows)`: The rows.
+- `rows_shared(rows)`: Share an existing row buffer (cheap for big tables).
+- `filter(f)`: Show only rows containing this text.
+- `selectable(on)`: Checkbox column with select-all (default on).
+- `height(h)`: Body viewport height in px.
+- `corners(c)`: Called with the selected source-row indices.
+- `on_change(v)`: Called when the value changes, with the selected indices.
+
+### DateInput
+
+- `new(id)`: Create a new [`DateInput`].
+- `value(d)`: The current (controlled) date; changing it rewrites the field.
+- `disabled(d)`: Disable the field.
+- `on_change(v)`: Called when the value changes, with the date.
+
+### DatePicker
+
+- `new(id, year, month)`: `year`/`month` (1-12) is the visible month.
+- `selected(d)`: The selected item (controlled).
+- `range(r)`: Highlight a span of days instead of one. Combine with [`range_pick`] in `on_select`.
+- `on_select(v)`: Called when an item is chosen, with the date.
+- `on_month(v)`: Called with the new visible `(year, month)` when the arrows are used.
+
+### DateTimePicker
+
+- `new(id, year, month)`: `year`/`month` (1-12) is the visible month; the time starts at 00:00.
+- `selected(d)`: The selected day (controlled).
+- `time(hour, minute)`: The time of day (controlled).
+- `twelve_hour(on)`: 12-hour display with AM/PM toggle.
+- `minute_step(s)`: Minute step of the time stepper.
+- `on_date(v)`: Called when a day is chosen.
+- `on_month(v)`: Called with the new visible `(year, month)` when the arrows are used.
+- `on_time(v)`: Called when the time changes, with hour and minute.
+
+### DateTimeRangePicker
+
+- `new(id, year, month)`: `year`/`month` (1-12) is the visible month; both times start at 00:00.
+- `range(r)`: The picked span of days (controlled).
+- `start_time(hour, minute)`: Time of day on the first day (controlled).
+- `end_time(hour, minute)`: Time of day on the last day (controlled).
+- `twelve_hour(on)`: 12-hour display with AM/PM toggle.
+- `minute_step(s)`: Minute step of both time steppers.
+- `on_select(v)`: Called when a day is clicked; pass it to [`range_pick`].
+- `on_month(v)`: Called with the new visible `(year, month)` when the arrows are used.
+- `on_start_time(v)`: Called when the start time changes, with hour and minute.
+- `on_end_time(v)`: Called when the end time changes, with hour and minute.
+
+### DesignSystemSelector
+
+- `new(id)`: Create a new [`DesignSystemSelector`].
+- `popup_surface(s)`: Frost and opacity of the open list, see [`Select::popup_surface`].
+
+### Dialog
+
+- `new(id, card)`: Create a new [`Dialog`].
+- `surface(s)`: Texture and effects for the dialog box; see [`DialogCard::surface`].
+- `on_dismiss`: Called when the surface is dismissed.
+
+### DialogCard
+
+- `new(title)`: Create a new [`DialogCard`].
+- `icon(i)`: Material 3 icon header: a secondary-coloured icon above a centred title.
+- `action(a)`: Footer action (usually a `Button`); order is left to right.
+- `width(w)`: Width in px.
+
+### Divider
+
+- `new`: Horizontal divider.
+- `vertical`: Vertical divider (needs a parent with a height).
+
+### DodaiTheme
+
+- `theme`: The active theme.
+- `switcher`: The theme switcher.
+- `tone(tone)`: Hsla for a status tone.
+
+### DodaiTooltip
+
+- `text(text)`: Builder for gpui's `.tooltip(...)`.
+- `view(text, cx)`: The tooltip as an ordinary view (static previews, docs).
+
+### DropdownMenu
+
+- `new(id, label)`: Create a new [`DropdownMenu`].
+- `items(i)`: The items.
+- `width(w)`: Width in px.
+- `on_select(v)`: Called when an item is chosen, with the index.
+
+### EntryScope
+
+- `key(id)`: Give the scope an element id so replaying (new id) resets the subtree.
+- `new(kind, child)`: Create a new [`EntryScope`].
+- `delay(d)`: Start the scoped components' animations after `d` (stagger).
+
+### Fab
+
+- `new(id, glyph)`: Create a new [`Fab`].
+- `icon(i)`: Draw a vector icon instead of the text glyph.
+- `extended(label)`: Show a label next to the glyph (extended FAB).
+- `size(s)`: Size step.
+- `variant(v)`: Visual variant.
+- `on_click(f)`: Called when clicked.
+
+### FabMenu
+
+- `new(id, icon)`: Create a new [`FabMenu`].
+- `items(items)`: The actions, nearest to the button last.
+- `on_select(v)`: Called when an item is chosen, with the index.
+
+### Feed
+
+- `new`: An empty feed.
+- `push(v)`: Queues a sample. Cheap and callable from any thread.
+- `push_all(vs)`: Queues several samples, oldest first.
+
+### FileDropZone
+
+- `new(id)`: Create a new [`FileDropZone`].
+- `title(t)`: Title text.
+- `hint(t)`: Secondary hint text.
+- `on_click(v)`: Called when it is clicked, with the click event.
+
+### Follow
+
+- `here`
+- `named(id)`: An id from a name, for components that already have one.
+- `with_animated(on)`: Turns following on or off for this component; off, it shows its value at once.
+- `with_interactive(on)`: Whether the component reacts to the pointer (hover readouts, click selection,
+- `answering_input`: Marks this follow as the answer to input (a hover or selection easing) rather than
+- `with_self_moving(on)`: Marks the data as moving on its own (a feed, a simulation) rather than because of the
+- `interactive`: Whether the component reacts to the pointer.
+- `with_on_focus(f)`: Sets the callback told which item has the focus.
+- `on_focus`: The callback told which item has the focus, if one is set.
+- `sub(name)`: A sibling identity for a second piece of state of the same component.
+- `element_id(w, cx)`: The state key of this component in the current frame: its id, plus the instance number
+- `with_id(id)`: Replaces the id.
+- `with_response(r)`: Overrides the design's response.
+
+### FormField
+
+- `new(label)`: Create a new [`FormField`].
+- `required(on)`: Append a red `*` to the label.
+- `help(h)`: Muted hint under the control (hidden while a validation message shows).
+- `error(m)`: Show an error message and the error state.
+- `warning(m)`: Show a warning message and the warning state.
+- `success(m)`: Show a success message and the success state.
+- `state(s)`: Validation state.
+- `child(c)`: The control(s) being labelled.
+
+### FrostedScene
+
+- `mesh(id, width, height)`: A scene over a generated picture in the theme's colours. `id` keys the cache.
+- `pixels(id, width, height, rgba)`: A scene over an picture of 4-byte pixels of exactly `width`×`height` pixels.
+- `radius(r)`: Corner radius of the panels (default: the theme's medium spacing).
+- `panel(, , content)`: A glass panel at `(x, y)` of `(width, height)` px, over the picture, holding `content`
+
+### FullScreenDialog
+
+- `new(id, title)`: Create a new [`FullScreenDialog`].
+- `action(label, f)`: Label of the header action button (e.g. "Save").
+- `on_dismiss`: Called when the surface is dismissed.
+
+### Heading
+
+- `new(text)`: Level 2 heading.
+- `level(level)`: Level 1 (largest) … 4 (smallest).
+
+### HoverCard
+
+- `new(id)`: Create a new [`HoverCard`].
+- `trigger(t)`: The element that opens the popup.
+- `content(c)`: The popup content.
+- `placement(p)`: Where the popup sits relative to its trigger.
+- `width(w)`: Width in px.
+
+### Icon
+
+- `new(id)`: An icon from a value chosen at run time (`Icon::new(id)`); written out by hand, name it
+- `size(s)`: Size in px.
+- `color(c)`: Colour (default: the theme's).
+- `state(state)`: What the symbol reports, as a theme colour (an explicit `.color(..)` wins).
+- `weight(w)`: Stroke width in px at 24 px size (scales with `size`; stroked drawings only).
+- `pack(pack)`: Force an icon pack instead of following the theme.
+- `filled(on)`: Use the filled form where the pack has one.
+- `modifier(m)`
+
+### IconBadge
+
+- `new(child)`: Create a new [`IconBadge`].
+- `count(n, tone)`: Counter badge; shows `99+` past 99, hidden when `n == 0`.
+- `dot(tone)`: Status dot.
+
+### IconButton
+
+- `new(id, glyph)`: Create a new [`IconButton`].
+- `icon_width(w)`: Narrow, default or wide (0.8 / 1 / 1.3 × the height).
+- `size(s)`: One of the five sizes (XS 32 … XL 136 under Material).
+- `square(on)`: Square shape instead of the circle, on rounded designs.
+- `icon(i)`: Draw a vector icon instead of the text glyph (crisp at any size/theme).
+- `variant(v)`: Visual variant.
+- `selected(on)`: Make it a toggle button; `true` renders as the filled (primary) state.
+- `disabled(d)`: Disable the control.
+- `on_click(f)`: Called when clicked.
+
+### Image
+
+- `path(p)`: Load the picture from a file path.
+- `url(u)`: Load the picture from a URL.
+- `size(w, h)`: Width and height in px.
+- `fit(f)`: How the picture fills its box.
+- `caption(c)`: Caption text.
+- `caption_on_image(on)`: Lay the caption over the picture on the design's dark fade instead of below it.
+- `video(on)`: Overlay a ▶ badge (a video poster).
+
+### IndeterminateBar
+
+- `new(id)`: Create a new [`IndeterminateBar`].
+- `style(s)`: Draw the bar the way a design does (see [`dodai_core::ProgressStyle`]).
+- `wavy(on)`: Material 3 Expressive wavy indeterminate bar. Ignored by other design systems.
+- `motion(m)`: Override cycle duration and easing (default 1400 ms, linear).
+- `playback(p)`: Play once, loop (default) or hold still.
+
+### InputBox
+
+- `new`: Create a new [`InputBox`].
+- `focused(f)`: Focus ring: border colour change and glow.
+- `placeholder(p)`: Shown (dimmed) while there are no children.
+
+### Interact
+
+- `control_state(disabled)`: Map pointer state (and `disabled`) to a token [`ControlState`].
+
+### Kbd
+
+- `new(key)`: Create a new [`Kbd`].
+- `corners(c)`: Cut these corners instead of the theme's.
+
+### Knob
+
+- `new(id, value)`: Create a new [`Knob`].
+- `range(min, max)`: Value range.
+- `step(step)`: Snap to multiples of `step` from `min`.
+- `size(px)`: Diameter in px (default 72).
+- `disabled(d)`: Disable interaction and dim.
+- `on_change(v)`: Called with the new value while dragging or scrolling.
+
+### Label
+
+- `new(text)`: Create a new [`Label`].
+
+### Lazy
+
+- `margin(px)`: Distance outside the window (px) within which the child is realised.
+
+### List
+
+- `new(id, items)`: A list of `items`; rows get their selection and click handling from the list.
+- `selected(i)`: The selected row (default the first).
+- `on_select(f)`: Called with the row index when the user picks one by click or key.
+
+### ListItem
+
+- `collapsed(c)`: Rail form: only the icon, or the label's first letter when there is no icon.
+- `depth(levels)`: Nest the row `levels` deep: indented, smaller, muted until selected.
+- `corners(c)`: Cut these corners instead of the theme's.
+- `new(id, label)`: Create a new [`ListItem`].
+- `disabled(d)`: Disable the row: dimmed, not clickable.
+- `overline(t)`: Small text above the headline (a three-line item when combined with supporting text).
+- `supporting(t)`: Supporting text below the headline (makes a two-line item).
+- `trailing(t)`: Trailing supporting text (a time, a count, a shortcut).
+- `badge(e)`: A leading element (avatar, image, checkbox) in place of the icon.
+- `leading(e)`: Leading content.
+- `selected(s)`: The selected item (controlled).
+- `icon(g)`: Vector icon shown at the row start, in the row's text colour.
+- `on_click(f)`: Called when clicked.
+
+### Live
+
+- `new(capacity)`: A window of `capacity` samples, starting flat at zero.
+- `prefilled(capacity, mut sample)`: A window already full of `sample(0..capacity)`, so a chart doesn't start flat.
+- `attach(feed)`: Draws samples from `feed` too: whatever other threads queue lands in the window the next
+- `push(v)`: Adds a sample now.
+- `advance(every, mut sample)`: Calls `sample(index)` and pushes the result once every `every` seconds of animation time
+- `values`: The samples, oldest first.
+- `scroll`: How far through the current sample interval the window is, in 0..1: how much a chart
+
+### LoadingIndicator
+
+- `new(id)`: Create a new [`LoadingIndicator`].
+- `contained(c)`: Draw inside a filled container.
+- `motion(m)`: Override the sequence duration (default 4.2 s, linear).
+
+### Markdown
+
+- `new(id, src)`: Create a new [`Markdown`].
+
+### Menu
+
+- `new(id)`: Create a new [`Menu`].
+- `items(i)`: The items.
+- `width(w)`: Width in px.
+- `active(i)`: Highlight the item at `i` (index into the item list) as the current
+- `on_select_sub(f)`: Called with `(parent index, child index)` when a sub-menu item is chosen.
+- `on_select(v)`: Called when an item is chosen, with the index.
+
+### MenuItem
+
+- `new(label)`: Create a new [`MenuItem`].
+- `icon(i)`: Leading icon (replaces the check column).
+- `submenu(items)`: Nested items: shown in a sub-menu to the right while this row is hovered.
+- `separator`: Horizontal rule between groups.
+- `shortcut(s)`: Right-aligned key hint, e.g. `⌘C`.
+- `disabled(d)`: Disable the control.
+- `danger(d)`: Destructive action (danger colour).
+- `checked(c)`: Show a ✓ before the label.
+
+### ModalDrawer
+
+- `new(id)`: Create a new [`ModalDrawer`].
+- `items(items)`: The items.
+- `on_dismiss`: Called when the surface is dismissed.
+
+### Mono
+
+- `new(text)`: Create a new [`Mono`].
+
+### Muted
+
+- `new(text)`: Create a new [`Muted`].
+
+### NavigationBar
+
+- `new`: Create a new [`NavigationBar`].
+- `item(i)`: Add an item.
+
+### NavigationDrawer
+
+- `new`: Create a new [`NavigationDrawer`].
+- `item(i)`: Add an item.
+- `headline(t)`: Section headline above the following items.
+- `divider`: Add a divider.
+- `width(px)`: Known pixel width of the drawer; long labels are cut with an ellipsis to fit.
+- `max_width(px)`: Width cap; defaults to the design's `drawer_max_width`. The drawer fills its parent up to it.
+
+### NavigationItem
+
+- `new(id, label)`: Create a new [`NavigationItem`].
+- `depth(levels)`: Nest the row `levels` deep (drawer only): indented, shorter, no icon.
+- `expanded(open)`: Make the row a branch of a tree (drawer only): a chevron at the end points down while it
+- `icon(i)`: Leading icon.
+- `badge(b)`: Count or short text at the end of a drawer row / on a rail icon.
+- `selected(s)`: The selected item (controlled).
+- `on_click(f)`: Called when clicked.
+
+### NavigationRail
+
+- `new`: Create a new [`NavigationRail`].
+- `item(i)`: Add an item.
+- `header(e)`: Element above the destinations (menu button, FAB).
+
+### NumberStepper
+
+- `new(id, value)`: Create a new [`NumberStepper`].
+- `range(min, max)`: Value range `min..max`.
+- `step(s)`: Step between values.
+- `on_change(v)`: Called when the value changes, with the new value.
+
+### OtpInput
+
+- `new(id, len)`: Create a new [`OtpInput`].
+- `value(v)`: Drive the cells from outside (a demo, or restoring a draft); typing still edits them.
+- `alphanumeric`: Accept letters as well as digits.
+- `disabled(d)`: Disable interaction and dim.
+- `masked(on)`: Show `•` instead of the character.
+- `on_change(v)`: Called when the value changes, with the text.
+- `on_complete(v)`: Called once all cells are filled.
+
+### PageGrid
+
+- `new`: Create a new [`PageGrid`].
+- `width(w)`: The width the grid lays out in, instead of the window's.
+- `cell(span, el)`: A cell spanning `span` columns (clamped to the grid's column count).
+
+### Pagination
+
+- `new(id, page, total)`: Create a new [`Pagination`].
+- `on_change(v)`: Called with the requested 1-based page.
+
+### Panel
+
+- `new`: Create a new [`Panel`].
+- `scope(set)`: Title shown above the content (uppercased per theme).
+- `scope_key(k)`: Changing this restarts the inner components' entry animations (the
+- `subheader(el)`: Element shown directly below the title (e.g. a toolbar or chips).
+- `title(t)`: Title text.
+- `corners(c)`: Cut these corners instead of the theme's.
+- `border(b)`: Border thickness/strength for this panel (default: [`section_border`]).
+- `accent(on)`: Fills the whole panel with the accent colour (primary) instead of the grey surface; text
+- `focused(f)`: Highlight border (and glow when enabled).
+- `refine(f)`: Extra layout styling on the root div (width, margin…).
+
+### Popover
+
+- `new(id)`: Create a new [`Popover`].
+- `trigger(t)`: The element that toggles the popover.
+- `content(c)`: What the popover shows.
+- `placement(p)`: Where the popup sits relative to its trigger.
+- `width(w)`: Width in px.
+- `close_on_click(on)`: Close after any click inside the content (menus).
+- `bare(on)`: No frame or padding: the content already is a popup (e.g. a [`Menu`]).
+
+### ProgressBar
+
+- `new(value)`
+- `tone(tone)`: Colour by status tone (default: brand colour).
+- `style(s)`: Draw the bar the way a design does (see [`dodai_core::ProgressStyle`]).
+- `wavy(on)`: Material 3 Expressive wavy indicator: the active part is a travelling sine wave.
+
+### RangeSlider
+
+- `new(id, lo, hi)`: Create a new [`RangeSlider`].
+- `orientation(d)`: Horizontal (default) or vertical (fixed [`RangeSlider::length`]).
+- `length(px)`: Height in px of a vertical slider (default 160).
+- `range(min, max)`: Value range `min..max`.
+- `step(s)`: Step between values.
+- `ticks(on)`: Tick mark at every `step`.
+- `show_value(on)`: Show `lo – hi` readout.
+- `on_change(v)`: Called when the value changes, with low and high.
+
+### Rating
+
+- `new(id, value)`: Create a new [`Rating`]. Without [`Rating::half`] the value is rounded to whole stars.
+- `max(m)`: Maximum value.
+- `half(on)`: Allow half stars.
+- `on_change(v)`: Called when the value changes, with the new value.
+
+### ResponsiveShell
+
+- `new(id)`: Create a new [`ResponsiveShell`].
+- `sidebar(el)`: The sidebar content.
+- `content(el)`: The popup content.
+- `breakpoint(px)`: Viewport width (px) below which the sidebar collapses into a drawer.
+- `sidebar_width(px)`: Sidebar width in px.
+- `rail(el)`: Icon-only sidebar shown while collapsed (wide layout only).
+- `rail_width(px)`: Collapsed rail width in px.
+- `collapsed(c)`: Controlled collapsed state; pair with [`Self::on_collapse`].
+- `menu_label(s)`: Label of the menu button when collapsed.
+- `on_collapse(v)`: Enables the drag/click handle on the sidebar edge. Called with the new
+
+### RichTooltip
+
+- `build(title, body, action)`: Builder for gpui's `.tooltip(...)`.
+- `view(title, body, action, cx)`: The tooltip as an ordinary view (static previews, docs).
+
+### Scanlines
+
+- `new`: Create a new [`Scanlines`].
+
+### ScrollArea
+
+- `new(id)`: Create a new [`ScrollArea`] (240 px tall unless sized otherwise).
+- `height(h)`: Viewport height in px.
+- `max_height(h)`: Grow with the content up to `h` px, then scroll.
+- `horizontal(on)`: Also scroll sideways when the content is wider than the viewport.
+- `scrollbar(on)`: Draw the scrollbars (default on). Off keeps wheel and trackpad scrolling.
+- `child(c)`: Add a child.
+
+### ScrollSpy
+
+- `new`: Create a new [`ScrollSpy`].
+- `pin(key)`: Force `key` current (call on click) until [`release`](Self::release).
+- `release`: Go back to following the scroll position (call on user scroll or when
+- `current(handle, items, slack)`: The current key. `items` is `(key, child index)` in document order;
+
+### SearchBar
+
+- `new(id)`: Create a new [`SearchBar`].
+- `placeholder(p)`: Placeholder text.
+- `value(v)`: Current value.
+- `on_click(f)`: Called when clicked.
+
+### SearchView
+
+- `new(id, input)`: Create a new [`SearchView`].
+- `items(i)`: The items.
+- `open(o)`: Whether the popup is open (controlled).
+- `mode(m)`: Docked or full-screen; Material themes only (others always drop down).
+- `recent(n)`: The first `n` items are recent searches and get the history icon (Material 3).
+- `max_rows(n)`: Most rows shown before scrolling.
+- `on_select(v)`: Called with the index into the original `items`.
+- `on_clear`: Show a ✕ button while the query is non-empty.
+
+### Segmented
+
+- `new(id, options)`: Create a new [`Segmented`].
+- `animation(a)`: How the selection moves between segments. `None` (the default) is the design's own
+- `motion(m)`: Pace, easing and travel of the selection. Defaults to the design's motion.
+- `selected(i)`: The selected item (controlled).
+- `disabled(d)`: Disable the control.
+- `on_select(v)`: Called when an item is chosen, with the index.
+
+### Select
+
+- `new(id)`: Create a new [`Select`].
+- `popup_surface(s)`: Frost and opacity of the open list. By default it follows the app-wide surface
+- `list_height(factor)`: Let the open list grow to `factor` times its usual height before it scrolls, for a
+- `options(o)`: The options to offer.
+- `selected(i)`: The selected item (controlled).
+- `placeholder(p)`: Placeholder text.
+- `disabled(d)`: Disable the control.
+- `on_select(v)`: Called with the chosen option index.
+
+### SelectOption
+
+- `new(label)`: Create a new [`SelectOption`].
+- `swatches(s)`: Colour swatches shown beside the label.
+
+### SelectionMarker
+
+- `fill(shape, style)`: A filled shape behind the chosen item (a pill, a block).
+- `underline(colour)`: The design's underline band at the foot of the chosen item.
+
+### SelectionTrack
+
+- `new(id, window, cx)`: The track for the row keyed `id` (state survives across frames).
+- `container`: Goes in the row (it must be `relative`): records where the row sits.
+- `item(i)`: Goes in item `i` (it must be `relative`): records where the item sits.
+- `indicator(active, kind, motion, marker, window, cx)`: The marker on item `active`, travelling there the `kind` way at `motion`'s pace (eased
+
+### SideSheet
+
+- `new(id, title)`: Create a new [`SideSheet`].
+- `edge(e)`: Screen edge it slides in from.
+- `width(w)`: Width in px.
+- `modal(m)`: Non-modal sheets draw no scrim.
+- `on_dismiss`: Called when the surface is dismissed.
+
+### Skeleton
+
+- `new(id)`: Create a new [`Skeleton`].
+- `motion(m)`: Override cycle duration and easing (default 1600 ms, linear).
+- `playback(p)`: Play once, loop (default) or hold still.
+- `width(w)`: Fixed width in px (default: fill the parent).
+- `height(h)`: Height in px.
+- `circle(c)`: Avatar-like block (round on rounded themes).
+
+### Slider
+
+- `new(id, value)`: Create a new [`Slider`].
+- `disabled(d)`: Disable the slider: dimmed, no drag and no keys.
+- `ticks(on)`: Draw a tick mark at every `step` (needs [`Slider::step`]).
+- `centered(on)`: Centred slider: the active track grows from the middle of the range towards the handle
+- `icon(i)`: Material 3 Expressive slider with an icon inset at the start of a tall track and a
+- `show_value(on)`: Show the current value next to the slider.
+- `bubble(p)`: Value bubble that follows the thumb, above or below it (horizontal only).
+- `format(f)`: Custom value formatter for the readout (e.g. `/v/ format!("{v:.0} dB")`).
+- `orientation(d)`: Horizontal (default, full width) or vertical (fixed [`Slider::length`]).
+- `length(px)`: Height in px of a vertical slider (default 160).
+- `range(min, max)`: Value range.
+- `step(step)`: Snap to multiples of `step` from `min`.
+- `on_change(v)`: Called with the new value while dragging/clicking.
+
+### Snackbar
+
+- `new(id, message)`: Create a new [`Snackbar`].
+- `action(label, f)`: Action label and handler.
+
+### SnapStack
+
+- `new(id)`: An empty stack, 200 px tall.
+- `item(e)`: Add an item.
+- `items(es)`: Add items.
+- `selected(i)`: The page shown first, or the page shown when [`SnapStack::on_select`] keeps it.
+- `height(h)`: The height of one page, in px (default 200).
+- `dots(on)`: Show the page dots (default on).
+- `arrows(on)`: Show chevron buttons at the top and bottom edges that turn a page (default off). Each
+- `autoplay(secs)`: Turn a page by itself every `secs` seconds, back and forth through the stack, until the
+- `motion(m)`: Pace and easing of the snap. Defaults to the design's motion.
+- `on_select(v)`: Called when a page snaps into place, with its index.
+
+### Spinner
+
+- `new(id)`: Create a new [`Spinner`].
+- `style(s)`: Draw this spinner instead of the design's own (to show them side by side).
+- `size(px)`: Side of the spinner in px (default 24).
+- `motion(m)`: Override cycle duration and easing (default 900 ms, linear).
+- `playback(p)`: Play once, loop (default) or hold still.
+
+### SplitButton
+
+- `new(id, label)`: Create a new [`SplitButton`].
+- `variant(v)`: Visual variant.
+- `disabled(d)`: Disable interaction and use disabled tokens.
+- `open(o)`: Draw the toggle as open (chevron up).
+- `on_click(f)`: Called when clicked.
+- `on_toggle(f)`: Called when the arrow part is clicked.
+
+### SplitPane
+
+- `new(id, ratio)`: Create a new [`SplitPane`].
+- `height(h)`: Height in px.
+- `first(e)`: The first pane.
+- `second(e)`: The second pane.
+- `on_change(v)`: Called when the value changes, with the new value.
+
+### Stepper
+
+- `new(steps, current)`
+
+### Stopwatch
+
+- `new(id)`: Create a new [`Stopwatch`].
+- `max_laps(n)`: How many of the newest laps to list (default 5).
+
+### Table
+
+- `new(id)`: Create a new [`Table`].
+- `columns(c)`: The column headers.
+- `weights(w)`: Relative column widths.
+- `rows(rows)`: The rows.
+- `selected(i)`: The selected item (controlled).
+- `sorted(column, ascending)`: Show a sort arrow on `column` (`ascending` → ▲).
+- `on_select(v)`: Called when an item is chosen, with the index.
+- `on_sort(v)`: Make headers clickable; called with the column index.
+
+### Tabs
+
+- `new(id)`
+- `closable(on)`: Give every tab a close button (a cross after the label). Controlled: the app drops the
+- `on_add(f)`: Show a "+" button after the last tab; the app adds the tab in the handler.
+- `disabled(tabs)`: Tabs (by index) that can't be picked: dimmed, skipped by the arrow keys.
+- `animation(a)`: How the selection moves between tabs. `None` (the default) is the design's own
+- `motion(m)`: Pace, easing and travel of the tab animations. Defaults to the design's motion.
+- `scrollable(on)`: Scrollable tabs: keep every tab at its natural width and scroll the strip sideways when
+- `icons(icons)`: One icon per tab, stacked above the label (icon-only when there are no labels).
+- `secondary(on)`: Secondary tabs: an on-surface label and a full-width underline, for sub-navigation.
+- `labels(labels)`: Tab labels in order.
+- `selected(i)`: Index of the active tab.
+- `on_select(v)`: Called with the clicked tab index.
+- `on_close(v)`: Called with the index of the tab whose close button was clicked. Setting it also
+
+### Tag
+
+- `new(text, tone)`: Create a new [`Tag`].
+- `solid(solid)`: Solid fill (default is outlined with a tinted background).
+
+### TagField
+
+- `new(id, tags)`: Create a new [`TagField`].
+- `trailing(e)`: Element after the chips (typically a `TextInput`).
+- `on_remove(v)`: Called when it is removed, with the index.
+
+### TapTempo
+
+- `new(id)`: Create a new [`TapTempo`].
+- `beats(n)`: Beats per bar in the metronome lights (default 4).
+- `on_change(v)`: Called with the new BPM after a tap or a ± adjustment.
+
+### Text
+
+- `new(role, text)`: Create a new [`Text`].
+- `muted(on)`: Use the secondary text colour.
+
+### TextInput
+
+- `new(cx)`: Create a new [`TextInput`].
+- `value(v)`: Initial text (cursor at the end).
+- `placeholder(p)`: Dimmed hint shown while empty.
+- `label(l)`: Floating label: sits in the field while it is empty and unfocused, then moves up
+- `filled(f)`: Material filled text field (tonal container, bottom indicator) instead of the outlined
+- `bare(b)`: No container: no fill, border, glow or height; for embedding the field in another
+- `multiline(rows)`: Textarea: Enter inserts a newline and the box is `rows` lines tall.
+- `password(on)`: Password field: shows `•` per character and blocks copy/cut.
+- `corners(c)`: Cut these corners instead of the theme's.
+- `set_disabled(d, cx)`: Disable or enable a field that already exists (the builder form is [`Self::disabled`]).
+- `disabled(d)`: Disable the control.
+- `set_on_submit(f)`: Replace the Enter handler on an existing input (used by composites
+- `text`: Current text.
+- `set_text(v, cx)`: Replace the text programmatically.
+- `on_change(v)`: Called with the full text after every edit.
+- `on_submit(v)`: Called on Enter (single-line only).
+
+### ThemeSelector
+
+- `new(id)`: Create a new [`ThemeSelector`].
+- `popup_surface(s)`: Frost and opacity of the open list, see [`Select::popup_surface`].
+- `system(on)`: Offer "System" as the first option: follow the operating system's light or dark
+
+### ThemeSwitcherBar
+
+- `new(id)`: Create a new [`ThemeSwitcherBar`].
+
+### TimeInput
+
+- `new(id)`: Create a new [`TimeInput`].
+- `value(hm)`: Current value.
+- `disabled(d)`: Disable the field.
+- `on_change(v)`: Called when the value changes, with hour and minute.
+
+### TimePicker
+
+- `new(id, hour, minute)`: Create a new [`TimePicker`].
+- `twelve_hour(on)`: 12-hour display with AM/PM toggle.
+- `minute_step(s)`: Minute step of the picker.
+- `on_change(v)`: Called when the value changes, with hour and minute.
+
+### Timeline
+
+- `new(events)`: Create a new [`Timeline`].
+
+### TimelineEvent
+
+- `new(title)`: Create a new [`TimelineEvent`].
+- `detail(d)`: Detail text.
+- `time(d)`: Time label.
+- `tone(t)`: Semantic tone (colour).
+
+### Timer
+
+- `new(id)`: Create a new [`Timer`].
+- `seconds(s)`: Duration in seconds.
+- `minutes(m)`: Duration in minutes.
+- `size(s)`: Size in px.
+- `on_finish`: Called once when the countdown reaches zero.
+
+### Toast
+
+- `new(tone, message)`: Create a new [`Toast`].
+
+### Toolbar
+
+- `new`: Create a new [`Toolbar`].
+- `floating(on)`: Material 3 Expressive floating toolbar: a lifted pill that hugs its content, instead of
+- `vibrant(on)`: Vibrant colour scheme (primary container) instead of the standard surface one.
+- `trailing(e)`: Element pinned to the right end (e.g. a [`crate::Fab`]).
+
+### TopAppBar
+
+- `new(title)`: Create a new [`TopAppBar`].
+- `leading(glyph)`: Leading content.
+- `size(s)`: Size step.
+- `scrolled(scrolled)`: Content is scrolled beneath the bar (tonal container in Material).
+- `collapse(progress)`: Collapse progress of a medium / large bar, `0.0` expanded to `1.0` one row.
+
+### TreeItem
+
+- `new(label)`: Create a new [`TreeItem`].
+- `disabled(d)`: Make the item unchoosable.
+- `icon(icon)`: Show `icon` before the label.
+- `expanded(e)`: Whether the item starts expanded.
+- `child(c)`: Add a child.
+
+### TreeNavigation
+
+- `new(id, items)`: Create a new [`TreeNavigation`]; each item's `expanded` is its initial state.
+- `selected(path)`: The leaf selected at first.
+- `on_select(v)`: Called with the path of a leaf when it is chosen.
+
+### TreeView
+
+- `new(id, items)`: Create a new [`TreeView`].
+- `selected(path)`: The selected item (controlled).
+- `on_toggle(v)`: Called with the node path when the chevron is clicked.
+- `on_select(v)`: Called when an item is chosen, with the selected indices.
+
+### BarChart
+
+- `annotations(a)`: Threshold lines and highlighted bands drawn over the plot.
+- `new(series)`
+- `max(m)`: Fix the value-axis maximum (default: fit data).
+- `format(f)`: Custom number formatter for axis labels, tooltips and value labels.
+- `value_labels(v)`: Print the value above each bar (vertical, grouped only).
+- `bar_width(w)`: Maximum bar thickness in px (default 32).
+- `title(t)`: Title above the chart.
+- `x_title(t)`: Name of the horizontal axis, centred under the plot (e.g. "Seconds").
+- `y_title(t)`: Name of the vertical axis, over its value labels (e.g. a unit, "Mbps").
+- `labels(l)`: Labels, one per item.
+- `height(h)`: Height in px.
+- `horizontal(h)`: Lay out horizontally.
+- `stacked(s)`: Stack the series instead of grouping them.
+- `legend(l)`: Show or hide the legend.
+- `toggleable(on)`: Clicking a legend entry hides or shows that series; the axis refits to what is left.
+
+### BubbleTimeline
+
+- `new(items)`
+- `max_radius(r)`: Radius in px of the biggest bubble (default 48, `6..=120`). Shrunk to fit if the pile
+- `size_label(l)`: What the size measures, for the details line ("records lost").
+- `x_format(f)`: How times are written on the axis and in the details (default: plain numbers).
+- `centred(on)`: Spread the bubbles either side of the middle (a sized beeswarm) instead of piling them
+- `filter(on)`: Whether clicking a legend entry hides its group (default on).
+
+### SplitFlow
+
+- `new(steps)`
+- `max_width(w)`: Keep the flow at most `w` px wide, centred (default: the full width). With a tall
+
+### Legend
+
+- `new(items)`: Create a new [`Legend`].
+- `of_series(t, series)`: Legend for `series` using palette colours.
+
+### Bullet
+
+- `new(label, value)`
+- `target(t)`: Target marker position.
+- `ranges(r)`: Upper bounds of the qualitative bands, e.g. `[150, 225, 300]` for
+- `max(m)`: Scale maximum (default: the largest of value, target and ranges).
+- `nice_scale(on)`: Round the scale up to a clean number (420 → 500), so a live reading keeps a steady
+- `color(c)`: Value bar colour (default: the theme's primary).
+
+### PairedBars
+
+- `new(rows)`
+- `names(a, b)`: Names of the two states (legend and tooltips).
+- `shared_scale(on)`: Use one scale for every row instead of one per row.
+
+### Lollipop
+
+- `new(items)`
+- `compare(values)`: Second value per category: draws a dumbbell between the two.
+- `names(a, b)`: Names of the two states in dumbbell mode.
+
+### SlopeChart
+
+- `new(items)`
+- `headers(a, b)`: Column headers.
+
+### Histogram
+
+- `annotations(a)`: Threshold lines and highlighted bands drawn over the plot.
+- `new(values)`
+- `kde(on)`: Overlay a kernel-density curve (scaled to the tallest bin).
+- `stats(on)`: Mark the mean (solid) and median (dashed) with labelled lines.
+- `bins(n)`: Number of bins.
+- `color(c)`: Colour (default: the theme's).
+
+### BoxPlot
+
+- `new(groups)`
+- `notch(on)`: Notched boxes: the notch is the ~95% confidence interval of the median.
+- `mean(on)`: Mark each group's mean with a diamond.
+- `points(on)`: Draw every sample as a jittered dot behind the box.
+
+### Sankey
+
+- `new(links)`
+- `node_width(w)`: Node bar width in px.
+
+### CalendarHeatmap
+
+- `new(values)`
+- `from_date(year, month, day)`: First day as `(year, month, day)`: sets the weekday and labels months.
+- `start_weekday(d)`: Weekday of the first value when no date is given (`0` Monday).
+- `cell(px)`: Cell size in px (default 14).
+- `levels(n)`: Number of intensity levels including "none" (default 5).
+
+### ViolinChart
+
+- `new(groups)`: Create a new [`ViolinChart`] from `(name, samples)` groups.
+
+### RoseChart
+
+- `new(items)`: Create a new [`RoseChart`] from `(label, value)` items.
+- `size(px)`: Diameter in px.
+- `hole(h)`: Hole radius as a fraction `0..0.8` of the outer radius.
+- `scale(s)`: Value → radius mapping.
+- `legend(on)`: Show the legend (default on).
+- `title(t)`: Title above the chart.
+
+### SpanFan
+
+- `new(items)`
+- `sweep(turns)`: The arc the spokes fill, in turns centred on the top (default 0.75, `0.05..=1`).
+- `order(o)`: The order the spokes go round in (default: as given).
+- `hub(h)`: The hub's radius, as a share of the fan's (default 0.16, `0..=0.6`).
+- `filter(on)`: Let the legend hide and show groups (default on; needs two groups or more).
+- `magnitude_format(f)`: Formatter for magnitudes in the readout.
+
+### Funnel
+
+- `new(stages)`
+
+### Waterfall
+
+- `annotations(a)`: Threshold lines and highlighted bands drawn over the plot.
+- `new(steps)`
+- `total(on)`: Append a "Total" bar (default on).
+
+### ScatterPlot
+
+- `annotations(a)`: Threshold lines and highlighted bands drawn over the plot.
+- `new(series)`
+- `height(h)`: Height in px.
+- `legend(l)`: Show or hide the legend.
+
+### Heatmap
+
+- `new(rows)`
+- `row_labels(l)`: Row labels.
+- `col_labels(l)`: Column labels.
+- `stretch(on)`: Let cells grow to fill the full width instead of capping at 4× the cell size.
+- `cell(s)`: Cell size in px.
+- `gradient(g)`: Colour scale; `Gradient::Theme` (default) mixes surface → primary.
+
+### Sunburst
+
+- `new(root)`
+- `hole(h)`: The empty middle, as a share of the radius (default 0.25, `0..=0.8`).
+
+### Icicle
+
+- `new(root)`
+
+### Waffle
+
+- `new(items)`
+- `grid(cols, rows)`: Columns and rows of the grid (each `1..=50`).
+
+### Marimekko
+
+- `new(segments, columns)`
+
+### KpiTile
+
+- `new(label, value)`
+- `previous(v)`: The value last period; the tile shows the change from it.
+- `trend(values)`: Recent values, drawn as a sparkline under the number.
+- `lower_is_better(l)`: A fall is good news (costs, errors, latency): falls show in the rising colour.
+- `format(f)`: Custom number formatter for the value.
+
+### BumpChart
+
+- `new(series)`
+- `labels(l)`: Step labels under the chart, one per value.
+
+### RidgelineChart
+
+- `new(groups)`
+- `overlap(o)`: How tall a ridge may rise, in row heights (default 1.8; 1 = no overlap).
+
+### HorizonChart
+
+- `new(series)`
+- `bands(n)`: How many bands each strip folds into (default 3, 1..=5).
+
+### LineChart
+
+- `glow(g)`: The glow ("shadow") under the lines: the theme's own, none, or a radius.
+- `annotations(a)`: Threshold lines and highlighted bands drawn over the plot.
+- `new(series)`
+- `y_range(lo, hi)`: Fix the Y axis to `lo..=hi` (default: fit data, including zero).
+- `format(f)`: Custom number formatter for axis labels and tooltips.
+- `grid(g)`: Show horizontal gridlines (default on).
+- `stroke_width(w)`: Line thickness in px (default: the design's chart style).
+- `stepped(s)`: Step (staircase) interpolation instead of straight segments.
+- `include_zero(z)`: Force the Y axis to include zero (default on).
+- `secondary(s)`: Series drawn against a second y axis on the right; its gridlines align
+- `title(t)`: Title above the chart.
+- `x_title(t)`: Name of the horizontal axis, centred under the plot (e.g. "Seconds").
+- `y_title(t)`: Name of the vertical axis, over its value labels (e.g. a unit, "Mbps").
+- `labels(l)`: X-axis category labels.
+- `height(h)`: Height in px.
+- `area(a)`: Fill under each line.
+- `smooth(s)`: Draw smooth curves instead of straight segments.
+- `crosshair(on)`: Vertical hairline that snaps to the nearest sample under the pointer,
+- `points(p)`: Hoverable point markers (default on).
+- `legend(l)`: Show or hide the legend.
+- `time_axis(stamps)`: Place the points by timestamp (unix seconds, UTC) instead of equal slots, and label the
+- `utc_offset(secs)`: Fixed UTC offset in seconds for the time axis labels (default 0 = UTC).
+- `patterns(on)`: Draw each series with its own dash pattern (solid, dashed, dotted, dash-dot), so the
+- `toggleable(on)`: Clicking a legend entry hides or shows that series; the axis refits to what is left.
+
+### RenkoChart
+
+- `new(closes, brick)`
+
+### DepthChart
+
+- `glow(g)`: The glow ("shadow") under the lines: the theme's own, none, or a radius.
+- `new(bids, asks)`
+
+### Gantt
+
+- `new(tasks)`
+- `format(f)`: Format task times in tooltips.
+- `title(t)`: Title text.
+- `label_width(w)`: Width of the task-name column.
+
+### ChartStack
+
+- `new`: Create a new [`ChartStack`].
+- `pane(weight, build)`: Add a pane of relative `weight`; `build` receives its height in px.
+- `height(h)`: Total height of the stack in px.
+- `gap(g)`: Gap in px.
+
+### TimeScatter
+
+- `new(points)`
+- `filter(on)`: Let the legend hide and show groups (default on; needs two groups or more).
+- `frontier(on)`: Draw the record frontier: the best value so far, as a staircase.
+- `trend(on)`: Draw the least-squares trend line through all points.
+- `trails(on)`: Join each group's points in time order.
+- `reference(y, label)`: A dashed reference line at value `y`, labelled `label` (a target, a break-even, ...).
+- `x_format(f)`: Formatter for times (the x axis).
+- `size_format(f)`: Formatter for bubble sizes in the readout.
+
+### ParallelCoordinates
+
+- `new(axes, items)`
+
+### Hexbin
+
+- `new(points)`
+- `radius(r)`: Hexagon radius in px (default 10, `4..=40`).
+
+### NetworkGraph
+
+- `new(nodes, links)`
+- `groups(g)`: A group per node (by index), coloured alike; nodes without one share the first colour.
+
+### ChordDiagram
+
+- `new(names, matrix)`
+
+### ArcDiagram
+
+- `new(nodes, links)`
+
+### ProportionalSquares
+
+- `filter(on)`: Let the legend hide and show groups (default on; needs two groups or more).
+- `new(groups)`
+
+### CirclePack
+
+- `new(root)`
+
+### Treemap
+
+- `new(items)`
+
+### RadialBar
+
+- `glow(g)`: The glow ("shadow") under the lines: the theme's own, none, or a radius.
+- `new(rings)`
+- `size(s)`: Size in px.
+- `legend(l)`: Show or hide the legend.
+
+### PeakRange
+
+- `new(series)`
+- `x_labels(l)`: Labels spread evenly under the horizon (months, years, ...).
+- `lanes(n)`: Stand the series on `n` horizons (series `i` on lane `i % n`; lane 0 is lowest and
+- `cap(c)`: Light the top of each mountain above this share of its summit (default 1: off).
+
+### PieChart
+
+- `new(slices)`
+- `style(s)`: Look of the slices (default [`PieStyle::Solid`]). `Segmented` and `Hud`
+- `gap(g)`: Straight gap between slices in px (default 2, `0` = flush).
+- `explode(px)`: Push every slice outward by `px` (an exploded pie), up to 10.
+- `colors(c)`: Slice colours (cycled) instead of the theme's series colours, e.g. a
+- `arc(start, sweep)`: Draw only `sweep` of a full turn (`0.5` = half donut), beginning at
+- `selected(i)`: Controlled selection (`None` = nothing selected). Without this the
+- `selected_color(c)`: Outline colour of the selected slice (default: the theme accent).
+- `size(s)`: Size in px.
+- `donut(hole)`: Donut hole as a fraction of the radius (`0` = pie).
+- `center(c)`: Text shown in the centre: the first line as the headline (sized to the hole), any
+- `legend(l)`: Show or hide the legend.
+- `on_select(v)`: Called with the new selection (`None` when deselected) on click.
+
+### ControlChart
+
+- `new(values)`
+- `labels(l)`: Sample labels under the chart (shown when there is one per value).
+- `baseline(n)`: Set the centre and limits from the first `n` samples only (a known stable period),
+- `sigma(k)`: How many σ the limits sit from the centre (default 3, `1..=6`).
+
+### EventTimeline
+
+- `new(lanes)`
+
+### Pulse
+
+- `ecg(bpm)`: Electrocardiogram at `bpm`.
+- `pleth(bpm)`: SpO₂ plethysmograph at `bpm`.
+- `art(bpm)`: Arterial pressure wave at `bpm`.
+- `resp(rpm)`: Respiration at `rpm` breaths per minute.
+- `eeg`: EEG-like activity.
+- `kind(kind, rate)`: Any other generated kind (sine, square, triangle) at `rate` cycles/min.
+- `data(samples, rate)`: Play back recorded `samples` (nominally `-1..=1`) at `rate` Hz, looping.
+- `rhythm(r)`: ECG rhythm (normal, atrial fibrillation, ST elevation, ...).
+- `variability(v)`: Beat-to-beat timing variation `0..=1` (heart-rate variability).
+- `noise(n)`: Random noise amplitude `0..=0.5` (electrode / motion artefact).
+- `wander(n)`: Baseline wander amplitude `0..=0.5`.
+- `seed(s)`: Distinguish two otherwise identical traces.
+- `mode(m)`: Sweep, scroll or static.
+- `live(on)`: Animate (default on). Off draws one still frame.
+- `seconds(s)`: Seconds of signal across the screen (default 6).
+- `speed(s)`: Playback speed (`1` real time).
+- `gain(g)`: Amplitude gain (default 1).
+- `grid(g)`: Background grid.
+- `cells(n)`: Large grid cells across the width (default 12).
+- `color(c)`: Trace colour (default by signal kind).
+- `line_width(w)`: Line width in px.
+- `glow(g)`: Glow under the trace.
+- `trail(t)`: How strongly older parts of the trace fade: `0` none, `1` strong.
+- `gap(g)`: Width of the erased gap ahead of the sweep head, as a fraction of the
+- `fill(on)`: Shade the area between the trace and its baseline.
+- `head(on)`: A bright dot at the write head (default on).
+- `markers(on)`: Mark detected peaks (R waves) with small ticks.
+- `calibration(on)`: Draw a 1 mV calibration pulse at the left edge.
+- `beat_led(on)`: A LED beside the readout that flashes with each beat.
+- `label(l)`: Lead / channel label, e.g. `"II"`.
+- `readout(value, unit)`: A fixed readout: value and unit, e.g. `("98", "%")`.
+- `show_rate(on)`: Show the signal's rate as the readout (bpm for ECG, rpm for resp).
+- `alarm(lo, hi)`: Alarm limits for the rate readout: outside `lo..=hi` it turns red and
+- `footer(f)`: Footer text, e.g. `"25 mm/s · 10 mm/mV"`.
+- `size(w, h)`: Screen size in px.
+
+### RadarChart
+
+- `glow(g)`: The glow ("shadow") under the lines: the theme's own, none, or a radius.
+- `new(axes, series)`: Create a new [`RadarChart`].
+- `size(s)`: Size in px.
+- `max(m)`: Maximum value.
+- `legend(l)`: Show or hide the legend.
+
+### ShardMap
+
+- `new(groups)`
+- `outline(o)`: The outline to fill (default: a circle).
+
+### Sparkline
+
+- `glow(g)`: The glow ("shadow") under the lines: the theme's own, none, or a radius.
+- `style(s)`: Drawing style (default [`SparkStyle::Line`]).
+- `guide(g)`: Faint dashed reference line at the mean, the peak or a fixed value.
+- `fluid(f)`: Stretch to the available width instead of the fixed `w`.
+- `live(window)`: Draws a [`dodai_gpui::Live`] window instead of fixed values, sliding left between samples.
+- `new(values)`
+- `marker(m)`: Shape at the line's tip (default `Dot`; `Marker::None` to hide).
+- `all_points(a)`: Draw the marker on every point instead of only the last.
+- `size(w, h)`: Width and height in px.
+- `color(c)`: Colour (default: the theme's).
+- `smooth(n)`: Round the line with `n` interpolated points per segment (0 = straight).
+- `area(a)`: Fill the area under the line.
+
+### Beeswarm
+
+- `new(groups)`
+- `radius(r)`: Dot radius in px (default 3.5, `1..=10`).
+
+### Ecdf
+
+- `new(series)`
+
+### ErrorBars
+
+- `new(rows)`
+- `reference(v)`: A vertical reference line at `v`.
+
+### SlotGrid
+
+- `new(slots)`
+- `row(label, blocks)`: A row of blocks.
+- `caption(title, note)`: A title and a quieter note above the grid ("2.4 GHz", "2412–2484 MHz").
+- `corner(name)`: Name of the slot header row, shown in the row-label column ("Channels").
+- `compact(on)`: Thin rails with the slot names underneath, for an overview.
+- `legend(names)`: A legend underneath naming the states in [`SlotState::ALL`] order (the domain's own
+- `on_pick(v)`: Called with `(row, block)` when a block is clicked.
+
+### StatusStrip
+
+- `new(lo, hi, spans)`
+- `format(f)`: Custom formatter for the span bounds in the readout.
+
+### BucketBar
+
+- `new(edges, counts)`
+
+### StageBars
+
+- `new(stages)`
+- `format(f)`: Custom formatter for the rates (default "97%").
+
+### GradientScale
+
+- `new(lo, hi, value)`
+- `low_is_good(on)`: Low values are the good ones (latency, error rate).
+- `format(f)`: Custom formatter for the tick labels.
+
+### ParetoChart
+
+- `new(items)`
+- `cutoff(c)`: The cumulative share that ends the vital few (default 0.8, `0..=1`).
+
+### DivergingBars
+
+- `new(parts, rows)`
+- `split(s)`: How many parts sit left of the centre; a fraction puts that part across it.
+- `percent(p)`: Scale every row to 100 % (default on; off keeps the raw values, as for a pyramid).
+
+### StackedAreaChart
+
+- `glow(g)`: The glow ("shadow") under the lines: the theme's own, none, or a radius.
+- `annotations(a)`: Threshold lines and highlighted bands drawn over the plot.
+- `new(series)`: Create a new [`StackedAreaChart`].
+- `offset(o)`: Where the stack sits: on zero (default), stretched to 100%, or floating as a stream
+- `labels(l)`: Labels, one per item.
+- `legend(l)`: Show or hide the legend.
+
+### Candlestick
+
+- `new(candles)`
+- `labels(l)`: Labels, one per item.
+- `style(s)`: Candles (default), Heikin-Ashi or OHLC bars.
+- `volume(on)`: Volume bars along the bottom of the price pane.
+- `overlay(o)`: Add a price overlay (call repeatedly).
+- `pane(p)`: Add an indicator pane under the chart (call repeatedly).
+- `markers(m)`: Buy/sell markers.
+
+### VoronoiChart
+
+- `new(points)`
+- `ring(items)`
+- `stipple(density, n, relax, seed)`
+- `bounds(x0, x1, y0, y1)`: Fix the visible data window `x0..x1`, `y0..y1` instead of fitting it to the points.
+- `gradient(g)`: Colour each cell by its point's value along `g`.
+- `probe(x, y)`: A temporary extra site at the data position `(x, y)`, like a cursor.
+- `axes(v)`: Tick labels along the bottom and left edges, in data units (default: off).
+- `neighbours(v)`: Hovering a point links it to the points whose cells touch its own (default: on).
+- `links(v)`: Draw the Delaunay links between neighbouring points (default: off).
+- `labels(v)`: Name each point on the plot (default: on).
+- `borders(v)`: Draw the borders between cells and territories (default: on).
+- `show_sites(v)`: Draw a dot on each point (default: on).
+- `shade_by_distance(v)`: Fade each pixel with its distance from its point (default: off).
+- `metric(v)`: The distance that decides the nearest point (default: Euclidean).
+- `weighted(v)`: Heavier points own larger cells: a power diagram (default: off).
+- `farthest(v)`: Each spot takes its farthest point instead of its nearest (default: off).
+- `knn(v)`: Colour each spot by the majority category among its `k` nearest points.
+- `relax(v)`: Lloyd steps: points move to their cells' centres (up to 30), evening the cells out.
+- `merge(v)`: Same-category cells share one region with no border between them (default: on).
+- `clip_circle(v)`: Fill only the inscribed disc (default: off).
+- `phase(v)`: Drift the points around their places; 0 leaves them (default: 0).
+- `square(v)`: Equal x and y scale, so distances are true (for maps; default: off).
+
 ## Components (126)
 
 | component | summary | toolkits | gpui reference |
 | --- | --- | --- | --- |
-| Accordion | Collapsible sections `(title, body)`. Each toggles independently; sections listed in `expanded` start expanded. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/nav.rs` |
+| Accordion | Collapsible sections `(title, body)`. Each toggles independently; sections listed in `expanded` start expanded. | gpui, iced, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/nav.rs` |
 | Alert | Inline status message with title + optional body. `banner()` = full solid strip. | gpui, iced, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/feedback.rs` |
 | Avatar | Initials in a shaped tile, optional status dot. | gpui, iced, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-gpui/src/data.rs` |
 | AxisGizmo | Orientation gizmo for a 3D view (Z up). Controlled: pass the camera basis. | gpui, iced, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/orientation.rs` |
@@ -393,7 +1838,7 @@ Entry effects: Fade, Rise, Drop, Slide from left, Slide from right. Overscroll f
 | Chip | Selectable filter chip with optional ✕ remove affordance. | gpui, iced, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/data.rs` |
 | CircularProgress | Ring progress. `new(0.0..=1.0)` is determinate; [`CircularProgress::indeterminate`] spins. | gpui, iced, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-gpui/src/display.rs` |
 | Clock | Live clock: analog dial, or a futuristic seven-segment face (see [`ClockFace`]). | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/time/clock.rs` |
-| CodeBlock | Monospace code with line numbers, highlighting, a copy button, scrolling in both directions (optionally with scrollbars) and selectable text (drag, then Cmd/Ctrl-C). | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/content.rs` |
+| CodeBlock | Monospace code with line numbers, highlighting, a copy button, scrolling in both directions (optionally with scrollbars) and selectable text (drag, then Cmd/Ctrl-C). | gpui, iced, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/content.rs` |
 | ColorPicker | Swatch grid; shows the selected colour's hex code. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/extras.rs` |
 | Column | One column of a [`DataTable`]. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/datatable.rs` |
 | Combobox | Text input with a filtered option list shown while `open`. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/command.rs` |
@@ -414,7 +1859,7 @@ Entry effects: Fade, Rise, Drop, Slide from left, Slide from right. Overscroll f
 | DodaiTooltip | Tooltip view: `.tooltip(DodaiTooltip::text("Hint"))` on an id'd element. | gpui, dioxus, bevy, freya, leptos, yew | `crates/dodai-gpui/src/panel.rs` |
 | DropdownMenu | A button that opens a [`Menu`] below it; closes after a choice or an outside click. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/popover.rs` |
 | EntryScope | Wraps a subtree so every component inside uses `kind` for its entry and value-in animation instead of the default [`Motion::entry`]. Components render while their parent lays out, so the override is installed around the child's `request_layout` and restored afterwards. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/motion.rs` |
-| Fab | Floating action button; `extended` adds a text label. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/surfaces.rs` |
+| Fab | Floating action button; `extended` adds a text label. | gpui, iced, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/surfaces.rs` |
 | FabMenu | A FAB that opens a stack of labelled actions above it (Material 3 FAB menu). The main button turns into a close button while open. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/surfaces.rs` |
 | Feed | Samples waiting for a [`Live`] window, pushed from any thread (a socket reader, a sensor loop). Clones share the queue; attach it with [`Live::attach`]. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/live.rs` |
 | FileDropZone | Drop target look (click to browse). Wire `on_click` to your file dialog. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/extras.rs` |
@@ -428,7 +1873,7 @@ Entry effects: Fade, Rise, Drop, Slide from left, Slide from right. Overscroll f
 | HoverCard | Card shown while the pointer is over the trigger or the card itself. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/popover.rs` |
 | Icon | Vector icon. Defaults: 16 px, the theme text colour; set `.color(..)` to override. | gpui, iced, dioxus, bevy, topcoat, egui, leptos, yew | `crates/dodai-gpui/src/icons.rs` |
 | IconBadge | Pins a [`Badge`] to the top-right corner of `child` (icon, avatar, …). | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/search.rs` |
-| IconButton | Square icon button. Pass any glyph string (emoji, symbol, icon-font char). | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/surfaces.rs` |
+| IconButton | Square icon button. Pass any glyph string (emoji, symbol, icon-font char). | gpui, iced, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/surfaces.rs` |
 | Image | Image in a themed frame, with an optional caption and a play badge for video posters. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/display.rs` |
 | IndeterminateBar | Indeterminate progress bar: a segment sliding across the track. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/feedback.rs` |
 | InputBox | Styled container for a text-input entity. gpui 0.2.2 ships no text input; put your own editor view/entity inside (or use `.placeholder`). | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/panel.rs` |
@@ -445,27 +1890,27 @@ Entry effects: Fade, Rise, Drop, Slide from left, Slide from right. Overscroll f
 | Menu | Floating action list. `on_select` receives the index into the item list. | gpui, iced, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-gpui/src/menu.rs` |
 | MenuItem | One row of a [`Menu`]. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/menu.rs` |
 | ModalDrawer | Modal navigation drawer: a [`crate::NavigationDrawer`] sliding over the page from the left edge with a scrim; picking an item or clicking the scrim dismisses it. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/sheets.rs` |
-| Mono | Monospace text (never uppercased). | gpui, dioxus, bevy, topcoat, freya, leptos, yew | `crates/dodai-gpui/src/text.rs` |
+| Mono | Monospace text (never uppercased). | gpui, iced, dioxus, bevy, topcoat, freya, leptos, yew | `crates/dodai-gpui/src/text.rs` |
 | Muted | Secondary body text in `text_muted`. | gpui, iced, dioxus, bevy, topcoat, freya, leptos, yew, tui | `crates/dodai-gpui/src/text.rs` |
-| NavigationBar | Navigation bar: the destinations side by side along the bottom of a compact screen. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/navigation.rs` |
+| NavigationBar | Navigation bar: the destinations side by side along the bottom of a compact screen. | gpui, iced, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/navigation.rs` |
 | NavigationDrawer | Vertical drawer: items, section headlines and dividers. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/navigation.rs` |
 | NavigationItem | One destination of a drawer or rail. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/navigation.rs` |
 | NavigationRail | Narrow icon rail (width from the design's tokens): label under each icon, indicator pill behind the icon. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/navigation.rs` |
 | NumberStepper | − value + control. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/extras.rs` |
 | OtpInput | Row of single-character cells for verification codes. Type or paste; Backspace deletes. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/forms.rs` |
 | PageGrid | The design's page grid (columns, gap and outer margins at the viewport width) laid out as wrapping rows of cells that each span a number of columns. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/page_grid.rs` |
-| Pagination | Page selector: `‹ 1 … 4 [5] 6 … 20 ›`. Pages are 1-based. Controlled. | gpui, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-gpui/src/nav.rs` |
+| Pagination | Page selector: `‹ 1 … 4 [5] 6 … 20 ›`. Pages are 1-based. Controlled. | gpui, iced, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-gpui/src/nav.rs` |
 | Panel | Shaped card with optional title; focused border/glow; hard shadow from tokens. | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew, xilem | `crates/dodai-gpui/src/panel.rs` |
 | Popover | Click-to-open panel anchored to a trigger. Closes on outside click or `Esc`. | gpui, iced, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/popover.rs` |
-| ProgressBar | Horizontal progress bar (`0.0..=1.0`). | gpui, dioxus, bevy, egui, leptos, yew | `crates/dodai-gpui/src/controls/bars.rs` |
+| ProgressBar | Horizontal progress bar (`0.0..=1.0`). | gpui, iced, dioxus, bevy, egui, leptos, yew | `crates/dodai-gpui/src/controls/bars.rs` |
 | RangeSlider | Two-thumb slider (controlled), horizontal or vertical. | gpui, iced, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-gpui/src/range.rs` |
-| Rating | Star rating (`value` of `max`). With [`Rating::half`] it also takes half stars: the left half of a star is `n - 0.5`, the right half is `n`. | gpui, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-gpui/src/extras.rs` |
+| Rating | Star rating (`value` of `max`). With [`Rating::half`] it also takes half stars: the left half of a star is `n - 0.5`, the right half is `n`. | gpui, iced, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-gpui/src/extras.rs` |
 | ResponsiveShell | Responsive app frame. Wide: `[sidebar / content]`. Narrow: content only, with a menu button that opens the sidebar as an overlay drawer. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/shell.rs` |
 | RichTooltip | Tooltip with a title, body text and optional action label: `.tooltip(RichTooltip::build("Title", "Body", Some("Learn more")))`. | gpui, iced, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/search.rs` |
 | Scanlines | Absolutely-positioned overlay filling its (relative) parent. Place it as the last child of the root. It adds no hitbox, so it never blocks input. | gpui, iced, dioxus, bevy, slint, leptos, yew, tui | `crates/dodai-gpui/src/scanlines.rs` |
 | ScrollArea | Scroll container with thin themed scrollbars (drag a thumb or use the wheel). Scrolls vertically; [`horizontal`](Self::horizontal) adds the other axis. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/display.rs` |
 | ScrollSpy | Scroll-spy state: just the optional pinned (clicked) key. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/spy.rs` |
-| SearchBar | Search field shell: leading glyph + placeholder/value text; click to focus your own input. Use [`crate::TextInput`] inside for real editing. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/surfaces.rs` |
+| SearchBar | Search field shell: leading glyph + placeholder/value text; click to focus your own input. Use [`crate::TextInput`] inside for real editing. | gpui, iced, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/surfaces.rs` |
 | SearchView | Full-text search: input, clear button and a fuzzy-filtered result list with matched characters highlighted. Owns no state: pass the [`TextInput`] entity and an `open` flag. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/search.rs` |
 | Segmented | Exclusive option group in one bordered strip. Controlled. | gpui, iced, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-gpui/src/nav.rs` |
 | Select | Dropdown list. Controlled: pass `selected` and update it in `on_select`. Keyboard (trigger focused): ↑/↓ move, Enter/Space open or choose, Esc close. | gpui, dioxus, bevy, topcoat, freya, leptos, yew | `crates/dodai-gpui/src/select.rs` |
@@ -481,14 +1926,14 @@ Entry effects: Fade, Rise, Drop, Slide from left, Slide from right. Overscroll f
 | Spinner | Indeterminate spinner: a row of bars with a travelling highlight. | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew | `crates/dodai-gpui/src/feedback.rs` |
 | SplitButton | A button with a trailing menu toggle: `[ Label / ▾ ]`. `on_click` runs the main action, `on_toggle` opens or closes the menu (rendered by the caller, e.g. a `DropdownMenu`). `crop(Left)` cuts the lead's outer corner, `crop(Right)` the menu's. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/expressive.rs` |
 | SplitPane | Two panes with a draggable divider (controlled ratio of the first pane). | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/layout.rs` |
-| Stepper | Multi-step progress: numbered nodes joined by lines. Done steps show ✓. | gpui, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-gpui/src/nav.rs` |
+| Stepper | Multi-step progress: numbered nodes joined by lines. Done steps show ✓. | gpui, iced, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-gpui/src/nav.rs` |
 | Stopwatch | Chronometer: start/stop, lap, reset; shows the newest laps with splits. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/time/stopwatch.rs` |
 | Table | Data table: header + rows, optional selected row. Cells are text. Column `i` gets flex weight `weights[i]` (default 1). | gpui, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-gpui/src/data.rs` |
 | Tabs | Tab strip. Controlled: pass `selected` and update it in `on_select`. | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew, tui, xilem | `crates/dodai-gpui/src/tabs.rs` |
 | Tag | Small status badge. | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew, tui, xilem | `crates/dodai-gpui/src/tag.rs` |
 | TagField | Removable chips inside an input-style box (pair with a text input to add). | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/extras.rs` |
 | TapTempo | Measure the tempo of music: tap along and read the BPM, then press Play to hear/see it back as a visual metronome (a bar of beat lights, beat 1 accented). | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/time/tap.rs` |
-| Text | Text in a type-scale role (Material 3: 15 roles; other designs derive them from their sizes). | gpui, dioxus, bevy, freya, slint, leptos, yew, xilem | `crates/dodai-gpui/src/text.rs` |
+| Text | Text in a type-scale role (Material 3: 15 roles; other designs derive them from their sizes). | gpui, iced, dioxus, bevy, freya, slint, leptos, yew, xilem | `crates/dodai-gpui/src/text.rs` |
 | TextInput | Editable text entity. Create with `cx.new(/cx/ TextInput::new(cx))`. | gpui, iced, dioxus, bevy, topcoat, egui, leptos, yew | `crates/dodai-gpui/src/text_input.rs` |
 | ThemeSelector | Dropdown of the variants (sub-themes) of the active design system; choosing one applies it live. New variants appear automatically. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/select.rs` |
 | ThemeSwitcherBar | Row of buttons, one per theme in the global switcher; the active one is filled. | gpui, dioxus, bevy, egui, leptos, yew | `crates/dodai-gpui/src/switcher.rs` |
@@ -498,9 +1943,9 @@ Entry effects: Fade, Rise, Drop, Slide from left, Slide from right. Overscroll f
 | TimelineEvent | One timeline entry. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/extras.rs` |
 | Timer | Countdown timer with a progress ring, start/pause/reset and ±1 min. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/time/timer.rs` |
 | Toast | Compact floating notification: raised surface, tone bar at the left, glow from tokens. | gpui, iced, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/feedback.rs` |
-| Toolbar | Compact bar of actions (children), optionally with a trailing floating action. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/extras.rs` |
-| TopAppBar | Top app bar: leading glyph, title, trailing actions (children). | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/surfaces.rs` |
+| Toolbar | Compact bar of actions (children), optionally with a trailing floating action. | gpui, iced, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/extras.rs` |
+| TopAppBar | Top app bar: leading glyph, title, trailing actions (children). | gpui, iced, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/surfaces.rs` |
 | TreeItem | Node of a [`TreeView`]. `expanded` is owned by the caller (controlled). | gpui, dioxus, bevy, topcoat, leptos, yew | `crates/dodai-gpui/src/layout.rs` |
 | TreeNavigation | Navigation tree that keeps its own expansion and selection: a click on a branch folds or unfolds it, a click on a leaf selects it and calls `on_select`. Built on [`TreeView`]. It never touches global state, so it can show any hierarchy (design systems and their themes, files, settings) without side effects. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/layout.rs` |
-| TreeRow | One visible row of a flattened tree. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/layout.rs` |
+| TreeRow | One visible row of a flattened tree. | gpui, iced, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/layout.rs` |
 | TreeView | Hierarchical list with expand/collapse. | gpui, dioxus, bevy, leptos, yew | `crates/dodai-gpui/src/layout.rs` |

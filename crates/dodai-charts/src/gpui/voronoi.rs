@@ -502,13 +502,31 @@ impl VoronoiChart {
             };
             if cfg.axes {
                 let (x0, y0, sx, sy) = frame(&paint_points, &cfg, bw, bh);
-                let tone = scale_alpha(ink, 0.6 * a);
+                // Dark ink on the pastel cells, kept inside the plot so no label spills out of it.
+                let tone = scale_alpha(label_ink, 0.8 * a);
                 for q in 0..=4 {
                     let f = q as f32 / 4.0;
                     let xv = fmt_with(&None, x0 + sx * f);
-                    name.centred(w, cx, &xv, (b.origin, (f * bw, bh - size)), 60.0, tone);
+                    name.centred(
+                        w,
+                        cx,
+                        &xv,
+                        (b.origin, ((f * bw).clamp(24.0, bw - 24.0), bh - size)),
+                        60.0,
+                        tone,
+                    );
                     let yv = fmt_with(&None, y0 + sy * f);
-                    name.centred(w, cx, &yv, (b.origin, (14.0, (1.0 - f) * bh)), 40.0, tone);
+                    name.centred(
+                        w,
+                        cx,
+                        &yv,
+                        (
+                            b.origin,
+                            (24.0, ((1.0 - f) * bh).clamp(size, bh - size * 2.0)),
+                        ),
+                        40.0,
+                        tone,
+                    );
                 }
             }
             for k in (0..n).filter(|k| cfg.neighbours && looks[*k].lift > 0.01) {
