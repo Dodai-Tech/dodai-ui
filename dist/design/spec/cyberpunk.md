@@ -695,7 +695,7 @@ Every public builder method of a component (or chart), with its parameters and f
 
 ### Follow
 
-- `here`
+- `here`: An id derived from the call site of the instrument's constructor. Instruments built on
 - `named(id)`: An id from a name, for components that already have one.
 - `with_animated(on)`: Turns following on or off for this component; off, it shows its value at once.
 - `with_interactive(on)`: Whether the component reacts to the pointer (hover readouts, click selection,
@@ -755,7 +755,7 @@ Every public builder method of a component (or chart), with its parameters and f
 - `weight(w)`: Stroke width in px at 24 px size (scales with `size`; stroked drawings only).
 - `pack(pack)`: Force an icon pack instead of following the theme.
 - `filled(on)`: Use the filled form where the pack has one.
-- `modifier(m)`
+- `modifier(m)`: A derived variant of a hand-drawn Cyberpunk icon (`Modifier::Add` on a heart is
 
 ### IconBadge
 
@@ -984,7 +984,7 @@ Every public builder method of a component (or chart), with its parameters and f
 
 ### ProgressBar
 
-- `new(value)`
+- `new(value)`: Create a new [`ProgressBar`]; a changed value glides.
 - `tone(tone)`: Colour by status tone (default: brand colour).
 - `style(s)`: Draw the bar the way a design does (see [`dodai_core::ProgressStyle`]).
 - `wavy(on)`: Material 3 Expressive wavy indicator: the active part is a travelling sine wave.
@@ -1178,7 +1178,7 @@ Every public builder method of a component (or chart), with its parameters and f
 
 ### Stepper
 
-- `new(steps, current)`
+- `new(steps, current)`: Create a new [`Stepper`]; the joining lines fill as the current step advances.
 
 ### Stopwatch
 
@@ -1198,7 +1198,7 @@ Every public builder method of a component (or chart), with its parameters and f
 
 ### Tabs
 
-- `new(id)`
+- `new(id)`: Create a new [`Tabs`]. The active indicator slides from tab to tab.
 - `closable(on)`: Give every tab a close button (a cross after the label). Controlled: the app drops the
 - `on_add(f)`: Show a "+" button after the last tab; the app adds the tab in the handler.
 - `disabled(tabs)`: Tabs (by index) that can't be picked: dimmed, skipped by the arrow keys.
@@ -1339,7 +1339,7 @@ Every public builder method of a component (or chart), with its parameters and f
 ### BarChart
 
 - `annotations(a)`: Threshold lines and highlighted bands drawn over the plot.
-- `new(series)`
+- `new(series)`: Create a new [`BarChart`].
 - `max(m)`: Fix the value-axis maximum (default: fit data).
 - `format(f)`: Custom number formatter for axis labels, tooltips and value labels.
 - `value_labels(v)`: Print the value above each bar (vertical, grouped only).
@@ -1356,17 +1356,23 @@ Every public builder method of a component (or chart), with its parameters and f
 
 ### BubbleTimeline
 
-- `new(items)`
+- `new(items)`: Create a new [`BubbleTimeline`] from its events, in any order.
 - `max_radius(r)`: Radius in px of the biggest bubble (default 48, `6..=120`). Shrunk to fit if the pile
 - `size_label(l)`: What the size measures, for the details line ("records lost").
 - `x_format(f)`: How times are written on the axis and in the details (default: plain numbers).
 - `centred(on)`: Spread the bubbles either side of the middle (a sized beeswarm) instead of piling them
 - `filter(on)`: Whether clicking a legend entry hides its group (default on).
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### SplitFlow
 
-- `new(steps)`
+- `new(steps)`: Create a new [`SplitFlow`] of `steps`.
 - `max_width(w)`: Keep the flow at most `w` px wide, centred (default: the full width). With a tall
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### Legend
 
@@ -1375,62 +1381,89 @@ Every public builder method of a component (or chart), with its parameters and f
 
 ### Bullet
 
-- `new(label, value)`
+- `new(label, value)`: Create a new [`Bullet`]. An empty `label` drops the label column (the bar takes the
 - `target(t)`: Target marker position.
 - `ranges(r)`: Upper bounds of the qualitative bands, e.g. `[150, 225, 300]` for
 - `max(m)`: Scale maximum (default: the largest of value, target and ranges).
 - `nice_scale(on)`: Round the scale up to a clean number (420 → 500), so a live reading keeps a steady
 - `color(c)`: Value bar colour (default: the theme's primary).
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### PairedBars
 
-- `new(rows)`
+- `new(rows)`: Create a new [`PairedBars`] from `(label, before, after)` rows.
 - `names(a, b)`: Names of the two states (legend and tooltips).
 - `shared_scale(on)`: Use one scale for every row instead of one per row.
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### Lollipop
 
-- `new(items)`
+- `new(items)`: Create a new [`Lollipop`].
 - `compare(values)`: Second value per category: draws a dumbbell between the two.
 - `names(a, b)`: Names of the two states in dumbbell mode.
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### SlopeChart
 
-- `new(items)`
+- `new(items)`: Create a new [`SlopeChart`] from `(label, left, right)` items.
 - `headers(a, b)`: Column headers.
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### Histogram
 
 - `annotations(a)`: Threshold lines and highlighted bands drawn over the plot.
-- `new(values)`
+- `new(values)`: Create a new [`Histogram`].
 - `kde(on)`: Overlay a kernel-density curve (scaled to the tallest bin).
 - `stats(on)`: Mark the mean (solid) and median (dashed) with labelled lines.
 - `bins(n)`: Number of bins.
 - `color(c)`: Colour (default: the theme's).
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### BoxPlot
 
-- `new(groups)`
+- `new(groups)`: Create a new [`BoxPlot`].
 - `notch(on)`: Notched boxes: the notch is the ~95% confidence interval of the median.
 - `mean(on)`: Mark each group's mean with a diamond.
 - `points(on)`: Draw every sample as a jittered dot behind the box.
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### Sankey
 
-- `new(links)`
+- `new(links)`: Create a new [`Sankey`].
 - `node_width(w)`: Node bar width in px.
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### CalendarHeatmap
 
-- `new(values)`
+- `new(values)`: Create a new [`CalendarHeatmap`] from one value per consecutive day.
 - `from_date(year, month, day)`: First day as `(year, month, day)`: sets the weekday and labels months.
 - `start_weekday(d)`: Weekday of the first value when no date is given (`0` Monday).
 - `cell(px)`: Cell size in px (default 14).
 - `levels(n)`: Number of intensity levels including "none" (default 5).
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### ViolinChart
 
 - `new(groups)`: Create a new [`ViolinChart`] from `(name, samples)` groups.
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### RoseChart
 
@@ -1443,33 +1476,42 @@ Every public builder method of a component (or chart), with its parameters and f
 
 ### SpanFan
 
-- `new(items)`
+- `new(items)`: Create a new [`SpanFan`] of `items`.
 - `sweep(turns)`: The arc the spokes fill, in turns centred on the top (default 0.75, `0.05..=1`).
 - `order(o)`: The order the spokes go round in (default: as given).
 - `hub(h)`: The hub's radius, as a share of the fan's (default 0.16, `0..=0.6`).
 - `filter(on)`: Let the legend hide and show groups (default on; needs two groups or more).
 - `magnitude_format(f)`: Formatter for magnitudes in the readout.
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### Funnel
 
-- `new(stages)`
+- `new(stages)`: Create a new [`Funnel`].
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### Waterfall
 
 - `annotations(a)`: Threshold lines and highlighted bands drawn over the plot.
-- `new(steps)`
+- `new(steps)`: Create a new [`Waterfall`].
 - `total(on)`: Append a "Total" bar (default on).
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### ScatterPlot
 
 - `annotations(a)`: Threshold lines and highlighted bands drawn over the plot.
-- `new(series)`
+- `new(series)`: Create a new [`ScatterPlot`].
 - `height(h)`: Height in px.
 - `legend(l)`: Show or hide the legend.
 
 ### Heatmap
 
-- `new(rows)`
+- `new(rows)`: Create a new [`Heatmap`].
 - `row_labels(l)`: Row labels.
 - `col_labels(l)`: Column labels.
 - `stretch(on)`: Let cells grow to fill the full width instead of capping at 4× the cell size.
@@ -1478,25 +1520,37 @@ Every public builder method of a component (or chart), with its parameters and f
 
 ### Sunburst
 
-- `new(root)`
+- `new(root)`: Create a new [`Sunburst`] of everything below `root`.
 - `hole(h)`: The empty middle, as a share of the radius (default 0.25, `0..=0.8`).
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### Icicle
 
-- `new(root)`
+- `new(root)`: Create a new [`Icicle`] of everything below `root`.
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### Waffle
 
-- `new(items)`
+- `new(items)`: Create a new [`Waffle`] from `(label, value)` parts.
 - `grid(cols, rows)`: Columns and rows of the grid (each `1..=50`).
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### Marimekko
 
-- `new(segments, columns)`
+- `new(segments, columns)`: Create a new [`Marimekko`]: segment names (top to bottom) and `(column, values)` with
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### KpiTile
 
-- `new(label, value)`
+- `new(label, value)`: Create a new [`KpiTile`] showing `value` under `label`.
 - `previous(v)`: The value last period; the tile shows the change from it.
 - `trend(values)`: Recent values, drawn as a sparkline under the number.
 - `lower_is_better(l)`: A fall is good news (costs, errors, latency): falls show in the rising colour.
@@ -1504,24 +1558,33 @@ Every public builder method of a component (or chart), with its parameters and f
 
 ### BumpChart
 
-- `new(series)`
+- `new(series)`: Create a new [`BumpChart`] from the raw values; the chart ranks them per step.
 - `labels(l)`: Step labels under the chart, one per value.
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### RidgelineChart
 
-- `new(groups)`
+- `new(groups)`: Create a new [`RidgelineChart`] from `(label, samples)` groups, drawn top to bottom.
 - `overlap(o)`: How tall a ridge may rise, in row heights (default 1.8; 1 = no overlap).
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### HorizonChart
 
-- `new(series)`
+- `new(series)`: Create a new [`HorizonChart`], one strip per series.
 - `bands(n)`: How many bands each strip folds into (default 3, 1..=5).
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### LineChart
 
 - `glow(g)`: The glow ("shadow") under the lines: the theme's own, none, or a radius.
 - `annotations(a)`: Threshold lines and highlighted bands drawn over the plot.
-- `new(series)`
+- `new(series)`: Create a new [`LineChart`].
 - `y_range(lo, hi)`: Fix the Y axis to `lo..=hi` (default: fit data, including zero).
 - `format(f)`: Custom number formatter for axis labels and tooltips.
 - `grid(g)`: Show horizontal gridlines (default on).
@@ -1546,16 +1609,22 @@ Every public builder method of a component (or chart), with its parameters and f
 
 ### RenkoChart
 
-- `new(closes, brick)`
+- `new(closes, brick)`: Create a new [`RenkoChart`].
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### DepthChart
 
 - `glow(g)`: The glow ("shadow") under the lines: the theme's own, none, or a radius.
-- `new(bids, asks)`
+- `new(bids, asks)`: `(price, size)` levels in any order.
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### Gantt
 
-- `new(tasks)`
+- `new(tasks)`: Create a new [`Gantt`].
 - `format(f)`: Format task times in tooltips.
 - `title(t)`: Title text.
 - `label_width(w)`: Width of the task-name column.
@@ -1569,7 +1638,7 @@ Every public builder method of a component (or chart), with its parameters and f
 
 ### TimeScatter
 
-- `new(points)`
+- `new(points)`: Create a new [`TimeScatter`] of `points`.
 - `filter(on)`: Let the legend hide and show groups (default on; needs two groups or more).
 - `frontier(on)`: Draw the record frontier: the best value so far, as a staircase.
 - `trend(on)`: Draw the least-squares trend line through all points.
@@ -1577,59 +1646,89 @@ Every public builder method of a component (or chart), with its parameters and f
 - `reference(y, label)`: A dashed reference line at value `y`, labelled `label` (a target, a break-even, ...).
 - `x_format(f)`: Formatter for times (the x axis).
 - `size_format(f)`: Formatter for bubble sizes in the readout.
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### ParallelCoordinates
 
-- `new(axes, items)`
+- `new(axes, items)`: Create new [`ParallelCoordinates`]: axis names, then `(item, one value per axis)`.
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### Hexbin
 
-- `new(points)`
+- `new(points)`: Create a new [`Hexbin`] from `(x, y)` points.
 - `radius(r)`: Hexagon radius in px (default 10, `4..=40`).
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### NetworkGraph
 
-- `new(nodes, links)`
+- `new(nodes, links)`: Create a new [`NetworkGraph`]: node names and `(from, to, weight)` links by index.
 - `groups(g)`: A group per node (by index), coloured alike; nodes without one share the first colour.
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### ChordDiagram
 
-- `new(names, matrix)`
+- `new(names, matrix)`: Create a new [`ChordDiagram`]: group names and the flow matrix (`m[i][j]` = from `i` to
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### ArcDiagram
 
-- `new(nodes, links)`
+- `new(nodes, links)`: Create a new [`ArcDiagram`]: node names (in order) and `(from, to, weight)` links.
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### ProportionalSquares
 
 - `filter(on)`: Let the legend hide and show groups (default on; needs two groups or more).
-- `new(groups)`
+- `new(groups)`: Create new [`ProportionalSquares`] from `(group, [(label, value)])`; each group takes a
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### CirclePack
 
-- `new(root)`
+- `new(root)`: Create a new [`CirclePack`] of everything below `root`.
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### Treemap
 
-- `new(items)`
+- `new(items)`: Create a new [`Treemap`].
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### RadialBar
 
 - `glow(g)`: The glow ("shadow") under the lines: the theme's own, none, or a radius.
-- `new(rings)`
+- `new(rings)`: Create a new [`RadialBar`].
 - `size(s)`: Size in px.
 - `legend(l)`: Show or hide the legend.
 
 ### PeakRange
 
-- `new(series)`
+- `new(series)`: Create a new [`PeakRange`]; every series is sampled on the same evenly spaced x grid.
 - `x_labels(l)`: Labels spread evenly under the horizon (months, years, ...).
 - `lanes(n)`: Stand the series on `n` horizons (series `i` on lane `i % n`; lane 0 is lowest and
 - `cap(c)`: Light the top of each mountain above this share of its summit (default 1: off).
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### PieChart
 
-- `new(slices)`
+- `new(slices)`: Create a new [`PieChart`].
 - `style(s)`: Look of the slices (default [`PieStyle::Solid`]). `Segmented` and `Hud`
 - `gap(g)`: Straight gap between slices in px (default 2, `0` = flush).
 - `explode(px)`: Push every slice outward by `px` (an exploded pie), up to 10.
@@ -1645,14 +1744,20 @@ Every public builder method of a component (or chart), with its parameters and f
 
 ### ControlChart
 
-- `new(values)`
+- `new(values)`: Create a new [`ControlChart`] of one measurement per sample, in time order.
 - `labels(l)`: Sample labels under the chart (shown when there is one per value).
 - `baseline(n)`: Set the centre and limits from the first `n` samples only (a known stable period),
 - `sigma(k)`: How many σ the limits sit from the centre (default 3, `1..=6`).
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### EventTimeline
 
-- `new(lanes)`
+- `new(lanes)`: Create a new [`EventTimeline`] from `(lane, spans)`.
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### Pulse
 
@@ -1702,8 +1807,11 @@ Every public builder method of a component (or chart), with its parameters and f
 
 ### ShardMap
 
-- `new(groups)`
+- `new(groups)`: Create a new [`ShardMap`] of `groups`.
 - `outline(o)`: The outline to fill (default: a circle).
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### Sparkline
 
@@ -1712,7 +1820,7 @@ Every public builder method of a component (or chart), with its parameters and f
 - `guide(g)`: Faint dashed reference line at the mean, the peak or a fixed value.
 - `fluid(f)`: Stretch to the available width instead of the fixed `w`.
 - `live(window)`: Draws a [`dodai_gpui::Live`] window instead of fixed values, sliding left between samples.
-- `new(values)`
+- `new(values)`: Create a new [`Sparkline`].
 - `marker(m)`: Shape at the line's tip (default `Dot`; `Marker::None` to hide).
 - `all_points(a)`: Draw the marker on every point instead of only the last.
 - `size(w, h)`: Width and height in px.
@@ -1722,21 +1830,30 @@ Every public builder method of a component (or chart), with its parameters and f
 
 ### Beeswarm
 
-- `new(groups)`
+- `new(groups)`: Create a new [`Beeswarm`] from `(label, samples)` groups, one lane each.
 - `radius(r)`: Dot radius in px (default 3.5, `1..=10`).
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### Ecdf
 
-- `new(series)`
+- `new(series)`: Create a new [`Ecdf`], one curve per series of samples.
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### ErrorBars
 
-- `new(rows)`
+- `new(rows)`: Create new [`ErrorBars`] from `(label, estimate, low, high)` rows, top to bottom.
 - `reference(v)`: A vertical reference line at `v`.
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### SlotGrid
 
-- `new(slots)`
+- `new(slots)`: A grid over the named `slots` (left to right).
 - `row(label, blocks)`: A row of blocks.
 - `caption(title, note)`: A title and a quieter note above the grid ("2.4 GHz", "2412–2484 MHz").
 - `corner(name)`: Name of the slot header row, shown in the row-label column ("Channels").
@@ -1746,34 +1863,40 @@ Every public builder method of a component (or chart), with its parameters and f
 
 ### StatusStrip
 
-- `new(lo, hi, spans)`
+- `new(lo, hi, spans)`: A strip over `lo..hi` with `(start, end, tone)` spans.
 - `format(f)`: Custom formatter for the span bounds in the readout.
 
 ### BucketBar
 
-- `new(edges, counts)`
+- `new(edges, counts)`: Buckets between `edges` (one more edge than counts), worst first.
 
 ### StageBars
 
-- `new(stages)`
+- `new(stages)`: Stages with their success rate in percent.
 - `format(f)`: Custom formatter for the rates (default "97%").
 
 ### GradientScale
 
-- `new(lo, hi, value)`
+- `new(lo, hi, value)`: `value` on a scale from `lo` (bad) to `hi` (good).
 - `low_is_good(on)`: Low values are the good ones (latency, error rate).
 - `format(f)`: Custom formatter for the tick labels.
 
 ### ParetoChart
 
-- `new(items)`
+- `new(items)`: Create a new [`ParetoChart`] from `(cause, count)` items in any order.
 - `cutoff(c)`: The cumulative share that ends the vital few (default 0.8, `0..=1`).
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### DivergingBars
 
-- `new(parts, rows)`
+- `new(parts, rows)`: Create new [`DivergingBars`]: part names (left to right) and `(row, one value per
 - `split(s)`: How many parts sit left of the centre; a fraction puts that part across it.
 - `percent(p)`: Scale every row to 100 % (default on; off keeps the raw values, as for a pyramid).
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### StackedAreaChart
 
@@ -1783,22 +1906,28 @@ Every public builder method of a component (or chart), with its parameters and f
 - `offset(o)`: Where the stack sits: on zero (default), stretched to 100%, or floating as a stream
 - `labels(l)`: Labels, one per item.
 - `legend(l)`: Show or hide the legend.
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### Candlestick
 
-- `new(candles)`
+- `new(candles)`: Create a new [`Candlestick`].
 - `labels(l)`: Labels, one per item.
 - `style(s)`: Candles (default), Heikin-Ashi or OHLC bars.
 - `volume(on)`: Volume bars along the bottom of the price pane.
 - `overlay(o)`: Add a price overlay (call repeatedly).
 - `pane(p)`: Add an indicator pane under the chart (call repeatedly).
 - `markers(m)`: Buy/sell markers.
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ### VoronoiChart
 
-- `new(points)`
-- `ring(items)`
-- `stipple(density, n, relax, seed)`
+- `new(points)`: Create a new [`VoronoiChart`] of `points`.
+- `ring(items)`: A pie drawn as a Voronoi diagram: one weighted site per `(label, value)` on a ring,
+- `stipple(density, n, relax, seed)`: A mosaic: `n` points sampled from `density[row][col]` (row 0 on top), relaxed `relax`
 - `bounds(x0, x1, y0, y1)`: Fix the visible data window `x0..x1`, `y0..y1` instead of fitting it to the points.
 - `gradient(g)`: Colour each cell by its point's value along `g`.
 - `probe(x, y)`: A temporary extra site at the data position `(x, y)`, like a cursor.
@@ -1818,6 +1947,9 @@ Every public builder method of a component (or chart), with its parameters and f
 - `clip_circle(v)`: Fill only the inscribed disc (default: off).
 - `phase(v)`: Drift the points around their places; 0 leaves them (default: 0).
 - `square(v)`: Equal x and y scale, so distances are true (for maps; default: off).
+- `height(h)`: Chart height in px.
+- `title(t)`: Title above the chart.
+- `format(f)`: Custom number formatter for labels and tooltips.
 
 ## Components (126)
 

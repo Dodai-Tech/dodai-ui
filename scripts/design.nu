@@ -122,7 +122,7 @@ def gpui-charts []: nothing -> list<record> {
 def api-of [text: string]: nothing -> record {
     $text | parse --regex '(?s)\nimpl(?:<[^>]*>)? (?<name>[A-Z]\w*)(?:<[^>]*>)? \{\n(?<body>.*?)\n\}\n'
     | each { |blk|
-        let real = ($blk.body | parse --regex '(?ms)^((?:    ///[^\n]*\n)*)    pub fn (?<fname>[a-z]\w*)[^(]*\((?<args>.*?)\)\s*(?:->[^{;]*)?\s*(?:where[^{]*)?\{' | each { |m|
+        let real = ($blk.body | parse --regex '(?ms)^((?:    ///[^\n]*\n)*)(?:    #\[[^\n]*\n)*    pub fn (?<fname>[a-z]\w*)[^(]*\((?<args>.*?)\)\s*(?:->[^{;]*)?\s*(?:where[^{]*)?\{' | each { |m|
             let doc = if ($m.capture0 | is-empty) { "" } else { $m.capture0 | lines | first | str replace --regex '^\s*/// ?' '' }
             let args = ($m.args | str replace --all --regex '\([^)]*\)' '' | split row ',' | each { |a| $a | str trim } | where { |a| ($a | is-not-empty) and ($a !~ '^&?(mut )?self') } | each { |a| $a | split row ':' | first | str trim } | str join ', ')
             { name: $m.fname, args: $args, doc: $doc, at: ($blk.body | str index-of $m.fname) }
@@ -134,6 +134,11 @@ def api-of [text: string]: nothing -> record {
         { name: $blk.name, fns: $fns }
     }
     | where { $in.fns | is-not-empty }
+    | append ($text | parse --regex 'chart_cfg!\((?<name>[A-Z]\w*)\)' | each { |m| { name: $m.name, fns: [
+        { name: "height", args: "h", doc: "Chart height in px." }
+        { name: "title", args: "t", doc: "Title above the chart." }
+        { name: "format", args: "f", doc: "Custom number formatter for labels and tooltips." }
+    ] } })
     | reduce --fold {} { |r, acc| $acc | upsert $r.name (($acc | get -o $r.name | default []) | append $r.fns) }
 }
 
