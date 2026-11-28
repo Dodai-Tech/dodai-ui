@@ -177,6 +177,23 @@
       ]
     },
     {
+      "name": "Checkbox",
+      "doc": "Checkbox with a ✓ mark.",
+      "behaviour": false,
+      "toolkits": [
+        "gpui",
+        "iced",
+        "dioxus",
+        "bevy",
+        "topcoat",
+        "egui",
+        "slint",
+        "leptos",
+        "yew",
+        "tui"
+      ]
+    },
+    {
       "name": "Chip",
       "doc": "Selectable filter chip with optional ✕ remove affordance.",
       "behaviour": false,
@@ -503,7 +520,7 @@
     },
     {
       "name": "Feed",
-      "doc": "Samples waiting for a [`Live`] window, pushed from any thread (a socket reader, a sensor loop). Clones share the queue; attach it with [`Live::attach`].",
+      "doc": "",
       "behaviour": true,
       "toolkits": [
         "gpui",
@@ -714,7 +731,7 @@
     },
     {
       "name": "Kbd",
-      "doc": "Keyboard key hint, e.g. `Kbd::new(\"⌘K\")`.",
+      "doc": "",
       "behaviour": false,
       "toolkits": [
         "gpui",
@@ -741,7 +758,7 @@
     },
     {
       "name": "Label",
-      "doc": "Small body-font label (uppercased when the theme says so).",
+      "doc": "",
       "behaviour": false,
       "toolkits": [
         "gpui",
@@ -798,7 +815,7 @@
     },
     {
       "name": "Live",
-      "doc": "A fixed-size window of recent samples. Clones share the same data.",
+      "doc": "",
       "behaviour": true,
       "toolkits": [
         "gpui",
@@ -872,7 +889,7 @@
     },
     {
       "name": "Mono",
-      "doc": "Monospace text (never uppercased).",
+      "doc": "",
       "behaviour": false,
       "toolkits": [
         "gpui",
@@ -887,7 +904,7 @@
     },
     {
       "name": "Muted",
-      "doc": "Secondary body text in `text_muted`.",
+      "doc": "",
       "behaviour": false,
       "toolkits": [
         "gpui",
@@ -1045,6 +1062,22 @@
       ]
     },
     {
+      "name": "Radio",
+      "doc": "Radio button; `on_change` is called with `true` when selected.",
+      "behaviour": false,
+      "toolkits": [
+        "gpui",
+        "iced",
+        "dioxus",
+        "bevy",
+        "topcoat",
+        "egui",
+        "slint",
+        "leptos",
+        "yew"
+      ]
+    },
+    {
       "name": "RangeSlider",
       "doc": "Two-thumb slider (controlled), horizontal or vertical.",
       "behaviour": false,
@@ -1099,7 +1132,7 @@
     },
     {
       "name": "Scanlines",
-      "doc": "Absolutely-positioned overlay filling its (relative) parent. Place it as the last child of the root. It adds no hitbox, so it never blocks input.",
+      "doc": "",
       "behaviour": false,
       "toolkits": [
         "gpui",
@@ -1126,7 +1159,7 @@
     },
     {
       "name": "ScrollSpy",
-      "doc": "Scroll-spy state: just the optional pinned (clicked) key.",
+      "doc": "",
       "behaviour": false,
       "toolkits": [
         "gpui",
@@ -1203,7 +1236,7 @@
     },
     {
       "name": "SelectionMarker",
-      "doc": "What the indicator looks like.",
+      "doc": "",
       "behaviour": false,
       "toolkits": [
         "gpui",
@@ -1571,6 +1604,20 @@
         "bevy",
         "leptos",
         "yew"
+      ]
+    },
+    {
+      "name": "Toggle",
+      "doc": "On/off switch.",
+      "behaviour": false,
+      "toolkits": [
+        "gpui",
+        "dioxus",
+        "egui",
+        "slint",
+        "leptos",
+        "yew",
+        "tui"
       ]
     },
     {

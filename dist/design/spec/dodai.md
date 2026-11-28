@@ -367,11 +367,11 @@ Entry effects: Fade, Rise, Drop, Slide from left, Slide from right. Overscroll f
 | --- | --- | --- |
 | DodaiTheme | Global theme state: the [`ThemeSwitcher`] plus the active theme. | gpui, dioxus, bevy, leptos, yew |
 | EntryScope | Wraps a subtree so every component inside uses `kind` for its entry and value-in animation instead of the default [`Motion::entry`]. Components render while their parent lays out, so the override is installed around the child's `request_layout` and restored afterwards. | gpui, dioxus, bevy, leptos, yew |
-| Feed | Samples waiting for a [`Live`] window, pushed from any thread (a socket reader, a sensor loop). Clones share the queue; attach it with [`Live::attach`]. | gpui, dioxus, bevy, leptos, yew |
+| Feed |  | gpui, dioxus, bevy, leptos, yew |
 | Follow | Animation identity and feel of one instrument. | gpui, dioxus, bevy, leptos, yew |
 | Interact | Pointer state of one control (kept in gpui keyed element state). | gpui, dioxus, bevy, leptos, yew |
 | Lazy | See [`lazy`]. | gpui, dioxus, bevy, leptos, yew |
-| Live | A fixed-size window of recent samples. Clones share the same data. | gpui, dioxus, bevy, leptos, yew |
+| Live |  | gpui, dioxus, bevy, leptos, yew |
 | PageGrid | The design's page grid (columns, gap and outer margins at the viewport width) laid out as wrapping rows of cells that each span a number of columns. | gpui, dioxus, bevy, leptos, yew |
 
 ## Properties (what each component and chart accepts)
@@ -506,6 +506,20 @@ Content: `variant`.
 | `motion` | property | m | Pace, easing and travel of paging and of a throw landing (a spring keeps the throw's |
 | `item_height` | property | h | Item height for the contained layouts. |
 | `select` | event | v | Called when an item is chosen, with the index. |
+
+### Checkbox
+
+Content: `on`.
+
+| property | kind | value | description |
+| --- | --- | --- | --- |
+| `disabled` | property | d | Disable interaction. |
+| `indeterminate` | property | m | Half-checked ("some children selected"): drawn as a dash; |
+| `variant` | property | v | Size / look under Material themes; see CheckboxVariant. Meaningful for |
+| `icons` | property | on | Show a check / cross in the thumb (Material switch with icons); Toggle only. |
+| `animation` | property | a | How the switch thumb travels and the tick or dot appears; `None` (the default) is the |
+| `motion` | property | m | Pace, easing and travel (eased or spring); defaults to the design's motion. |
+| `change` | event | f | Called with the requested new value on click. |
 
 ### Chip
 
@@ -1174,6 +1188,20 @@ Content: `value`.
 | `style` | property | s | Draw the bar the way a design does (see dodai_core::ProgressStyle). |
 | `wavy` | property | on | Material 3 Expressive wavy indicator: the active part is a travelling sine wave. |
 
+### Radio
+
+Content: `on`.
+
+| property | kind | value | description |
+| --- | --- | --- | --- |
+| `disabled` | property | d | Disable interaction. |
+| `indeterminate` | property | m | Half-checked ("some children selected"): drawn as a dash; |
+| `variant` | property | v | Size / look under Material themes; see CheckboxVariant. Meaningful for |
+| `icons` | property | on | Show a check / cross in the thumb (Material switch with icons); Toggle only. |
+| `animation` | property | a | How the switch thumb travels and the tick or dot appears; `None` (the default) is the |
+| `motion` | property | m | Pace, easing and travel (eased or spring); defaults to the design's motion. |
+| `change` | event | f | Called with the requested new value on click. |
+
 ### RangeSlider
 
 Content: `lo`, `hi`.
@@ -1554,6 +1582,20 @@ Content: `title`.
 ### Toast
 
 Content: `tone`, `message`.
+
+### Toggle
+
+Content: `on`.
+
+| property | kind | value | description |
+| --- | --- | --- | --- |
+| `disabled` | property | d | Disable interaction. |
+| `indeterminate` | property | m | Half-checked ("some children selected"): drawn as a dash; |
+| `variant` | property | v | Size / look under Material themes; see CheckboxVariant. Meaningful for |
+| `icons` | property | on | Show a check / cross in the thumb (Material switch with icons); Toggle only. |
+| `animation` | property | a | How the switch thumb travels and the tick or dot appears; `None` (the default) is the |
+| `motion` | property | m | Pace, easing and travel (eased or spring); defaults to the design's motion. |
+| `change` | event | f | Called with the requested new value on click. |
 
 ### Toolbar
 
@@ -2406,7 +2448,7 @@ Content: `points`.
 | `title` | property | t | Title above the chart. |
 | `format` | property | f | Custom number formatter for labels and tooltips. |
 
-## Components (126)
+## Components (129)
 
 | component | summary | toolkits |
 | --- | --- | --- |
@@ -2422,6 +2464,7 @@ Content: `points`.
 | Button | Themed button. Construct with an id so hover/press state can be tracked. | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew, tui, xilem |
 | Card | Container with optional headline, supporting text and children. | gpui, iced, dioxus, bevy, leptos, yew |
 | Carousel | Controlled carousel; each item gets a fixed `item_width`. | gpui, dioxus, bevy, leptos, yew |
+| Checkbox | Checkbox with a ✓ mark. | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew, tui |
 | Chip | Selectable filter chip with optional ✕ remove affordance. | gpui, iced, dioxus, bevy, leptos, yew |
 | CircularProgress | Ring progress. `new(0.0..=1.0)` is determinate; [`CircularProgress::indeterminate`] spins. | gpui, iced, dioxus, bevy, topcoat, leptos, yew |
 | Clock | Live clock: analog dial, or a futuristic seven-segment face (see [`ClockFace`]). | gpui, dioxus, bevy, leptos, yew |
@@ -2448,7 +2491,7 @@ Content: `points`.
 | EntryScope | Wraps a subtree so every component inside uses `kind` for its entry and value-in animation instead of the default [`Motion::entry`]. Components render while their parent lays out, so the override is installed around the child's `request_layout` and restored afterwards. | gpui, dioxus, bevy, leptos, yew |
 | Fab | Floating action button; `extended` adds a text label. | gpui, iced, dioxus, bevy, leptos, yew |
 | FabMenu | A FAB that opens a stack of labelled actions above it (Material 3 FAB menu). The main button turns into a close button while open. | gpui, dioxus, bevy, leptos, yew |
-| Feed | Samples waiting for a [`Live`] window, pushed from any thread (a socket reader, a sensor loop). Clones share the queue; attach it with [`Live::attach`]. | gpui, dioxus, bevy, leptos, yew |
+| Feed |  | gpui, dioxus, bevy, leptos, yew |
 | FileDropZone | Drop target look (click to browse). Wire `on_click` to your file dialog. | gpui, dioxus, bevy, leptos, yew |
 | Follow | Animation identity and feel of one instrument. | gpui, dioxus, bevy, leptos, yew |
 | FormField | Label + control + help or validation message. When an error appears (or changes) the control shakes, in the design's personality; fields are told apart by their label. | gpui, dioxus, bevy, leptos, yew |
@@ -2465,20 +2508,20 @@ Content: `points`.
 | IndeterminateBar | Indeterminate progress bar: a segment sliding across the track. | gpui, dioxus, bevy, leptos, yew |
 | InputBox | Styled container for a text-input entity. gpui 0.2.2 ships no text input; put your own editor view/entity inside (or use `.placeholder`). | gpui, dioxus, bevy, leptos, yew |
 | Interact | Pointer state of one control (kept in gpui keyed element state). | gpui, dioxus, bevy, leptos, yew |
-| Kbd | Keyboard key hint, e.g. `Kbd::new("⌘K")`. | gpui, iced, dioxus, bevy, leptos, yew |
+| Kbd |  | gpui, iced, dioxus, bevy, leptos, yew |
 | Knob | Rotary knob over `min..=max` (default `0..=1`). Controlled. | gpui, iced, dioxus, bevy, topcoat, leptos, yew |
-| Label | Small body-font label (uppercased when the theme says so). | gpui, iced, dioxus, bevy, topcoat, freya, leptos, yew, tui |
+| Label |  | gpui, iced, dioxus, bevy, topcoat, freya, leptos, yew, tui |
 | Lazy | See [`lazy`]. | gpui, dioxus, bevy, leptos, yew |
 | List | A column of [`ListItem`]s with one selected row and the keyboard: once the list has focus (a click inside it, or Tab), Up and Down move the selection, Home and End jump to the ends, and disabled rows are skipped. The selection works without state in the parent (`.selected(i)` only sets the start, and a changed value wins again). | gpui, dioxus, bevy, topcoat, freya, leptos, yew |
 | ListItem | Selectable list/menu row with a left accent marker when selected. | gpui, iced, dioxus, bevy, egui, slint, leptos, yew |
-| Live | A fixed-size window of recent samples. Clones share the same data. | gpui, dioxus, bevy, leptos, yew |
+| Live |  | gpui, dioxus, bevy, leptos, yew |
 | LoadingIndicator | Material 3 expressive loading indicator: a 48 px container with a 38 px shape that morphs and turns. `contained` draws it on a filled pill/circle. | gpui, dioxus, bevy, leptos, yew |
 | Markdown | Rich text from Markdown source. | gpui, dioxus, bevy, leptos, yew |
 | Menu | Floating action list. `on_select` receives the index into the item list. | gpui, iced, dioxus, bevy, topcoat, leptos, yew |
 | MenuItem | One row of a [`Menu`]. | gpui, dioxus, bevy, leptos, yew |
 | ModalDrawer | Modal navigation drawer: a [`crate::NavigationDrawer`] sliding over the page from the left edge with a scrim; picking an item or clicking the scrim dismisses it. | gpui, dioxus, bevy, leptos, yew |
-| Mono | Monospace text (never uppercased). | gpui, iced, dioxus, bevy, topcoat, freya, leptos, yew |
-| Muted | Secondary body text in `text_muted`. | gpui, iced, dioxus, bevy, topcoat, freya, leptos, yew, tui |
+| Mono |  | gpui, iced, dioxus, bevy, topcoat, freya, leptos, yew |
+| Muted |  | gpui, iced, dioxus, bevy, topcoat, freya, leptos, yew, tui |
 | NavigationBar | Navigation bar: the destinations side by side along the bottom of a compact screen. | gpui, iced, dioxus, bevy, leptos, yew |
 | NavigationDrawer | Vertical drawer: items, section headlines and dividers. | gpui, dioxus, bevy, leptos, yew |
 | NavigationItem | One destination of a drawer or rail. | gpui, dioxus, bevy, leptos, yew |
@@ -2490,19 +2533,20 @@ Content: `points`.
 | Panel | Shaped card with optional title; focused border/glow; hard shadow from tokens. | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew, xilem |
 | Popover | Click-to-open panel anchored to a trigger. Closes on outside click or `Esc`. | gpui, iced, dioxus, bevy, leptos, yew |
 | ProgressBar | Horizontal progress bar (`0.0..=1.0`). | gpui, iced, dioxus, bevy, egui, leptos, yew |
+| Radio | Radio button; `on_change` is called with `true` when selected. | gpui, iced, dioxus, bevy, topcoat, egui, slint, leptos, yew |
 | RangeSlider | Two-thumb slider (controlled), horizontal or vertical. | gpui, iced, dioxus, bevy, topcoat, leptos, yew |
 | Rating | Star rating (`value` of `max`). With [`Rating::half`] it also takes half stars: the left half of a star is `n - 0.5`, the right half is `n`. | gpui, iced, dioxus, bevy, topcoat, leptos, yew |
 | ResponsiveShell | Responsive app frame. Wide: `[sidebar / content]`. Narrow: content only, with a menu button that opens the sidebar as an overlay drawer. | gpui, dioxus, bevy, leptos, yew |
 | RichTooltip | Tooltip with a title, body text and optional action label: `.tooltip(RichTooltip::build("Title", "Body", Some("Learn more")))`. | gpui, iced, dioxus, bevy, leptos, yew |
-| Scanlines | Absolutely-positioned overlay filling its (relative) parent. Place it as the last child of the root. It adds no hitbox, so it never blocks input. | gpui, iced, dioxus, bevy, slint, leptos, yew, tui |
+| Scanlines |  | gpui, iced, dioxus, bevy, slint, leptos, yew, tui |
 | ScrollArea | Scroll container with thin themed scrollbars (drag a thumb or use the wheel). Scrolls vertically; [`horizontal`](Self::horizontal) adds the other axis. | gpui, dioxus, bevy, leptos, yew |
-| ScrollSpy | Scroll-spy state: just the optional pinned (clicked) key. | gpui, dioxus, bevy, leptos, yew |
+| ScrollSpy |  | gpui, dioxus, bevy, leptos, yew |
 | SearchBar | Search field shell: leading glyph + placeholder/value text; click to focus your own input. Use [`crate::TextInput`] inside for real editing. | gpui, iced, dioxus, bevy, leptos, yew |
 | SearchView | Full-text search: input, clear button and a fuzzy-filtered result list with matched characters highlighted. Owns no state: pass the [`TextInput`] entity and an `open` flag. | gpui, dioxus, bevy, leptos, yew |
 | Segmented | Exclusive option group in one bordered strip. Controlled. | gpui, iced, dioxus, bevy, topcoat, leptos, yew |
 | Select | Dropdown list. Controlled: pass `selected` and update it in `on_select`. Keyboard (trigger focused): ↑/↓ move, Enter/Space open or choose, Esc close. | gpui, dioxus, bevy, topcoat, freya, leptos, yew |
 | SelectOption | One entry of a [`Select`]. | gpui, dioxus, bevy, leptos, yew |
-| SelectionMarker | What the indicator looks like. | gpui, dioxus, bevy, leptos, yew |
+| SelectionMarker |  | gpui, dioxus, bevy, leptos, yew |
 | SelectionTrack | The travelling indicator of one row of choices. Cheap to clone; keyed by its id. | gpui, dioxus, bevy, leptos, yew |
 | Shimmer | Shimmer sweep painted by [`shaped`] over any shape. | gpui, dioxus, bevy, leptos, yew |
 | SideSheet | Sheet attached to the left or right edge with a header and close button. | gpui, dioxus, bevy, leptos, yew |
@@ -2530,6 +2574,7 @@ Content: `points`.
 | TimelineEvent | One timeline entry. | gpui, dioxus, bevy, leptos, yew |
 | Timer | Countdown timer with a progress ring, start/pause/reset and ±1 min. | gpui, dioxus, bevy, leptos, yew |
 | Toast | Compact floating notification: raised surface, tone bar at the left, glow from tokens. | gpui, iced, dioxus, bevy, leptos, yew |
+| Toggle | On/off switch. | gpui, dioxus, egui, slint, leptos, yew, tui |
 | Toolbar | Compact bar of actions (children), optionally with a trailing floating action. | gpui, iced, dioxus, bevy, leptos, yew |
 | TopAppBar | Top app bar: leading glyph, title, trailing actions (children). | gpui, iced, dioxus, bevy, leptos, yew |
 | TreeItem | Node of a [`TreeView`]. `expanded` is owned by the caller (controlled). | gpui, dioxus, bevy, topcoat, leptos, yew |
@@ -2553,6 +2598,7 @@ Content: `points`.
 | Button | `crates/dodai-gpui/src/button.rs` |
 | Card | `crates/dodai-gpui/src/surfaces.rs` |
 | Carousel | `crates/dodai-gpui/src/carousel.rs` |
+| Checkbox | `-` |
 | Chip | `crates/dodai-gpui/src/data.rs` |
 | CircularProgress | `crates/dodai-gpui/src/display.rs` |
 | Clock | `crates/dodai-gpui/src/time/clock.rs` |
@@ -2621,6 +2667,7 @@ Content: `points`.
 | Panel | `crates/dodai-gpui/src/panel.rs` |
 | Popover | `crates/dodai-gpui/src/popover.rs` |
 | ProgressBar | `crates/dodai-gpui/src/controls/bars.rs` |
+| Radio | `-` |
 | RangeSlider | `crates/dodai-gpui/src/range.rs` |
 | Rating | `crates/dodai-gpui/src/extras.rs` |
 | ResponsiveShell | `crates/dodai-gpui/src/shell.rs` |
@@ -2661,6 +2708,7 @@ Content: `points`.
 | TimelineEvent | `crates/dodai-gpui/src/extras.rs` |
 | Timer | `crates/dodai-gpui/src/time/timer.rs` |
 | Toast | `crates/dodai-gpui/src/feedback.rs` |
+| Toggle | `-` |
 | Toolbar | `crates/dodai-gpui/src/extras.rs` |
 | TopAppBar | `crates/dodai-gpui/src/surfaces.rs` |
 | TreeItem | `crates/dodai-gpui/src/layout.rs` |

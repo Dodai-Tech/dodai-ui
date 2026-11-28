@@ -362,6 +362,100 @@ impl Chip {
     }
 }
 
+macro_rules! choice {
+    ($(#[$m:meta])* $name:ident, $kind:expr) => {
+        $(#[$m])*
+        pub struct $name {
+            on: bool,
+            disabled: bool,
+        }
+        impl $name {
+            /// `on` is the current value.
+            pub fn new(on: bool) -> Self {
+                Self { on, disabled: false }
+            }
+            /// Disable interaction.
+            #[must_use]
+            pub fn disabled(mut self, d: bool) -> Self {
+                self.disabled = d;
+                self
+            }
+            /// The bundle to spawn.
+            pub fn bundle(self) -> impl Bundle {
+                widgets::toggle($kind, self.on, self.disabled)
+            }
+        }
+    };
+}
+
+choice!(
+    /// On/off switch.
+    Toggle,
+    widgets::ToggleKind::Switch
+);
+choice!(
+    /// Checkbox with a tick.
+    Checkbox,
+    widgets::ToggleKind::Checkbox
+);
+choice!(
+    /// Radio button, exclusive among its siblings.
+    Radio,
+    widgets::ToggleKind::Radio
+);
+
+/// A draggable value in a range.
+pub struct Slider {
+    value: f32,
+    min: f32,
+    max: f32,
+}
+
+impl Slider {
+    /// A slider at `value`, over 0..=1 until `range` says otherwise.
+    pub fn new(value: f32) -> Self {
+        Self {
+            value,
+            min: 0.0,
+            max: 1.0,
+        }
+    }
+    /// Value range.
+    #[must_use]
+    pub fn range(mut self, min: f32, max: f32) -> Self {
+        self.min = min;
+        self.max = max;
+        self
+    }
+    /// The bundle to spawn.
+    pub fn bundle(self) -> impl Bundle {
+        widgets::slider(self.value, self.min, self.max)
+    }
+}
+
+/// A bar filled to a fraction.
+pub struct ProgressBar {
+    value: f32,
+    tone: Option<Tone>,
+}
+
+impl ProgressBar {
+    /// A bar filled to `value` (0..=1).
+    pub fn new(value: f32) -> Self {
+        Self { value, tone: None }
+    }
+    /// Colour by status tone (default: the brand colour).
+    #[must_use]
+    pub fn tone(mut self, t: Tone) -> Self {
+        self.tone = Some(t);
+        self
+    }
+    /// The bundle to spawn.
+    pub fn bundle(self) -> impl Bundle {
+        widgets::progress(self.value, self.tone)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -386,5 +480,10 @@ mod tests {
         is_bundle(Tag::new("x", Tone::Info).solid(true).bundle());
         is_bundle(Spinner::new().size(16.0).bundle());
         is_bundle(Chip::new("c").selected(true).bundle());
+        is_bundle(Toggle::new(true).disabled(true).bundle());
+        is_bundle(Checkbox::new(false).bundle());
+        is_bundle(Radio::new(true).bundle());
+        is_bundle(Slider::new(0.5).range(0.0, 2.0).bundle());
+        is_bundle(ProgressBar::new(0.3).tone(Tone::Success).bundle());
     }
 }

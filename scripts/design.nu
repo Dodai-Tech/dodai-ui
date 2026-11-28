@@ -120,7 +120,7 @@ def gpui-charts []: nothing -> list<record> {
 # The public options of every type in a source text: `pub fn` of each inherent `impl`, with its
 # first doc line and its parameters (`self` dropped). Record name -> list of { name, args, doc }.
 def api-of [text: string]: nothing -> record {
-    $text | parse --regex '(?s)\nimpl(?:<[^>]*>)? (?<name>[A-Z]\w*)(?:<[^>]*>)? \{\n(?<body>.*?)\n\}\n'
+    $text | parse --regex '(?s)\nimpl(?:<[^>]*>)? (?<name>\$?\w+)(?:<[^>]*>)? \{\n(?<body>.*?)\n\}\n'
     | each { |blk|
         let real = ($blk.body | parse --regex '(?ms)^((?:    ///[^\n]*\n)*)(?:    #\[[^\n]*\n)*    pub fn (?<fname>[a-z]\w*)[^(]*\((?<args>.*?)\)\s*(?:->[^{;]*)?\s*(?:where[^{]*)?\{' | each { |m|
             let doc = if ($m.capture0 | is-empty) { "" } else { $m.capture0 | lines | first | str replace --regex '^\s*/// ?' '' }
@@ -134,6 +134,10 @@ def api-of [text: string]: nothing -> record {
         { name: $blk.name, fns: $fns }
     }
     | where { $in.fns | is-not-empty }
+    | append ($text | parse --regex '(?s)\n        impl \$name \{\n(?<body>.*?)\n        \}\n' | each { |blk| { name: '$name', fns: (
+        $blk.body | parse --regex '(?ms)^((?:            ///[^\n]*\n)*)            pub fn (?<fname>[a-z]\w*)[^(]*\((?<args>.*?)\)\s*(?:->[^{;]*)?\{' | each { |m|
+            { name: $m.fname, args: ($m.args | split row ',' | each { |a| $a | str trim } | where { |a| ($a | is-not-empty) and ($a !~ '^&?(mut )?self') } | each { |a| $a | split row ':' | first | str trim } | str join ', '), doc: (if ($m.capture0 | is-empty) { "" } else { $m.capture0 | lines | first | str replace --regex '^\s*/// ?' '' }) }
+        }) } })
     | append ($text | parse --regex 'chart_cfg!\((?<name>[A-Z]\w*)\)' | each { |m| { name: $m.name, fns: [
         { name: "height", args: "h", doc: "Chart height in px." }
         { name: "title", args: "t", doc: "Title above the chart." }
@@ -146,6 +150,7 @@ def api-of [text: string]: nothing -> record {
 def gpui-api []: nothing -> record {
     (glob crates/dodai-gpui/src/**/*.rs) | append (glob crates/dodai-charts/src/gpui/*.rs) | sort | each { |f| api-of (open --raw $f) }
     | reduce --fold {} { |r, acc| $acc | merge $r }
+    | do { |a| let m = ($a | get -o '$name' | default []); $a | upsert Toggle $m | upsert Checkbox $m | upsert Radio $m | reject -o '$name' } $in
 }
 
 # "### Name" blocks listing the options of the given names.
@@ -163,7 +168,7 @@ def api-md [names: list<string>, api: record]: nothing -> list<string> {
                 | append ($props | each { |f|
                     let ev = ($f.name | str starts-with "on_")
                     let name = if $ev { $f.name | str replace "on_" "" } else { $f.name }
-                    let val = if ($f.args | is-empty) { "flag" } else { $f.args }
+                    let val = if ($f.args | is-empty) { "flag" } else if $ev { $f.args | split row ', ' | first } else { $f.args }
                     $"| `($name)` | (if $ev { 'event' } else { 'property' }) | ($val) | (do $clean $f.doc) |"
                 })
                 | append ""

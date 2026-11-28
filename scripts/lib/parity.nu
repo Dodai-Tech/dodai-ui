@@ -32,7 +32,7 @@ export def matched-variants [src: string, variants: list<string>]: nothing -> li
 # Public component names of the reference toolkit: pub structs that are not plumbing.
 export def component-names [src: string]: nothing -> list<string> {
     $src
-    | parse --regex '(?m)^pub struct ([A-Z][A-Za-z0-9]*)'
+    | parse --regex '(?m)^(?:pub struct |choice_component!\(\n(?:\s*///[^\n]*\n)+\s*)([A-Z][A-Za-z0-9]*)'
     | get capture0
     | where { $in !~ '(State|Config|Props|Options|Kind|Mode|Id|Style|Tokens|Ctx|Handle|Group|Colours?)$' }
     | uniq
@@ -143,7 +143,7 @@ export def behaviour-names []: nothing -> list<string> {
 # First doc-comment paragraph of every `pub struct` in a source text: { name: text }.
 export def component-docs [src: string]: nothing -> record {
     $src
-    | parse --regex '(?m)(?<doc>(?:^[ \t]*///[^\n]*\n)+)(?:[ \t]*#\[[^\n]*\n)*pub struct (?<name>[A-Z][A-Za-z0-9]*)'
+    | parse --regex '(?m)(?<doc>(?:^[ \t]*///[^\n]*\n)+)(?:[ \t]*#\[[^\n]*\n)*(?:pub struct |\s*)(?<name>[A-Z][A-Za-z0-9]*)[ ,]*(?:\{|\n)'
     | reduce --fold {} { |r, acc|
         let line = ($r.doc | lines | each { |l| $l | str trim | str replace --regex '^///\s?' '' | str trim } | take while { |l| $l != "" } | str join ' ')
         if ($acc | get -o $r.name | is-empty) and ($line != "") { $acc | insert $r.name $line } else { $acc }

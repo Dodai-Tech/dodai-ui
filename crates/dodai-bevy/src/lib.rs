@@ -60,7 +60,8 @@ pub use theme::{color, DodaiTheme};
 /// Everything needed to build a themed UI.
 pub mod prelude {
     pub use crate::builders::{
-        Accordion, Alert, Avatar, Badge, Breadcrumb, Chip, Divider, Heading, Spinner, Tag,
+        Accordion, Alert, Avatar, Badge, Breadcrumb, Checkbox, Chip, Divider, Heading, ProgressBar,
+        Radio, Slider, Spinner, Tag, Toggle,
     };
     pub use crate::components::*;
     pub use crate::data::*;

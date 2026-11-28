@@ -875,7 +875,7 @@ pub fn tabs(labels: &[&str], active: usize) -> impl Bundle + use<> {
     )
 }
 
-fn toggle(kind: ToggleKind, on: bool, disabled: bool) -> impl Bundle {
+pub(crate) fn toggle(kind: ToggleKind, on: bool, disabled: bool) -> impl Bundle {
     (
         UiToggle { kind, on, disabled },
         Node {
